@@ -1,0 +1,80 @@
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.confetti-particle {
+  position: absolute;
+  top: -10px;
+  border-radius: 50%;
+  animation: confetti-fall linear forwards;
+}
+
+/* 하트 모양 컨페티 */
+.confetti-heart {
+  --heart-size: 16px;
+  --heart-color: #FF6B6B;
+  position: absolute;
+  top: -20px;
+  width: var(--heart-size);
+  height: var(--heart-size);
+  animation: confetti-heart-fall linear forwards;
+}
+
+.confetti-heart::before,
+.confetti-heart::after {
+  content: '';
+  position: absolute;
+  width: var(--heart-size);
+  height: calc(var(--heart-size) * 1.6);
+  background: var(--heart-color);
+  border-radius: calc(var(--heart-size) / 2) calc(var(--heart-size) / 2) 0 0;
+}
+
+.confetti-heart::before {
+  left: calc(var(--heart-size) / 2);
+  transform: rotate(-45deg);
+  transform-origin: 0 100%;
+}
+
+.confetti-heart::after {
+  left: 0;
+  transform: rotate(45deg);
+  transform-origin: 100% 100%;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-heart-fall {
+  0% {
+    transform: translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50vh) rotate(180deg) scale(1.1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg) scale(0.8);
+    opacity: 0;
+  }
+}
+
+
+
+

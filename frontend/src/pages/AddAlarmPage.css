@@ -1,0 +1,275 @@
+.add-alarm-page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--adaptiveBackground, #ffffff);
+  padding-bottom: 100px; /* 하단 고정 버튼 공간 확보 */
+}
+
+/* Quick_Navigation 스타일 - IntroPage와 동일 */
+.quick-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 44px;
+  background: var(--adaptiveBackground, #ffffff);
+}
+
+.nav-left-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-back-button {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-title-area {
+  width: fit-content;
+  height: 34px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+}
+
+.nav-title-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 100%;
+}
+
+.nav-right-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+.nav-dynamic-icon-area {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  height: 34px;
+  background-color: var(--token-tds-color-grey-opacity-50, var(--adaptiveGreyOpacity50, rgba(0, 23, 51, 0.02)));
+  border-radius: 99px;
+}
+
+.nav-dynamic-icon-area .nav-icon-button {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-fixed-icon-area {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  height: 34px;
+  background-color: var(--token-tds-color-grey-opacity-50, var(--adaptiveGreyOpacity50, rgba(0, 23, 51, 0.02)));
+  border-radius: 99px;
+  padding: 0 4px;
+}
+
+.nav-fixed-icon-area .nav-icon-button {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--token-tds-color-grey-opacity-200, var(--adaptiveGreyOpacity200, rgba(0, 27, 55, 0.1)));
+}
+
+.add-alarm-top-section {
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Top 컴포넌트 기본 패딩 제거 */
+.add-alarm-top-section > div {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 보조 텍스트 간격 조정 - 타이틀과 보조 텍스트 사이 간격 2배 증가 */
+.add-alarm-subtitle {
+  margin-top: 16px;
+  display: block;
+}
+
+/* 보조 텍스트 색상 강제 적용 */
+.add-alarm-subtitle * {
+  color: var(--token-tds-color-grey-700, #4e5968) !important;
+}
+
+.add-alarm-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* TextField 컴포넌트의 기본 패딩 제거 */
+.add-alarm-content > * {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* TextField big variant - 입력 영역에만 밑줄 적용 */
+.add-alarm-content input {
+  border: none !important;
+  border-bottom: 1px solid var(--token-tds-color-grey-300, #d1d6db) !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  width: 100% !important;
+}
+
+.add-alarm-content input:focus {
+  border-bottom-color: var(--token-tds-color-blue-500, #3182f6) !important;
+}
+
+/* 에러 상태일 때 input 밑줄 색상 */
+.add-alarm-content [class*="error"] input,
+.add-alarm-content [class*="hasError"] input {
+  border-bottom-color: var(--token-tds-color-red-500, #f04452) !important;
+}
+
+/* TextField 컴포넌트 자체와 내부 div는 밑줄 제거 */
+.add-alarm-content > div[class*="TextField"],
+.add-alarm-content > div[class*="textField"],
+.add-alarm-content > div > div,
+.add-alarm-content > div > div > div,
+.add-alarm-content fieldset {
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* 라벨 색상 조정 - 첫 번째 필드는 파란색 */
+.add-alarm-content > div:first-child [class*="label"],
+.add-alarm-content > div:first-child label,
+.add-alarm-content > div:first-child [class*="Label"] {
+  color: var(--token-tds-color-blue-500, #3182f6) !important;
+}
+
+/* 에러 상태일 때 라벨 색상 - 빨간색 */
+.add-alarm-content [class*="error"] [class*="label"],
+.add-alarm-content [class*="hasError"] [class*="label"],
+.add-alarm-content [class*="error"] label,
+.add-alarm-content [class*="hasError"] label {
+  color: var(--token-tds-color-red-500, #f04452) !important;
+}
+
+/* 플레이스홀더 스타일 조정 - big variant에 맞는 큰 폰트 */
+.add-alarm-content input::placeholder {
+  color: var(--token-tds-color-grey-400, #b0b8c1) !important;
+  font-size: 24px !important;
+  font-weight: 500 !important;
+  line-height: 32px !important;
+  opacity: 1 !important;
+}
+
+/* 입력 텍스트 스타일 - big variant에 맞는 큰 폰트 */
+.add-alarm-content input {
+  font-size: 24px !important;
+  font-weight: 500 !important;
+  line-height: 32px !important;
+  min-height: 32px !important;
+  padding: 8px 0 !important;
+  color: var(--token-tds-color-grey-900, #191f28) !important;
+}
+
+/* TextField big variant의 입력 영역 높이 조정 */
+.add-alarm-content [class*="TextField"][class*="big"] input,
+.add-alarm-content [class*="TextField"] input {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 버튼 섹션 - 하단 고정 */
+.add-alarm-button-section {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 376px;
+  width: 100%;
+  padding: 20px;
+  background: var(--adaptiveBackground, #ffffff);
+  z-index: 1000;
+  box-shadow: none;
+}
+
+.add-alarm-save-button {
+  width: 100%;
+  height: 56px;
+  background: #3182f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  box-shadow: none;
+  outline: none;
+}
+
+.add-alarm-save-button:hover:not(:disabled) {
+  background: #1c64f2;
+}
+
+.add-alarm-save-button:active:not(:disabled) {
+  background: #1557d0;
+}
+
+.add-alarm-save-button:disabled {
+  background: #3182f6;
+  color: #ffffff;
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.add-alarm-save-button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Toast 스타일은 App.css에서 공통으로 관리 */

@@ -1,0 +1,38 @@
+{
+  "name": "love-alarm",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "granite dev",
+    "build": "granite build",
+    "lint": "cd frontend && eslint .",
+    "preview": "cd frontend && vite preview",
+    "deploy": "ait deploy",
+    "frontend:dev": "cd frontend && vite --host",
+    "frontend:build": "cd frontend && vite build",
+    "vite:dev": "cd frontend && vite --host",
+    "vite:build": "cd frontend && vite build"
+  },
+  "dependencies": {
+    "@apps-in-toss/web-framework": "^1.5.2",
+    "@emotion/react": "^11.14.0",
+    "@toss/tds-mobile": "^2.2.0",
+    "@toss/tds-mobile-ait": "^2.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.10.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "vite": "^7.2.4"
+  }
+}

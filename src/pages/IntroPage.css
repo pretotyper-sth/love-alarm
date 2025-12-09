@@ -1,0 +1,103 @@
+.intro-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 24px;
+  background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
+}
+
+.intro-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+}
+
+.intro-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #191f28;
+  margin: 0;
+  text-align: center;
+}
+
+.intro-illustration {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 200px;
+  height: 200px;
+}
+
+.calendar-icon {
+  width: 120px;
+  height: 120px;
+  background: #fff;
+  border: 2px solid #e5e8eb;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.calendar-heart {
+  font-size: 48px;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.intro-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #3182f6;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.step-text {
+  flex: 1;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #4e5968;
+  padding-top: 4px;
+}
+
+.intro-footer {
+  padding-top: 24px;
+}
+
+
+
+

@@ -1,0 +1,54 @@
+// Prisma Schema for 좋아하면 울리는
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 테이블
+model User {
+  id           String   @id @default(uuid())
+  tossUserId   String   @unique // 토스 계정 고유 ID
+  instagramId  String?           // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  alarms       Alarm[]  @relation("UserAlarms")      // 내가 등록한 알람들
+  matchesAsUser1 Match[] @relation("MatchUser1")
+  matchesAsUser2 Match[] @relation("MatchUser2")
+}
+
+// 알람 (좋아요) 테이블
+model Alarm {
+  id                 String   @id @default(uuid())
+  userId             String                          // 알람을 등록한 사용자
+  targetInstagramId  String                          // 대상의 인스타그램 ID
+  status             String   @default("waiting")    // waiting | matched
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user               User     @relation("UserAlarms", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetInstagramId]) // 같은 대상에게 중복 알람 방지
+}
+
+// 매칭 테이블
+model Match {
+  id        String   @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  matchedAt DateTime @default(now())
+
+  // Relations
+  user1     User     @relation("MatchUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2     User     @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id]) // 같은 매칭 중복 방지
+}
+

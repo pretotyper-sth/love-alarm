@@ -1,0 +1,275 @@
+.alarm-list-page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--adaptiveBackground, #ffffff);
+}
+
+/* Quick_Navigation 스타일 - IntroPage와 동일 */
+.quick-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 44px;
+  background: var(--adaptiveBackground, #ffffff);
+}
+
+.nav-left-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.nav-back-button {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-title-area {
+  width: fit-content;
+  height: 34px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+}
+
+.nav-title-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 100%;
+}
+
+.nav-right-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  height: 100%;
+  flex-shrink: 0;
+}
+
+/* Dynamic Icon Area */
+.nav-dynamic-icon-area {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  height: 34px;
+  background-color: var(--token-tds-color-grey-opacity-50, var(--adaptiveGreyOpacity50, rgba(0, 23, 51, 0.02)));
+  border-radius: 99px;
+}
+
+.nav-dynamic-icon-area .nav-icon-button {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-fixed-icon-area {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  height: 34px;
+  background-color: var(--token-tds-color-grey-opacity-50, var(--adaptiveGreyOpacity50, rgba(0, 23, 51, 0.02)));
+  border-radius: 99px;
+  padding: 0 4px;
+}
+
+.nav-fixed-icon-area .nav-icon-button {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-divider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--token-tds-color-grey-opacity-200, var(--adaptiveGreyOpacity200, rgba(0, 27, 55, 0.1)));
+}
+
+.alarm-list-top-section {
+  padding: 0;
+  position: relative;
+}
+
+/* Top 컴포넌트 기본 패딩 제거 */
+.alarm-list-top-section > div {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 설정 버튼 wrapper - 절대 위치 */
+.settings-button-wrapper {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.alarm-list-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+/* ListRow 아이콘 배경색 강제 설정 */
+.alarm-list-content [class*="Icon"][class*="squircle"],
+.alarm-list-content [class*="ListRow"] [class*="icon"] {
+  background-color: #f2f4f6 !important; /* grey100 */
+}
+
+/* 제거 버튼 스타일 */
+.alarm-remove-button {
+  background: rgba(0, 23, 51, 0.05);
+  border: none;
+  color: #4e5968;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.alarm-remove-button:hover {
+  background-color: rgba(0, 27, 55, 0.1);
+}
+
+.alarm-remove-button:active {
+  background-color: rgba(0, 29, 58, 0.15);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--token-tds-color-grey-600, #8b95a1);
+}
+
+.empty-state p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: var(--token-tds-color-grey-500, #adb5bd);
+}
+
+/* Toast 스타일은 App.css에서 공통으로 관리 */
+
+/* 커스텀 BottomSheet 스타일 */
+.custom-bottom-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.custom-bottom-sheet-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.custom-bottom-sheet {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(calc(100% + 20px));
+  width: calc(100% - 16px);
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 24px;
+  z-index: 9999;
+  transition: transform 0.3s ease-out;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.custom-bottom-sheet.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.bottom-sheet-header {
+  padding: 24px 24px 0 24px;
+  text-align: left;
+}
+
+.bottom-sheet-title {
+  margin: 0 0 8px 0;
+  font-size: 19px;
+  font-weight: bold;
+  color: #191f28;
+}
+
+.bottom-sheet-description {
+  margin: 0;
+  font-size: 15px;
+  color: #6b7684;
+  line-height: 1.5;
+}
+
+.bottom-sheet-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.bottom-sheet-image {
+  width: 100px;
+  height: 100px;
+}
+
+.bottom-sheet-cta {
+  padding: 0 24px 24px 24px;
+}
+
+.bottom-sheet-button {
+  width: 100%;
+  height: 54px;
+  background: #3182f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.bottom-sheet-button:hover {
+  background: #1b64da;
+}
+
+.bottom-sheet-button:active {
+  background: #1557c0;
+}
+

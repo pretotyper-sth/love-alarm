@@ -1,0 +1,90 @@
+.alarm-list-page {
+  min-height: 100vh;
+  background: #fff;
+  padding: 24px;
+}
+
+.alarm-list-header {
+  margin-bottom: 24px;
+}
+
+.alarm-list-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #191f28;
+  margin: 0;
+}
+
+.alarm-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.add-button {
+  width: 100%;
+}
+
+.alarm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alarm-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e5e8eb;
+}
+
+.alarm-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.alarm-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alarm-target {
+  font-size: 16px;
+  font-weight: 600;
+  color: #191f28;
+}
+
+.alarm-from {
+  font-size: 14px;
+  color: #8b95a1;
+}
+
+.remove-button {
+  flex-shrink: 0;
+  color: #8b95a1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #8b95a1;
+}
+
+.empty-state p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: #adb5bd;
+}
+
+
+
+
