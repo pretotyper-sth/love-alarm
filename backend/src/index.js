@@ -18,11 +18,15 @@ const prisma = new PrismaClient();
 const PORT = process.env.PORT || 8080;
 
 // Socket.io 설정
+const socketCorsOrigin = process.env.CORS_ORIGIN === '*' 
+  ? '*' 
+  : (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000').split(',');
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : ['http://localhost:5173', 'http://localhost:3000'],
+    origin: socketCorsOrigin,
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: socketCorsOrigin !== '*'
   },
 });
 
@@ -52,9 +56,13 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
+const corsOrigin = process.env.CORS_ORIGIN === '*' 
+  ? '*' 
+  : (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000').split(',');
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
+  origin: corsOrigin,
+  credentials: corsOrigin !== '*'
 }));
 app.use(express.json());
 
