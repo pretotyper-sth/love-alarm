@@ -7,90 +7,167 @@
 
 ## 📋 준비물 체크
 
-- [ ] **Supabase 계정**: 데이터 저장소 (회원가입 완료)
-- [ ] **Render 계정**: 서버 호스팅 (회원가입 필요: [https://render.com](https://render.com))
-- [ ] **GitHub 계정**: 코드 저장소 (코드를 Render로 보내기 위해 필요)
+- [x] **Supabase 계정**: 데이터 저장소 (완료)
+- [x] **Render 계정**: 서버 호스팅 (완료)
+- [x] **GitHub 계정**: 코드 저장소 (완료)
 
 ---
 
-## 1단계: 코드를 GitHub에 올리기
+## 🎯 현재 배포 상태
 
-Render는 GitHub에 있는 코드를 가져와서 서버를 실행합니다.
+| 항목 | 상태 | 주소 |
+|------|------|------|
+| 백엔드 서버 | ✅ Live | https://love-alarm-server.onrender.com |
+| 데이터베이스 | ✅ 연결됨 | Supabase PostgreSQL (Session Pooler) |
+| 프론트엔드 | ⏳ 배포 대기 | 앱인토스 배포 필요 |
 
-1. GitHub에 로그인하고 **New Repository**를 만듭니다. (예: `love-alarm-backend`)
-2. 이 프로젝트 폴더를 GitHub에 업로드합니다.
-   (VS Code나 Cursor의 Source Control 탭을 이용하거나 터미널 명령어를 사용합니다)
+---
 
-## 2단계: Render에 백엔드 서버 만들기
+## 1단계: 코드를 GitHub에 올리기 ✅ 완료
 
-1. [Render Dashboard](https://dashboard.render.com/)에 접속합니다.
-2. **New +** 버튼을 누르고 **Web Service**를 선택합니다.
-3. **Build and deploy from a Git repository**를 선택하고 **Next**를 누릅니다.
-4. 방금 만든 GitHub 저장소(`love-alarm-backend`)를 연결합니다.
-5. 설정 화면에서 다음 내용을 입력합니다:
-   - **Name**: `love-alarm-server` (원하는 이름)
-   - **Region**: `Singapore` (한국과 가까워서 빠름) 또는 `Oregon`
-   - **Branch**: `main`
-   - **Root Directory**: `backend` (중요! 우리는 백엔드 폴더가 따로 있으므로 꼭 입력해야 합니다)
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install && npm run db:generate`
-   - **Start Command**: `npm start`
-   - **Instance Type**: `Free` (무료)
+코드는 **`love-alarm`** 저장소에 업로드되어 있습니다.
+- 저장소 주소: `https://github.com/pretotyper-sth/love-alarm`
 
-6. **Environment Variables (환경 변수)** 섹션으로 내려가서 **Add Environment Variable**을 누르고 다음 값들을 추가합니다:
-
-   | Key | Value | 설명 |
-   |-----|-------|------|
-   | `DATABASE_URL` | `postgresql://...` | 아까 메모장에 적어둔 **Supabase 주소** 전체 |
-   | `JWT_SECRET` | `lovealarm1234!@#` | 보안 키 (예: `lovealarm1234!@#`) |
-   | `NODE_ENV` | `production` | 프로덕션 모드 설정 |
-   | `CORS_ORIGIN` | `*` | 임시로 모든 접속 허용 (나중에 프론트엔드 주소 나오면 변경) |
-
-7. **Create Web Service** 버튼을 클릭합니다.
-8. 서버가 생성되는 동안 기다립니다. (약 3~5분 소요)
-9. 완료되면 상단에 `https://love-alarm-server.onrender.com` 같은 **서버 주소**가 생깁니다. **이 주소를 복사해두세요!**
-
-## 3단계: 데이터베이스 초기화
-
-서버가 처음 실행되면 데이터베이스 구조를 만들어야 합니다.
-Render의 **Shell** 탭(터미널처럼 생긴 곳)에 들어가서 다음 명령어를 입력하고 엔터를 칩니다:
-
+### Git 초기 설정 (처음 한 번만)
 ```bash
-npm run db:push
+git config --global user.email "your-email@example.com"
+git config --global user.name "Your Name"
 ```
 
-초록색으로 성공 메시지가 뜨면 DB 준비 완료!
+## 2단계: Supabase 데이터베이스 설정 ✅ 완료
 
-## 4단계: 앱(프론트엔드) 설정 변경
+### 2-1. Supabase 프로젝트 생성
+1. [Supabase](https://supabase.com/)에 가입하고 새 프로젝트를 생성합니다.
+2. 비밀번호는 **특수문자 없이 영문+숫자**로만 설정하세요. (URL 인코딩 문제 방지)
 
-이제 내 컴퓨터에 있는 앱 코드가 방금 만든 서버를 바라보도록 설정해야 합니다.
+### 2-2. Connection String 복사 (⚠️ 중요!)
 
-1. 프로젝트 폴더의 `frontend` 폴더 안에 `.env` 파일을 만듭니다. (이미 있다면 수정)
-2. 다음 내용을 입력합니다:
+Supabase는 IPv4/IPv6 호환성 문제가 있어서 **Session Pooler** 모드를 사용해야 합니다.
 
+1. Supabase 대시보드 → **Settings** → **Database**
+2. **Connect to your project** 클릭
+3. 다음과 같이 설정:
+   - **Type**: URI
+   - **Source**: Primary Database
+   - **Method**: **Session pooler** (⚠️ 반드시 이걸로!)
+4. 나오는 URL을 복사합니다. (형식: `postgresql://postgres.프로젝트ID:비밀번호@aws-...-pooler.supabase.com:5432/postgres`)
+5. `[YOUR-PASSWORD]` 부분을 실제 비밀번호로 교체합니다.
+
+## 3단계: Render에 백엔드 서버 만들기 ✅ 완료
+
+### 3-1. Web Service 생성
+
+1. [Render Dashboard](https://dashboard.render.com/)에 접속합니다.
+2. **New +** → **Web Service** 선택
+3. GitHub 저장소 **`love-alarm`** 연결
+
+### 3-2. 설정값 입력 (정확히 따라하세요!)
+
+| 항목 | 값 |
+|------|-----|
+| **Name** | `love-alarm-server` |
+| **Region** | `Singapore` 또는 `Oregon` |
+| **Branch** | `main` |
+| **Root Directory** | `backend` (⚠️ 필수!) |
+| **Runtime** | `Node` |
+| **Build Command** | `npm install` |
+| **Start Command** | `npx prisma db push --accept-data-loss && npm start` |
+| **Instance Type** | `Free` |
+
+### 3-3. 환경 변수 설정
+
+**Environment** 탭에서 다음 변수들을 추가합니다:
+
+| Key | Value |
+|-----|-------|
+| `DATABASE_URL` | `postgresql://postgres.프로젝트ID:비밀번호@aws-...-pooler.supabase.com:5432/postgres` |
+| `JWT_SECRET` | 아무 문자열 (예: `LoveAlarm2025Secret`) |
+| `NODE_ENV` | `production` |
+| `CORS_ORIGIN` | `*` |
+
+### 3-4. 배포 확인
+
+**Create Web Service** 클릭 후 로그를 확인합니다.
+다음 메시지가 나오면 성공입니다:
+```
+🚀  Your database is now in sync with your Prisma schema.
+🚀 서버가 http://localhost:10000 에서 실행 중입니다.
+🔌 WebSocket 활성화됨
+==> Your service is live 🎉
+```
+
+## 4단계: 프론트엔드 설정 ✅ 완료
+
+`frontend/.env` 파일에 서버 주소가 설정되어 있습니다:
 ```env
 VITE_API_URL=https://love-alarm-server.onrender.com
 ```
-(방금 복사한 Render 서버 주소를 넣으세요. 끝에 `/`는 뺍니다)
 
 ## 5단계: 앱인토스 배포
 
-이제 모든 준비가 끝났습니다! 토스 서버로 앱을 보냅니다.
+### 5-1. 배포 명령어 실행
 
-1. 터미널을 열고 다음 명령어를 실행합니다:
-
+프로젝트 루트 폴더에서 터미널을 열고 실행합니다:
 ```bash
 npm run deploy
 ```
 
-2. 로그인이 필요하면 브라우저가 뜨면서 토스 로그인을 요청할 겁니다.
-3. 배포가 완료되면 **토스 개발자 센터**에서 새 버전을 확인하고 테스트할 수 있습니다.
+### 5-2. 토스 개발자 센터에서 테스트
+
+1. 배포가 완료되면 토스 개발자 센터에서 새 버전 확인
+2. 개발자 모드에서 테스트 진행
+3. 문제없으면 심사 요청
 
 ---
 
-## 🆘 자주 발생하는 문제
+## 🆘 트러블슈팅
 
-- **서버가 자꾸 꺼져요**: 무료 서버라 15분 동안 사용자가 없으면 잠듭니다. 다시 접속하면 30초 정도 깨어나는 시간이 필요해요.
-- **DB 연결 에러**: Supabase 비밀번호에 특수문자가 있으면 URL 인코딩이 필요할 수 있습니다. 비밀번호는 되도록 영문+숫자로만 간단히 설정하세요.
+### "Can't reach database server" 에러
 
+**원인**: Supabase의 Direct Connection은 IPv6만 지원하는데, Render는 IPv4만 지원합니다.
 
+**해결**: Session Pooler 사용
+- Supabase에서 **Method: Session pooler** 선택
+- URL이 `pooler.supabase.com`을 포함해야 함
+
+### "Tenant or user not found" 에러
+
+**원인**: Pooler 모드에서는 username 형식이 다릅니다.
+
+**해결**: username을 `postgres.프로젝트ID` 형식으로 변경
+- ❌ `postgres:비밀번호@...`
+- ✅ `postgres.psexdcugzmzbzfuknxoi:비밀번호@...`
+
+### "Schema engine error" 또는 타임아웃
+
+**원인**: Build 단계에서 DB 접속 시 타임아웃 발생
+
+**해결**: DB 초기화를 Start Command로 이동
+- Build Command: `npm install`
+- Start Command: `npx prisma db push --accept-data-loss && npm start`
+
+### 비밀번호 특수문자 문제
+
+**원인**: URL에서 `%`, `@`, `#` 등 특수문자가 오작동을 일으킵니다.
+
+**해결**: 비밀번호를 영문+숫자로만 재설정
+
+---
+
+## 📌 주요 URL 정리
+
+| 서비스 | URL |
+|--------|-----|
+| 백엔드 서버 | https://love-alarm-server.onrender.com |
+| 백엔드 헬스체크 | https://love-alarm-server.onrender.com/health |
+| GitHub 저장소 | https://github.com/pretotyper-sth/love-alarm |
+| Supabase 대시보드 | https://supabase.com/dashboard |
+| Render 대시보드 | https://dashboard.render.com |
+
+---
+
+## ⚠️ 무료 서버 주의사항
+
+Render 무료 서버는 **15분 동안 접속이 없으면 절전 모드**에 들어갑니다.
+- 첫 접속 시 30~50초 정도 깨어나는 시간이 필요합니다.
+- 유저가 많아지면 유료 플랜($7/월)으로 업그레이드하면 해결됩니다.

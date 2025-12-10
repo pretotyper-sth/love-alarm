@@ -31,14 +31,14 @@ router.get('/', async (req, res) => {
  * POST /api/alarms
  * 새 알람 생성 (좋아하는 사람 등록)
  * 
- * Body: { userId: string, targetInstagramId: string }
+ * Body: { userId: string, fromInstagramId: string, targetInstagramId: string }
  */
 router.post('/', async (req, res) => {
   try {
-    const { userId, targetInstagramId } = req.body;
+    const { userId, fromInstagramId, targetInstagramId } = req.body;
 
-    if (!userId || !targetInstagramId) {
-      return res.status(400).json({ error: 'userId와 targetInstagramId가 필요합니다.' });
+    if (!userId || !fromInstagramId || !targetInstagramId) {
+      return res.status(400).json({ error: 'userId, fromInstagramId, targetInstagramId가 필요합니다.' });
     }
 
     // 현재 사용자 확인
@@ -51,7 +51,7 @@ router.post('/', async (req, res) => {
     }
 
     // 자기 자신에게 알람 등록 방지
-    if (user.instagramId === targetInstagramId) {
+    if (fromInstagramId === targetInstagramId) {
       return res.status(400).json({ error: '자기 자신에게는 알람을 등록할 수 없습니다.' });
     }
 
@@ -66,13 +66,13 @@ router.post('/', async (req, res) => {
       return res.status(409).json({ error: '이미 등록된 알람입니다.' });
     }
 
-    // 알람 생성
+    // 알람 생성 (fromInstagramId 포함)
     const alarm = await req.prisma.alarm.create({
-      data: { userId, targetInstagramId },
+      data: { userId, fromInstagramId, targetInstagramId },
     });
 
-    // 매칭 확인
-    const matchResult = await checkMatching(req.prisma, user, targetInstagramId);
+    // 매칭 확인 (fromInstagramId 기반)
+    const matchResult = await checkMatching(req.prisma, user, fromInstagramId, targetInstagramId);
 
     // 🔌 WebSocket: 매칭 성공 시 상대방에게 실시간 알림
     if (matchResult.matched && matchResult.targetUserId) {
@@ -117,19 +117,20 @@ router.delete('/:id', async (req, res) => {
     }
 
     // 2. 매칭 상태였다면 상대방 알람도 초기화
-    if (alarmToDelete.status === 'matched' && alarmToDelete.user.instagramId) {
-      // 상대방 찾기
-      const targetUser = await req.prisma.user.findFirst({
-        where: { instagramId: alarmToDelete.targetInstagramId },
+    if (alarmToDelete.status === 'matched' && alarmToDelete.fromInstagramId) {
+      // 상대방의 알람 찾기 (fromInstagramId 기반)
+      const reverseAlarm = await req.prisma.alarm.findFirst({
+        where: {
+          fromInstagramId: alarmToDelete.targetInstagramId,
+          targetInstagramId: alarmToDelete.fromInstagramId,
+        },
+        include: { user: true },
       });
 
-      if (targetUser) {
+      if (reverseAlarm) {
         // 상대방의 알람 상태를 'waiting'으로 변경
-        await req.prisma.alarm.updateMany({
-          where: {
-            userId: targetUser.id,
-            targetInstagramId: alarmToDelete.user.instagramId,
-          },
+        await req.prisma.alarm.update({
+          where: { id: reverseAlarm.id },
           data: { status: 'waiting' },
         });
 
@@ -137,20 +138,20 @@ router.delete('/:id', async (req, res) => {
         await req.prisma.match.deleteMany({
           where: {
             OR: [
-              { user1Id: alarmToDelete.userId, user2Id: targetUser.id },
-              { user1Id: targetUser.id, user2Id: alarmToDelete.userId },
+              { user1Id: alarmToDelete.userId, user2Id: reverseAlarm.userId },
+              { user1Id: reverseAlarm.userId, user2Id: alarmToDelete.userId },
             ],
           },
         });
 
         // 🔌 WebSocket: 상대방에게 매칭 해제 실시간 알림
-        const targetSocketId = req.userSockets.get(targetUser.id);
+        const targetSocketId = req.userSockets.get(reverseAlarm.userId);
         if (targetSocketId) {
           req.io.to(targetSocketId).emit('matchCanceled', {
             message: '매칭이 해제되었습니다',
-            canceledBy: alarmToDelete.user.instagramId,
+            canceledBy: alarmToDelete.fromInstagramId,
           });
-          console.log(`🔔 매칭 해제 알림 전송: ${targetUser.id}`);
+          console.log(`🔔 매칭 해제 알림 전송: ${reverseAlarm.userId}`);
         }
       }
     }

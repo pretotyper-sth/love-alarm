@@ -14,7 +14,7 @@ import { api } from '../utils/api';
 import './AlarmListPage.css';
 
 // 알람 아이템 컴포넌트
-function AlarmItem({ alarm, myInstagramId, onRemove, onMatchedClick, listRowRef }) {
+function AlarmItem({ alarm, onRemove, onMatchedClick, listRowRef }) {
   // 매칭 여부에 따른 색상 (백엔드: status = 'waiting' | 'matched')
   const isMatched = alarm.status === 'matched';
   const matchedColor = '#f04452'; // 빨간색
@@ -48,7 +48,7 @@ function AlarmItem({ alarm, myInstagramId, onRemove, onMatchedClick, listRowRef 
             color: isMatched ? matchedColor : normalTopColor, 
             fontWeight: 'bold' 
           }}
-          bottom={myInstagramId ? `From: @${myInstagramId}` : ''}
+          bottom={alarm.fromInstagramId ? `From: @${alarm.fromInstagramId}` : ''}
           bottomProps={{ 
             color: isMatched ? matchedColor : normalBottomColor 
           }}
@@ -78,8 +78,6 @@ export function AlarmListPage() {
   const [alarms, setAlarms] = useState([]);
   const [toasts, setToasts] = useState([]); // 토스트 스택
   const [showLimitSheet, setShowLimitSheet] = useState(false);
-  const [removedAlarm, setRemovedAlarm] = useState(null);
-  const toastShownRef = useRef(false);
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
 
@@ -126,12 +124,12 @@ export function AlarmListPage() {
       loadAlarms(); // 목록 새로고침
     });
 
-    // 매칭 해제 이벤트
+    // 연결 해제 이벤트
     api.onMatchCanceled((data) => {
-      console.log('💔 실시간 매칭 해제:', data);
+      console.log('💔 실시간 연결 해제:', data);
       addToast({
         type: 'remove',
-        message: '매칭이 해제되었어요.',
+        message: '상대와의 연결이 끊겼어요.',
         duration: 3000,
       });
       loadAlarms(); // 목록 새로고침
@@ -183,7 +181,9 @@ export function AlarmListPage() {
     }
   }, [alarms]);
 
-  // 알람 추가 후 Toast 표시 (별도 useEffect)
+  // 알람 추가 후 Toast 표시
+  const toastShownRef = useRef(false);
+  
   useEffect(() => {
     if (location.state?.showAddedToast && !toastShownRef.current) {
       toastShownRef.current = true;
@@ -192,14 +192,9 @@ export function AlarmListPage() {
         message: '알람을 추가했어요.',
         duration: 3000,
       });
-      // state 초기화
       window.history.replaceState({}, document.title);
-      // 다음 추가 시 다시 표시할 수 있도록
-      setTimeout(() => {
-        toastShownRef.current = false;
-      }, 100);
     }
-  }, [location.state]);
+  }, []);
 
   const loadAlarms = async () => {
     try {
@@ -226,22 +221,44 @@ export function AlarmListPage() {
   };
 
   const handleRemoveAlarm = async (id) => {
-    // 삭제 전에 알람 저장 (되돌리기용 - UI에서만 사용)
-    const alarmToRemove = alarms.find(alarm => alarm.id === id);
-    setRemovedAlarm(alarmToRemove);
+    // 삭제 전에 알람과 위치 저장 (되돌리기용 & 롤백용)
+    const alarmIndex = alarms.findIndex(alarm => alarm.id === id);
+    const alarmToRemove = alarms[alarmIndex];
+    const previousAlarms = [...alarms];
+    
+    // ✨ Optimistic UI: 서버 응답 전에 UI 먼저 업데이트
+    setAlarms(prev => prev.filter(alarm => alarm.id !== id));
+    
+    // 제거 Toast 표시 (되돌리기 버튼 포함)
+    const toastId = addToast({
+      type: 'remove',
+      message: '알람을 제거했어요.',
+      duration: 5000,
+      undoAction: async () => {
+        // 버튼 클릭 즉시 토스트 제거 (중복 클릭 방지)
+        removeToast(toastId);
+        try {
+          // 새로 생성하고 결과로 받은 새 ID로 목록 갱신 (fromInstagramId 포함)
+          const result = await api.createAlarm(alarmToRemove.fromInstagramId, alarmToRemove.targetInstagramId);
+          // 원래 위치에 삽입
+          setAlarms(prev => {
+            const newAlarms = [...prev];
+            newAlarms.splice(alarmIndex, 0, result.alarm);
+            return newAlarms;
+          });
+        } catch (error) {
+          console.error('되돌리기 실패:', error);
+        }
+      },
+    });
     
     try {
       await api.deleteAlarm(id);
-      await loadAlarms();
-      
-      // 제거 Toast 표시
-      addToast({
-        type: 'remove',
-        message: '알람을 제거했어요.',
-        duration: 3000,
-      });
+      // ✅ 성공: Optimistic UI 유지 (깜빡임 방지)
     } catch (error) {
       console.error('알람 삭제 실패:', error);
+      // ❌ 실패 시 롤백: 원래 상태로 되돌림
+      setAlarms(previousAlarms);
       addToast({
         type: 'error',
         message: '알람 삭제에 실패했어요.',
@@ -378,7 +395,6 @@ export function AlarmListPage() {
           <AlarmItem 
             key={alarm.id} 
             alarm={alarm}
-            myInstagramId={user?.instagramId}
             onRemove={handleRemoveAlarm}
             onMatchedClick={handleMatchedClick}
             listRowRef={(el) => { alarmRefsRef.current[index] = el; }}

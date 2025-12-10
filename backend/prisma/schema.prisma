@@ -27,6 +27,7 @@ model User {
 model Alarm {
   id                 String   @id @default(uuid())
   userId             String                          // 알람을 등록한 사용자
+  fromInstagramId    String                          // 본인 인스타그램 ID (알람별로 다를 수 있음)
   targetInstagramId  String                          // 대상의 인스타그램 ID
   status             String   @default("waiting")    // waiting | matched
   createdAt          DateTime @default(now())

@@ -6,46 +6,27 @@
   height: 100%;
   pointer-events: none;
   z-index: 9999;
-  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.confetti-particle {
+.confetti-burst {
   position: absolute;
-  top: -10px;
-  border-radius: 50%;
-  animation: confetti-fall linear forwards;
+  line-height: 1;
+  animation: burst 0.6s ease-out forwards;
 }
 
-/* 하트 모양 컨페티 */
-.confetti-heart {
-  position: absolute;
-  top: -30px;
-  line-height: 0;
-  animation: confetti-heart-fall linear forwards;
-}
-
-@keyframes confetti-fall {
+@keyframes burst {
   0% {
-    transform: translateY(0) rotate(0deg);
+    transform: translate(0, 0) scale(0.3);
+    opacity: 1;
+  }
+  60% {
     opacity: 1;
   }
   100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-@keyframes confetti-heart-fall {
-  0% {
-    transform: translateY(0) rotate(0deg) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateY(50vh) rotate(180deg) scale(1.1);
-    opacity: 0.9;
-  }
-  100% {
-    transform: translateY(100vh) rotate(360deg) scale(0.8);
+    transform: translate(var(--x), var(--y)) scale(1);
     opacity: 0;
   }
 }

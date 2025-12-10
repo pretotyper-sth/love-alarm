@@ -184,7 +184,7 @@ export const api = {
   /**
    * 알람 생성
    */
-  createAlarm: async (targetInstagramId) => {
+  createAlarm: async (fromInstagramId, targetInstagramId) => {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
@@ -193,6 +193,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId: user.id,
+        fromInstagramId,
         targetInstagramId,
       }),
     });

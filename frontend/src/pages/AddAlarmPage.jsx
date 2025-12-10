@@ -9,24 +9,24 @@ import {
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+// useAuth는 더 이상 필요하지 않음 (본인 ID는 알람별로 localStorage에 저장)
 import { api } from '../utils/api';
 import './AddAlarmPage.css';
 
 export function AddAlarmPage() {
   const navigate = useNavigate();
-  const { user, updateInstagramId } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
 
-  // 저장된 인스타그램 ID가 있으면 자동 입력
+  // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
   useEffect(() => {
-    if (user?.instagramId) {
-      setMyId(user.instagramId);
+    const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
+    if (savedMyId) {
+      setMyId(savedMyId);
     }
-  }, [user]);
+  }, []);
 
   const showErrorToast = (message) => {
     setErrorToast({ show: true, message });
@@ -43,10 +43,14 @@ export function AddAlarmPage() {
       return;
     }
 
-    // ID 형식 간단 검증 (영문, 숫자, 언더스코어, 점만 허용)
-    const idPattern = /^[a-zA-Z0-9._]+$/;
-    if (!idPattern.test(myId.trim()) || !idPattern.test(targetId.trim())) {
-      showErrorToast('ID 형식에 맞춰 정확하게 입력해주세요.');
+    // 인스타그램 ID 형식 검증
+    const idPattern = /^[a-z0-9._]+$/;
+    const myIdLower = myId.trim().toLowerCase();
+    const targetIdLower = targetId.trim().toLowerCase();
+    
+    if (!idPattern.test(myIdLower) || myIdLower.length > 30 ||
+        !idPattern.test(targetIdLower) || targetIdLower.length > 30) {
+      showErrorToast('인스타그램 ID 형식에 맞춰 정확하게 입력해주세요.');
       return;
     }
 
@@ -64,23 +68,19 @@ export function AddAlarmPage() {
   const addAlarm = async () => {
     setIsSubmitting(true);
     try {
-      // 1. 인스타그램 ID 업데이트 (변경된 경우만)
-      if (user?.instagramId !== myId.trim()) {
-        console.log('📝 인스타그램 ID 업데이트:', myId.trim());
-        await updateInstagramId(myId.trim());
-      }
+      const myIdTrimmed = myId.trim().toLowerCase();
+      const targetIdTrimmed = targetId.trim().toLowerCase();
 
-      // 2. API로 알람 생성
-      console.log('📝 API로 알람 생성:', targetId.trim());
-      const result = await api.createAlarm(targetId.trim());
-      console.log('✅ 알람 생성 완료:', result);
+      // 1. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
+      localStorage.setItem('love_alarm_my_instagram_id', myIdTrimmed);
+
+      // 2. API로 알람 생성 (fromInstagramId 포함)
+      const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed);
       
-      // 3. 매칭 결과에 따라 페이지 이동
+      // 3. 완료 후 페이지 이동
       if (result.matched) {
-        console.log('🎉 매칭 성공! /match-success로 이동');
         navigate('/match-success', { state: { alarmId: result.alarm.id } });
       } else {
-        console.log('📋 알람 목록(/alarms)으로 이동');
         navigate('/alarms', { state: { showAddedToast: true } });
       }
     } catch (error) {
@@ -99,22 +99,35 @@ export function AddAlarmPage() {
     setTargetId('');
   };
 
-  // 한글 포함 여부 확인
-  const hasKorean = (text) => {
-    return /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text);
+  // 인스타그램 ID 유효성 검사
+  // - 영문 소문자(a-z), 숫자(0-9), 마침표(.), 밑줄(_) 만 허용
+  // - 1~30자
+  // - 대문자 입력 시 소문자로 취급 (인스타그램 정책)
+  const isInvalidInstagramId = (text) => {
+    const trimmed = text.trim().toLowerCase();
+    if (!trimmed) return false;
+    if (trimmed.length > 30) return true;
+    return !/^[a-z0-9._]+$/.test(trimmed);
   };
 
   // 본인 ID와 상대 ID가 같은지 확인 (대소문자 무시)
   const isSameId = myId.trim() && targetId.trim() && 
     myId.trim().toLowerCase() === targetId.trim().toLowerCase();
 
-  const myIdHasError = hasKorean(myId);
-  const targetIdHasError = hasKorean(targetId) || isSameId;
+  const myIdHasError = isInvalidInstagramId(myId);
+  const targetIdHasError = isInvalidInstagramId(targetId) || isSameId;
 
-  // 상대 ID 에러 메시지
+  // 에러 메시지
+  const getMyIdErrorMessage = () => {
+    if (isInvalidInstagramId(myId)) {
+      return '인스타그램 ID 형식에 맞춰 정확하게 입력해주세요.';
+    }
+    return null;
+  };
+
   const getTargetIdErrorMessage = () => {
-    if (hasKorean(targetId)) {
-      return 'ID 형식에 맞춰 정확하게 입력해주세요.';
+    if (isInvalidInstagramId(targetId)) {
+      return '인스타그램 ID 형식에 맞춰 정확하게 입력해주세요.';
     }
     if (isSameId) {
       return '상대 ID는 본인 ID와 같을 수 없어요.';
@@ -241,7 +254,7 @@ export function AddAlarmPage() {
           hasError={myIdHasError}
             label="본인 인스타그램 ID"
           labelOption="sustain"
-          help={myIdHasError ? "ID 형식에 맞춰 정확하게 입력해주세요." : null}
+          help={getMyIdErrorMessage()}
             value={myId}
             onChange={(e) => setMyId(e.target.value)}
           placeholder="예: abcd1234"
