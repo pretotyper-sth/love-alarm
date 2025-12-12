@@ -6,7 +6,6 @@ import {
   TextField,
   Spacing,
   Button,
-  BottomSheet,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
@@ -381,45 +380,43 @@ export function AddAlarmPage() {
       </div>
 
       {/* 알림 허용 BottomSheet */}
-      <BottomSheet
-        open={showNotificationSheet}
-        onClose={handleNotificationClose}
-        header={<BottomSheet.Header>알림 받기</BottomSheet.Header>}
-        headerDescription={
-          <BottomSheet.HeaderDescription>
-            알람이 추가됐어요.{'\n'}상대 마음도 같다면 바로 알려드릴게요.
-          </BottomSheet.HeaderDescription>
-        }
-        cta={
-          <BottomSheet.DoubleCTA
-            leftButton={
-              <Button color="dark" variant="weak" onClick={handleNotificationClose}>
-                닫기
-              </Button>
-            }
-            rightButton={
-              <Button onClick={handleNotificationAgree}>
-                동의하기
-              </Button>
-            }
-          />
-        }
-      >
-        <div style={{ height: '16px' }} />
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Asset.Image
-            frameShape={{ width: 100 }}
-            src="https://static.toss.im/3d-emojis/u1F514-apng.png"
-            aria-hidden={true}
-          />
+      <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>
+        <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="bottom-sheet-header">
+            <h3 className="bottom-sheet-title">알림 받기</h3>
+            <p className="bottom-sheet-description">알람이 추가됐어요.<br />상대 마음도 같다면 바로 알려드릴게요.</p>
+          </div>
+          <div className="bottom-sheet-content">
+            <img 
+              src="https://static.toss.im/3d-emojis/u1F514-apng.png" 
+              alt="알림" 
+              className="bottom-sheet-image"
+            />
+          </div>
+          <div className="bottom-sheet-cta bottom-sheet-double-cta">
+            <Button
+              size="xlarge"
+              color="dark"
+              variant="weak"
+              display="block"
+              onClick={handleNotificationClose}
+              style={{
+                '--button-background-color': '#f2f4f6',
+                '--button-color': '#6b7684',
+              }}
+            >
+              닫기
+            </Button>
+            <Button
+              size="xlarge"
+              display="block"
+              onClick={handleNotificationAgree}
+            >
+              동의하기
+            </Button>
+          </div>
         </div>
-      </BottomSheet>
+      </div>
     </div>
   );
 }

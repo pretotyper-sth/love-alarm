@@ -273,3 +273,85 @@
 }
 
 /* Toast 스타일은 App.css에서 공통으로 관리 */
+
+/* 커스텀 BottomSheet 스타일 */
+.custom-bottom-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.custom-bottom-sheet-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.custom-bottom-sheet {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(calc(100% + 20px));
+  width: calc(100% - 16px);
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 24px;
+  z-index: 9999;
+  transition: transform 0.3s ease-out;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.custom-bottom-sheet.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.bottom-sheet-header {
+  padding: 24px 24px 0 24px;
+  text-align: left;
+}
+
+.bottom-sheet-title {
+  margin: 0 0 8px 0;
+  font-size: 19px;
+  font-weight: bold;
+  color: #191f28;
+}
+
+.bottom-sheet-description {
+  margin: 0;
+  font-size: 15px;
+  color: #6b7684;
+  line-height: 1.5;
+}
+
+.bottom-sheet-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.bottom-sheet-image {
+  width: 100px;
+  height: 100px;
+}
+
+.bottom-sheet-cta {
+  padding: 0 24px 24px 24px;
+}
+
+/* Double CTA 스타일 */
+.bottom-sheet-double-cta {
+  display: flex;
+  gap: 8px;
+}
+
+.bottom-sheet-double-cta > button {
+  flex: 1;
+}
