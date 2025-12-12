@@ -55,15 +55,28 @@ function AlarmItem({ alarm, onRemove, onMatchedClick, listRowRef }) {
         />
       }
       right={
-        <button
-          className="alarm-remove-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(alarm.id);
-          }}
-        >
-          제거
-        </button>
+        <div className="alarm-button-group">
+          <button
+            className="alarm-remove-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(alarm.id);
+            }}
+          >
+            제거
+          </button>
+          {isMatched && (
+            <button
+              className="alarm-confirm-button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMatchedClick(alarm);
+              }}
+            >
+              확인
+            </button>
+          )}
+        </div>
       }
       verticalPadding="large"
       horizontalPadding="medium"
@@ -116,12 +129,7 @@ export function AlarmListPage() {
     // 매칭 성공 이벤트
     api.onMatched((data) => {
       console.log('🎉 실시간 매칭 알림:', data);
-      addToast({
-        type: 'success',
-        message: `@${data.matchedWith}님과 매칭됐어요! 🎉`,
-        duration: 5000,
-      });
-      loadAlarms(); // 목록 새로고침
+      loadAlarms(); // 목록 새로고침 (아이콘으로 구별)
     });
 
     // 연결 해제 이벤트
@@ -217,7 +225,7 @@ export function AlarmListPage() {
   };
 
   const handleMatchedClick = (alarm) => {
-    navigate('/match-success', { state: { alarmId: alarm.id } });
+    navigate('/match-success', { state: { alarmId: alarm.id, targetInstagramId: alarm.targetInstagramId } });
   };
 
   const handleRemoveAlarm = async (id) => {
@@ -240,10 +248,15 @@ export function AlarmListPage() {
         try {
           // 새로 생성하고 결과로 받은 새 ID로 목록 갱신 (fromInstagramId 포함)
           const result = await api.createAlarm(alarmToRemove.fromInstagramId, alarmToRemove.targetInstagramId);
+          // API 응답의 matched 여부를 알람 status에 반영
+          const restoredAlarm = {
+            ...result.alarm,
+            status: result.matched ? 'matched' : result.alarm.status,
+          };
           // 원래 위치에 삽입
           setAlarms(prev => {
             const newAlarms = [...prev];
-            newAlarms.splice(alarmIndex, 0, result.alarm);
+            newAlarms.splice(alarmIndex, 0, restoredAlarm);
             return newAlarms;
           });
         } catch (error) {

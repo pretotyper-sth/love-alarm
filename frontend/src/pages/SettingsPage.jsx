@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Asset,
   Text,
@@ -12,15 +12,38 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
 import './SettingsPage.css';
 
+// 알림 설정 키
+const NOTIFICATION_SETTINGS_KEY = 'love_alarm_notification_settings';
+
+// 알림 설정 가져오기
+export function getNotificationSettings() {
+  try {
+    const saved = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Failed to get notification settings:', e);
+  }
+  return { pushNotification: false, tossAppNotification: false };
+}
+
+// 알림 설정 저장하기
+export function setNotificationSettings(settings) {
+  try {
+    localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
+  } catch (e) {
+    console.error('Failed to save notification settings:', e);
+  }
+}
+
 export function SettingsPage() {
   const navigate = useNavigate();
-  const [pushNotification, setPushNotification] = useState(true);
-  const [tossAppNotification, setTossAppNotification] = useState(true);
-
-  // 디버깅용 로그
-  console.log('=== SettingsPage 렌더링 ===');
-  console.log('pushNotification:', pushNotification);
-  console.log('tossAppNotification:', tossAppNotification);
+  
+  // localStorage에서 초기값 로드 (기본값: false)
+  const savedSettings = getNotificationSettings();
+  const [pushNotification, setPushNotification] = useState(savedSettings.pushNotification);
+  const [tossAppNotification, setTossAppNotification] = useState(savedSettings.tossAppNotification);
 
   return (
     <div className="settings-page-container">
@@ -118,8 +141,9 @@ export function SettingsPage() {
             <Switch
               checked={pushNotification}
               onChange={() => {
-                console.log('푸시 Switch onChange! 현재:', pushNotification);
-                setPushNotification((prev) => !prev);
+                const newValue = !pushNotification;
+                setPushNotification(newValue);
+                setNotificationSettings({ pushNotification: newValue, tossAppNotification });
               }}
             />
           }
@@ -138,8 +162,9 @@ export function SettingsPage() {
             <Switch
               checked={tossAppNotification}
               onChange={() => {
-                console.log('토스앱 Switch onChange! 현재:', tossAppNotification);
-                setTossAppNotification((prev) => !prev);
+                const newValue = !tossAppNotification;
+                setTossAppNotification(newValue);
+                setNotificationSettings({ pushNotification, tossAppNotification: newValue });
               }}
             />
           }

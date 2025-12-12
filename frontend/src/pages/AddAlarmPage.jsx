@@ -6,12 +6,16 @@ import {
   TextField,
   Spacing,
   Button,
+  BottomSheet,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
-// useAuth는 더 이상 필요하지 않음 (본인 ID는 알람별로 localStorage에 저장)
 import { api } from '../utils/api';
+import { getNotificationSettings, setNotificationSettings } from './SettingsPage';
 import './AddAlarmPage.css';
+
+// 최초 알람 등록 여부 키
+const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
 
 export function AddAlarmPage() {
   const navigate = useNavigate();
@@ -19,6 +23,8 @@ export function AddAlarmPage() {
   const [targetId, setTargetId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
+  const [showNotificationSheet, setShowNotificationSheet] = useState(false);
+  const [pendingAlarmData, setPendingAlarmData] = useState(null);
 
   // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
   useEffect(() => {
@@ -36,8 +42,6 @@ export function AddAlarmPage() {
   };
 
   const handleSubmit = async () => {
-    console.log('🔍 handleSubmit 시작', { myId, targetId });
-    
     if (!myId.trim() || !targetId.trim()) {
       showErrorToast('인스타그램 ID를 모두 입력해주세요.');
       return;
@@ -60,8 +64,39 @@ export function AddAlarmPage() {
       return;
     }
 
-    console.log('✅ 유효성 검증 통과');
-    console.log('💾 알람 추가 시작');
+    // 최초 알람 등록인지 확인
+    const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
+    const settings = getNotificationSettings();
+    
+    // 최초 등록이고 알림이 아직 활성화되지 않았으면 팝업 표시
+    if (isFirstAlarm && !settings.pushNotification && !settings.tossAppNotification) {
+      setPendingAlarmData({ myId: myIdLower, targetId: targetIdLower });
+      setShowNotificationSheet(true);
+      return;
+    }
+
+    await addAlarm();
+  };
+
+  // 알림 동의하기 클릭
+  const handleNotificationAgree = async () => {
+    // 알림 설정 켜기
+    setNotificationSettings({ pushNotification: true, tossAppNotification: true });
+    // 최초 등록 완료 표시
+    localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
+    // 팝업 닫기
+    setShowNotificationSheet(false);
+    // 알람 저장
+    await addAlarm();
+  };
+
+  // 알림 닫기 클릭 (동의 안 함)
+  const handleNotificationClose = async () => {
+    // 최초 등록 완료 표시 (다시 팝업 안 뜨게)
+    localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
+    // 팝업 닫기
+    setShowNotificationSheet(false);
+    // 알람은 저장
     await addAlarm();
   };
 
@@ -344,6 +379,47 @@ export function AddAlarmPage() {
           <span className="custom-toast-text">{errorToast.message}</span>
         </div>
       </div>
+
+      {/* 알림 허용 BottomSheet */}
+      <BottomSheet
+        open={showNotificationSheet}
+        onClose={handleNotificationClose}
+        header={<BottomSheet.Header>알림 받기</BottomSheet.Header>}
+        headerDescription={
+          <BottomSheet.HeaderDescription>
+            알람이 추가됐어요.{'\n'}상대 마음도 같다면 바로 알려드릴게요.
+          </BottomSheet.HeaderDescription>
+        }
+        cta={
+          <BottomSheet.DoubleCTA
+            leftButton={
+              <Button color="dark" variant="weak" onClick={handleNotificationClose}>
+                닫기
+              </Button>
+            }
+            rightButton={
+              <Button onClick={handleNotificationAgree}>
+                동의하기
+              </Button>
+            }
+          />
+        }
+      >
+        <div style={{ height: '16px' }} />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Asset.Image
+            frameShape={{ width: 100 }}
+            src="https://static.toss.im/3d-emojis/u1F514-apng.png"
+            aria-hidden={true}
+          />
+        </div>
+      </BottomSheet>
     </div>
   );
 }

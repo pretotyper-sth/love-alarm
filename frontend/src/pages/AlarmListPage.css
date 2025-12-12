@@ -141,6 +141,13 @@
   background-color: #f2f4f6 !important; /* grey100 */
 }
 
+/* 버튼 그룹 */
+.alarm-button-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* 제거 버튼 스타일 */
 .alarm-remove-button {
   background: rgba(0, 23, 51, 0.05);
@@ -160,6 +167,27 @@
 
 .alarm-remove-button:active {
   background-color: rgba(0, 29, 58, 0.15);
+}
+
+/* 확인 버튼 스타일 (매칭된 알람용) */
+.alarm-confirm-button {
+  background: #3182f6;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.alarm-confirm-button:hover {
+  background-color: #1b64da;
+}
+
+.alarm-confirm-button:active {
+  background-color: #1557c0;
 }
 
 .empty-state {

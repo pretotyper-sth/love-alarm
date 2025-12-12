@@ -16,18 +16,19 @@ export function MatchSuccessPage() {
   const [confettiFading, setConfettiFading] = useState(false);
 
   useEffect(() => {
-    const alarmId = location.state?.alarmId;
+    // targetInstagramId로 컨페티 표시 여부 저장 (되돌리기해도 같은 대상이면 컨페티 안 뜸)
+    const targetInstagramId = location.state?.targetInstagramId;
     
-    if (alarmId) {
-      // 이미 컨페티를 본 알람인지 확인
-      const shownConfettiAlarms = storage.get(STORAGE_KEYS.CONFETTI_SHOWN) || [];
+    if (targetInstagramId) {
+      // 이미 컨페티를 본 대상인지 확인
+      const shownConfettiTargets = storage.get(STORAGE_KEYS.CONFETTI_SHOWN) || [];
       
-      if (!shownConfettiAlarms.includes(alarmId)) {
+      if (!shownConfettiTargets.includes(targetInstagramId)) {
         // 최초 방문이면 컨페티 표시
         setShowConfetti(true);
         
-        // localStorage에 저장
-        storage.set(STORAGE_KEYS.CONFETTI_SHOWN, [...shownConfettiAlarms, alarmId]);
+        // localStorage에 저장 (targetInstagramId 기준)
+        storage.set(STORAGE_KEYS.CONFETTI_SHOWN, [...shownConfettiTargets, targetInstagramId]);
         
         // 5초 후 컨페티 페이드아웃 시작
         setTimeout(() => {
