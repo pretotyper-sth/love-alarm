@@ -402,7 +402,15 @@ export function AddAlarmPage() {
             </div>
             <BottomCTA.Double
               leftButton={
-                <CTAButton color="dark" variant="weak" onClick={handleNotificationClose}>
+                <CTAButton 
+                  color="dark" 
+                  variant="weak" 
+                  onClick={handleNotificationClose}
+                  style={{
+                    '--button-background-color': '#f2f4f6',
+                    '--button-color': '#6b7684',
+                  }}
+                >
                   닫기
                 </CTAButton>
               }
