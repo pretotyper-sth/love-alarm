@@ -411,7 +411,7 @@ export function AddAlarmPage() {
                     '--button-color': '#6b7684',
                   }}
                 >
-                  닫기
+                  나중에 하기
                 </CTAButton>
               }
               rightButton={
