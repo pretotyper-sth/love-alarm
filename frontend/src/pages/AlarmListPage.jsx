@@ -438,7 +438,7 @@ export function AlarmListPage() {
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top="추가하기"
+              top={`추가하기 (${alarms.length}/2)`}
               topProps={{ color: '#4e5968' }}
             />
           }
