@@ -138,6 +138,52 @@ export const api = {
   // ==================== 사용자 ====================
 
   /**
+   * 사용자 정보 조회 (maxSlots 포함)
+   */
+  getUser: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/users/${user.id}`);
+    
+    if (!response.ok) {
+      throw new Error('사용자 정보 조회 실패');
+    }
+
+    const data = await response.json();
+    // 로컬 사용자 정보 업데이트
+    currentUser = data.user;
+    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    
+    return data.user;
+  },
+
+  /**
+   * 알람 슬롯 구매 (결제 성공 후 호출)
+   */
+  purchaseSlot: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/users/${user.id}/purchase-slot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '슬롯 구매 실패');
+    }
+
+    const data = await response.json();
+    // 로컬 사용자 정보 업데이트
+    currentUser = data.user;
+    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    
+    return data;
+  },
+
+  /**
    * 인스타그램 ID 등록/수정
    */
   updateInstagramId: async (instagramId) => {

@@ -301,3 +301,68 @@
   background: #1557c0;
 }
 
+/* 결제 BottomSheet 스타일 */
+.payment-sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+}
+
+.payment-sheet-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 16px);
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 24px;
+  z-index: 9999;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: paymentSlideUp 0.3s ease-out;
+}
+
+@keyframes paymentSlideUp {
+  from {
+    transform: translateX(-50%) translateY(calc(100% + 20px));
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.payment-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #e5e8eb;
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+.payment-sheet-content {
+  padding: 24px 24px 16px 24px;
+}
+
+.payment-sheet-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.payment-sheet-description {
+  margin: 0;
+  font-size: 16px;
+  color: #6b7684;
+  line-height: 1.6;
+}
+
+.payment-sheet-cta {
+  padding: 8px 24px 24px 24px;
+}
+
+

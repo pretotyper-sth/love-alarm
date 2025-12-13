@@ -18,14 +18,30 @@ export function AuthProvider({ children }) {
           // 저장된 사용자가 없으면 기기 ID로 자동 로그인
           // 실제 토스 연동 시 토스 사용자 ID 사용
           const deviceId = getOrCreateDeviceId();
-          const result = await api.login(deviceId);
-          currentUser = result.user;
+          try {
+            const result = await api.login(deviceId);
+            currentUser = result.user;
+          } catch (loginError) {
+            // 백엔드 연결 실패 시 mock 사용자 사용 (로컬 테스트용)
+            console.warn('백엔드 연결 실패, mock 사용자 사용:', loginError.message);
+            currentUser = {
+              id: 'mock-user-' + deviceId,
+              tossUserId: deviceId,
+              instagramId: null,
+              maxSlots: 2,
+            };
+            localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+          }
         }
 
         setUser(currentUser);
         
-        // WebSocket 연결
-        api.connectSocket();
+        // WebSocket 연결 (실패해도 무시)
+        try {
+          api.connectSocket();
+        } catch (e) {
+          console.warn('WebSocket 연결 실패:', e.message);
+        }
       } catch (error) {
         console.error('Auth init error:', error);
       } finally {

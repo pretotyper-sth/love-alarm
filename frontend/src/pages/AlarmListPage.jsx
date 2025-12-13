@@ -89,8 +89,11 @@ export function AlarmListPage() {
   const location = useLocation();
   const { user } = useAuth();
   const [alarms, setAlarms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState([]); // 토스트 스택
-  const [showLimitSheet, setShowLimitSheet] = useState(false);
+  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
+  const [maxSlots, setMaxSlots] = useState(2); // 기본 슬롯 2개
+  const [isPurchasing, setIsPurchasing] = useState(false);
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
 
@@ -206,21 +209,46 @@ export function AlarmListPage() {
 
   const loadAlarms = async () => {
     try {
-      const fetchedAlarms = await api.getAlarms();
+      setIsLoading(true);
+      // 알람 목록과 사용자 정보(maxSlots) 동시 로드
+      const [fetchedAlarms, userData] = await Promise.all([
+        api.getAlarms(),
+        api.getUser(),
+      ]);
       setAlarms(fetchedAlarms);
+      setMaxSlots(userData.maxSlots || 2);
       // ref 배열 초기화
       alarmRefsRef.current = [];
     } catch (error) {
-      console.error('알람 목록 조회 실패:', error);
+      console.warn('백엔드 연결 실패, localStorage 사용:', error.message);
+      // 백엔드 실패 시 localStorage에서 로드 (테스트용)
+      const localAlarms = JSON.parse(localStorage.getItem('love_alarm_alarms') || '[]');
+      const localMaxSlots = parseInt(localStorage.getItem('love_alarm_max_slots') || '2');
+      setAlarms(localAlarms);
+      setMaxSlots(localMaxSlots);
+      alarmRefsRef.current = [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleAddAlarm = () => {
-    // 알람이 2개 이상이면 제한 팝업 표시
-    if (alarms.length >= 2) {
-      setShowLimitSheet(true);
+    // 현재 알람 수가 최대 슬롯에 도달하면 결제 팝업 표시
+    if (alarms.length >= maxSlots) {
+      setShowPaymentSheet(true);
       return;
     }
+    navigate('/add-alarm');
+  };
+
+  // 슬롯 구매 처리
+  const handlePurchaseSlot = async () => {
+    // TODO: 실제 결제 연동 시 api.purchaseSlot() 호출
+    // 현재는 테스트용으로 바로 슬롯 증가
+    const newMaxSlots = maxSlots + 1;
+    setMaxSlots(newMaxSlots);
+    localStorage.setItem('love_alarm_max_slots', String(newMaxSlots));
+    setShowPaymentSheet(false);
     navigate('/add-alarm');
   };
 
@@ -229,54 +257,38 @@ export function AlarmListPage() {
   };
 
   const handleRemoveAlarm = async (id) => {
-    // 삭제 전에 알람과 위치 저장 (되돌리기용 & 롤백용)
+    // 삭제 전에 알람과 위치 저장 (되돌리기용)
     const alarmIndex = alarms.findIndex(alarm => alarm.id === id);
     const alarmToRemove = alarms[alarmIndex];
-    const previousAlarms = [...alarms];
     
-    // ✨ Optimistic UI: 서버 응답 전에 UI 먼저 업데이트
-    setAlarms(prev => prev.filter(alarm => alarm.id !== id));
+    // UI 업데이트
+    const newAlarms = alarms.filter(alarm => alarm.id !== id);
+    setAlarms(newAlarms);
+    // localStorage 업데이트
+    localStorage.setItem('love_alarm_alarms', JSON.stringify(newAlarms));
     
     // 제거 Toast 표시 (되돌리기 버튼 포함)
     const toastId = addToast({
       type: 'remove',
       message: '알람을 제거했어요.',
       duration: 5000,
-      undoAction: async () => {
-        // 버튼 클릭 즉시 토스트 제거 (중복 클릭 방지)
+      undoAction: () => {
         removeToast(toastId);
-        try {
-          // 새로 생성하고 결과로 받은 새 ID로 목록 갱신 (fromInstagramId 포함)
-          const result = await api.createAlarm(alarmToRemove.fromInstagramId, alarmToRemove.targetInstagramId);
-          // API 응답의 matched 여부를 알람 status에 반영
-          const restoredAlarm = {
-            ...result.alarm,
-            status: result.matched ? 'matched' : result.alarm.status,
-          };
-          // 원래 위치에 삽입
-          setAlarms(prev => {
-            const newAlarms = [...prev];
-            newAlarms.splice(alarmIndex, 0, restoredAlarm);
-            return newAlarms;
-          });
-        } catch (error) {
-          console.error('되돌리기 실패:', error);
-        }
+        // 되돌리기: 원래 위치에 삽입
+        setAlarms(prev => {
+          const restored = [...prev];
+          restored.splice(alarmIndex, 0, alarmToRemove);
+          localStorage.setItem('love_alarm_alarms', JSON.stringify(restored));
+          return restored;
+        });
       },
     });
     
+    // 백엔드 삭제 시도 (실패해도 무시 - 로컬 테스트용)
     try {
       await api.deleteAlarm(id);
-      // ✅ 성공: Optimistic UI 유지 (깜빡임 방지)
     } catch (error) {
-      console.error('알람 삭제 실패:', error);
-      // ❌ 실패 시 롤백: 원래 상태로 되돌림
-      setAlarms(previousAlarms);
-      addToast({
-        type: 'error',
-        message: '알람 삭제에 실패했어요.',
-        duration: 3000,
-      });
+      console.warn('백엔드 삭제 실패 (무시):', error.message);
     }
   };
 
@@ -394,7 +406,7 @@ export function AlarmListPage() {
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top="추가하기"
+              top={`추가하기 (${alarms.length}/${maxSlots})`}
               topProps={{ color: '#4e5968' }}
             />
           }
@@ -403,8 +415,8 @@ export function AlarmListPage() {
           onClick={handleAddAlarm}
         />
 
-        {/* 알람 목록 */}
-        {alarms.map((alarm, index) => (
+        {/* 알람 목록 - 로딩 완료 후에만 표시 (알람 없으면 빈 상태) */}
+        {!isLoading && alarms.map((alarm, index) => (
           <AlarmItem 
             key={alarm.id} 
             alarm={alarm}
@@ -444,31 +456,49 @@ export function AlarmListPage() {
         ))}
       </div>
 
-      {/* 알람 추가 제한 BottomSheet */}
-      <div className={`custom-bottom-sheet-overlay ${showLimitSheet ? 'show' : ''}`} onClick={() => setShowLimitSheet(false)}>
-        <div className={`custom-bottom-sheet ${showLimitSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
-          <div className="bottom-sheet-header">
-            <h3 className="bottom-sheet-title">알람 추가 제한</h3>
-            <p className="bottom-sheet-description">아쉽지만 아직은 2개까지만 추가할 수 있어요.</p>
+      {/* 알람 슬롯 결제 BottomSheet */}
+      {showPaymentSheet && (
+        <>
+          <div className="payment-sheet-overlay" onClick={() => setShowPaymentSheet(false)} />
+          <div className="payment-sheet-container">
+            <div className="payment-sheet-handle" />
+            <div className="payment-sheet-content">
+              <h3 className="payment-sheet-title">결제하기</h3>
+              <p className="payment-sheet-description">
+                소중한 인연을 놓치지 않도록,<br />
+                알람 슬롯을 하나 더 추가해보세요.<br />
+                구매한 슬롯은 영구적으로 누적돼요.
+              </p>
+            </div>
+            <div className="payment-sheet-cta">
+              <Button
+                size="xlarge"
+                display="block"
+                onClick={handlePurchaseSlot}
+                disabled={isPurchasing}
+                loading={isPurchasing}
+              >
+                알람 슬롯 추가하기 (1,000원)
+              </Button>
+              <Spacing size={8} />
+              <Button
+                size="xlarge"
+                display="block"
+                color="dark"
+                variant="weak"
+                onClick={() => setShowPaymentSheet(false)}
+                disabled={isPurchasing}
+                style={{
+                  '--button-background-color': '#f2f4f6',
+                  '--button-color': '#6b7684',
+                }}
+              >
+                나중에 하기
+              </Button>
+            </div>
           </div>
-          <div className="bottom-sheet-content">
-            <img 
-              src="https://static.toss.im/2d-emojis/png/4x/u26A0.png" 
-              alt="경고" 
-              className="bottom-sheet-image"
-            />
-          </div>
-          <div className="bottom-sheet-cta">
-            <Button
-              size="xlarge"
-              display="block"
-              onClick={() => setShowLimitSheet(false)}
-            >
-              확인
-            </Button>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }

@@ -110,13 +110,27 @@ export function AddAlarmPage() {
       // 1. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
       localStorage.setItem('love_alarm_my_instagram_id', myIdTrimmed);
 
-      // 2. API로 알람 생성 (fromInstagramId 포함)
-      const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed);
-      
-      // 3. 완료 후 페이지 이동
-      if (result.matched) {
-        navigate('/match-success', { state: { alarmId: result.alarm.id } });
-      } else {
+      // 2. API로 알람 생성 시도
+      try {
+        const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed);
+        if (result.matched) {
+          navigate('/match-success', { state: { alarmId: result.alarm.id } });
+        } else {
+          navigate('/alarms', { state: { showAddedToast: true } });
+        }
+      } catch (apiError) {
+        // 백엔드 실패 시 localStorage에 저장 (테스트용)
+        console.warn('백엔드 연결 실패, localStorage 사용:', apiError.message);
+        const localAlarms = JSON.parse(localStorage.getItem('love_alarm_alarms') || '[]');
+        const newAlarm = {
+          id: 'local-' + Date.now(),
+          fromInstagramId: myIdTrimmed,
+          targetInstagramId: targetIdTrimmed,
+          status: 'waiting',
+          createdAt: new Date().toISOString(),
+        };
+        localAlarms.push(newAlarm);
+        localStorage.setItem('love_alarm_alarms', JSON.stringify(localAlarms));
         navigate('/alarms', { state: { showAddedToast: true } });
       }
     } catch (error) {

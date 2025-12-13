@@ -55,5 +55,39 @@ router.put('/:id/instagram', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/users/:id/purchase-slot
+ * 알람 슬롯 구매 (결제 성공 후 호출)
+ * 
+ * 결제 연동 전: 바로 슬롯 증가
+ * 결제 연동 후: 결제 검증 후 슬롯 증가
+ */
+router.post('/:id/purchase-slot', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await req.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    // 슬롯 1개 증가
+    const updatedUser = await req.prisma.user.update({
+      where: { id },
+      data: { maxSlots: user.maxSlots + 1 },
+    });
+
+    console.log(`🎫 슬롯 구매 완료: ${id}, ${user.maxSlots} -> ${updatedUser.maxSlots}`);
+
+    res.json({ user: updatedUser, newMaxSlots: updatedUser.maxSlots });
+  } catch (error) {
+    console.error('Purchase slot error:', error);
+    res.status(500).json({ error: '슬롯 구매 중 오류가 발생했습니다.' });
+  }
+});
+
 export default router;
 

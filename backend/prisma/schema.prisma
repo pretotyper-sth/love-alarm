@@ -14,6 +14,7 @@ model User {
   id           String   @id @default(uuid())
   tossUserId   String   @unique // 토스 계정 고유 ID
   instagramId  String?           // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
+  maxSlots     Int      @default(2) // 최대 알람 슬롯 수 (기본 2개, 결제로 증가)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
