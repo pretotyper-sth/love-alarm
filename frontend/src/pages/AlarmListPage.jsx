@@ -91,9 +91,11 @@ export function AlarmListPage() {
   const [alarms, setAlarms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [toasts, setToasts] = useState([]); // 토스트 스택
-  const [showPaymentSheet, setShowPaymentSheet] = useState(false);
-  const [maxSlots, setMaxSlots] = useState(2); // 기본 슬롯 2개
-  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [showLimitSheet, setShowLimitSheet] = useState(false);
+  // TODO: 결제 연동 시 아래 주석 해제
+  // const [showPaymentSheet, setShowPaymentSheet] = useState(false);
+  // const [maxSlots, setMaxSlots] = useState(2); // 기본 슬롯 2개
+  // const [isPurchasing, setIsPurchasing] = useState(false);
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
 
@@ -212,11 +214,9 @@ export function AlarmListPage() {
       setIsLoading(true);
       const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
-      
-      // 사용자 정보에서 maxSlots 로드
-      const user = api.getCurrentUser();
-      setMaxSlots(user?.maxSlots || 2);
-      
+      // TODO: 결제 연동 시 아래 주석 해제
+      // const user = api.getCurrentUser();
+      // setMaxSlots(user?.maxSlots || 2);
       // ref 배열 초기화
       alarmRefsRef.current = [];
     } catch (error) {
@@ -226,6 +226,16 @@ export function AlarmListPage() {
     }
   };
 
+  const handleAddAlarm = () => {
+    // 알람이 2개 이상이면 제한 팝업 표시
+    if (alarms.length >= 2) {
+      setShowLimitSheet(true);
+      return;
+    }
+    navigate('/add-alarm');
+  };
+
+  /* TODO: 결제 연동 시 아래 주석 해제
   const handleAddAlarm = () => {
     // 현재 알람 수가 최대 슬롯에 도달하면 결제 팝업 표시
     if (alarms.length >= maxSlots) {
@@ -256,6 +266,7 @@ export function AlarmListPage() {
       setIsPurchasing(false);
     }
   };
+  */
 
   const handleMatchedClick = (alarm) => {
     navigate('/match-success', { state: { alarmId: alarm.id, targetInstagramId: alarm.targetInstagramId } });
@@ -427,7 +438,7 @@ export function AlarmListPage() {
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top={`추가하기 (${alarms.length}/${maxSlots})`}
+              top="추가하기"
               topProps={{ color: '#4e5968' }}
             />
           }
@@ -477,7 +488,33 @@ export function AlarmListPage() {
         ))}
       </div>
 
-      {/* 알람 슬롯 결제 BottomSheet */}
+      {/* 알람 추가 제한 BottomSheet */}
+      <div className={`custom-bottom-sheet-overlay ${showLimitSheet ? 'show' : ''}`} onClick={() => setShowLimitSheet(false)}>
+        <div className={`custom-bottom-sheet ${showLimitSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="bottom-sheet-header">
+            <h3 className="bottom-sheet-title">알람 추가 제한</h3>
+            <p className="bottom-sheet-description">아쉽지만 아직은 2개까지만 추가할 수 있어요.</p>
+          </div>
+          <div className="bottom-sheet-content">
+            <img 
+              src="https://static.toss.im/2d-emojis/png/4x/u26A0.png" 
+              alt="경고" 
+              className="bottom-sheet-image"
+            />
+          </div>
+          <div className="bottom-sheet-cta">
+            <Button
+              size="xlarge"
+              display="block"
+              onClick={() => setShowLimitSheet(false)}
+            >
+              확인
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* TODO: 결제 연동 시 아래 주석 해제하고 위 제한 팝업 제거
       {showPaymentSheet && (
         <>
           <div className="payment-sheet-overlay" onClick={() => setShowPaymentSheet(false)} />
@@ -520,6 +557,7 @@ export function AlarmListPage() {
           </div>
         </>
       )}
+      */}
     </div>
   );
 }
