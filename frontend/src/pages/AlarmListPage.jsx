@@ -11,6 +11,7 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
+import { hasConfirmedAbuseWarning } from './AbuseWarningPage';
 import './AlarmListPage.css';
 
 // 알람 아이템 컴포넌트
@@ -227,6 +228,11 @@ export function AlarmListPage() {
   };
 
   const handleAddAlarm = () => {
+    // 최초 추가 시 비정상적 사용 방지 페이지 표시
+    if (!hasConfirmedAbuseWarning()) {
+      navigate('/abuse-warning');
+      return;
+    }
     // 알람이 2개 이상이면 제한 팝업 표시
     if (alarms.length >= 2) {
       setShowLimitSheet(true);

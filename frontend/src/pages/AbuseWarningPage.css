@@ -1,0 +1,115 @@
+.abuse-warning-page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--adaptiveBackground, #ffffff);
+}
+
+/* Quick_Navigation 스타일 - 다른 페이지와 동일 */
+.abuse-warning-page-container .quick-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 54px;
+  padding: 0 4px;
+  background: var(--adaptiveBackground, #ffffff);
+}
+
+.abuse-warning-page-container .nav-left-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex: 1;
+}
+
+.abuse-warning-page-container .nav-back-button {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 12px;
+}
+
+.abuse-warning-page-container .nav-title-area {
+  display: flex;
+  align-items: center;
+  height: 48px;
+}
+
+.abuse-warning-page-container .nav-title-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.abuse-warning-page-container .nav-right-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.abuse-warning-page-container .nav-fixed-icon-area {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  background: rgba(0, 23, 51, 0.02);
+  border-radius: 99px;
+}
+
+.abuse-warning-page-container .nav-icon-button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.abuse-warning-page-container .nav-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(0, 27, 55, 0.1);
+}
+
+/* 콘텐츠 영역 */
+.abuse-warning-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  padding: 0 20px;
+}
+
+/* 이모지 이미지 */
+.abuse-warning-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 하단 버튼 */
+.abuse-warning-button-section {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 376px;
+  padding: 12px 20px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--adaptiveBackground, #ffffff);
+}
+
+/* 모바일에서는 전체 너비 사용 */
+@media (max-width: 480px) {
+  .abuse-warning-button-section {
+    max-width: 100%;
+  }
+}
+

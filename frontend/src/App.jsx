@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
 import { AlarmListPage } from './pages/AlarmListPage';
 import { AddAlarmPage } from './pages/AddAlarmPage';
+import { AbuseWarningPage } from './pages/AbuseWarningPage';
 import { MatchSuccessPage } from './pages/MatchSuccessPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ErrorPage } from './pages/ErrorPage';
@@ -29,6 +30,7 @@ function App() {
             }
           />
           <Route path="/alarms" element={<AlarmListPage />} />
+          <Route path="/abuse-warning" element={<AbuseWarningPage />} />
           <Route path="/add-alarm" element={<AddAlarmPage />} />
           <Route path="/match-success" element={<MatchSuccessPage />} />
           <Route path="/settings" element={<SettingsPage />} />
