@@ -278,9 +278,11 @@
 .notification-sheet-overlay {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 376px;
+  height: 100%;
   background: rgba(0, 0, 0, 0.4);
   z-index: 9998;
 }
@@ -288,13 +290,25 @@
 .notification-sheet-container {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 376px;
   background: #ffffff;
   border-radius: 24px 24px 0 0;
   z-index: 9999;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   animation: slideUp 0.3s ease-out;
+}
+
+/* 모바일에서는 전체 너비 사용 */
+@media (max-width: 480px) {
+  .notification-sheet-overlay {
+    max-width: 100%;
+  }
+  .notification-sheet-container {
+    max-width: 100%;
+  }
 }
 
 @keyframes slideUp {
