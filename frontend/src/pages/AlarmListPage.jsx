@@ -210,23 +210,17 @@ export function AlarmListPage() {
   const loadAlarms = async () => {
     try {
       setIsLoading(true);
-      // 알람 목록과 사용자 정보(maxSlots) 동시 로드
-      const [fetchedAlarms, userData] = await Promise.all([
-        api.getAlarms(),
-        api.getUser(),
-      ]);
+      const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
-      setMaxSlots(userData.maxSlots || 2);
+      
+      // 사용자 정보에서 maxSlots 로드
+      const user = api.getCurrentUser();
+      setMaxSlots(user?.maxSlots || 2);
+      
       // ref 배열 초기화
       alarmRefsRef.current = [];
     } catch (error) {
-      console.warn('백엔드 연결 실패, localStorage 사용:', error.message);
-      // 백엔드 실패 시 localStorage에서 로드 (테스트용)
-      const localAlarms = JSON.parse(localStorage.getItem('love_alarm_alarms') || '[]');
-      const localMaxSlots = parseInt(localStorage.getItem('love_alarm_max_slots') || '2');
-      setAlarms(localAlarms);
-      setMaxSlots(localMaxSlots);
-      alarmRefsRef.current = [];
+      console.error('알람 목록 조회 실패:', error);
     } finally {
       setIsLoading(false);
     }
@@ -243,13 +237,24 @@ export function AlarmListPage() {
 
   // 슬롯 구매 처리
   const handlePurchaseSlot = async () => {
-    // TODO: 실제 결제 연동 시 api.purchaseSlot() 호출
-    // 현재는 테스트용으로 바로 슬롯 증가
-    const newMaxSlots = maxSlots + 1;
-    setMaxSlots(newMaxSlots);
-    localStorage.setItem('love_alarm_max_slots', String(newMaxSlots));
-    setShowPaymentSheet(false);
-    navigate('/add-alarm');
+    setIsPurchasing(true);
+    try {
+      // TODO: 실제 결제 연동 시 여기에 결제 API 호출 추가
+      // 결제 성공 후 슬롯 증가 API 호출
+      const result = await api.purchaseSlot();
+      setMaxSlots(result.newMaxSlots);
+      setShowPaymentSheet(false);
+      navigate('/add-alarm');
+    } catch (error) {
+      console.error('슬롯 구매 실패:', error);
+      addToast({
+        type: 'error',
+        message: '슬롯 구매에 실패했어요.',
+        duration: 3000,
+      });
+    } finally {
+      setIsPurchasing(false);
+    }
   };
 
   const handleMatchedClick = (alarm) => {
@@ -257,38 +262,54 @@ export function AlarmListPage() {
   };
 
   const handleRemoveAlarm = async (id) => {
-    // 삭제 전에 알람과 위치 저장 (되돌리기용)
+    // 삭제 전에 알람과 위치 저장 (되돌리기용 & 롤백용)
     const alarmIndex = alarms.findIndex(alarm => alarm.id === id);
     const alarmToRemove = alarms[alarmIndex];
+    const previousAlarms = [...alarms];
     
-    // UI 업데이트
-    const newAlarms = alarms.filter(alarm => alarm.id !== id);
-    setAlarms(newAlarms);
-    // localStorage 업데이트
-    localStorage.setItem('love_alarm_alarms', JSON.stringify(newAlarms));
+    // ✨ Optimistic UI: 서버 응답 전에 UI 먼저 업데이트
+    setAlarms(prev => prev.filter(alarm => alarm.id !== id));
     
     // 제거 Toast 표시 (되돌리기 버튼 포함)
     const toastId = addToast({
       type: 'remove',
       message: '알람을 제거했어요.',
       duration: 5000,
-      undoAction: () => {
+      undoAction: async () => {
+        // 버튼 클릭 즉시 토스트 제거 (중복 클릭 방지)
         removeToast(toastId);
-        // 되돌리기: 원래 위치에 삽입
-        setAlarms(prev => {
-          const restored = [...prev];
-          restored.splice(alarmIndex, 0, alarmToRemove);
-          localStorage.setItem('love_alarm_alarms', JSON.stringify(restored));
-          return restored;
-        });
+        try {
+          // 새로 생성하고 결과로 받은 새 ID로 목록 갱신 (fromInstagramId 포함)
+          const result = await api.createAlarm(alarmToRemove.fromInstagramId, alarmToRemove.targetInstagramId);
+          // API 응답의 matched 여부를 알람 status에 반영
+          const restoredAlarm = {
+            ...result.alarm,
+            status: result.matched ? 'matched' : result.alarm.status,
+          };
+          // 원래 위치에 삽입
+          setAlarms(prev => {
+            const newAlarms = [...prev];
+            newAlarms.splice(alarmIndex, 0, restoredAlarm);
+            return newAlarms;
+          });
+        } catch (error) {
+          console.error('되돌리기 실패:', error);
+        }
       },
     });
     
-    // 백엔드 삭제 시도 (실패해도 무시 - 로컬 테스트용)
     try {
       await api.deleteAlarm(id);
+      // ✅ 성공: Optimistic UI 유지 (깜빡임 방지)
     } catch (error) {
-      console.warn('백엔드 삭제 실패 (무시):', error.message);
+      console.error('알람 삭제 실패:', error);
+      // ❌ 실패 시 롤백: 원래 상태로 되돌림
+      setAlarms(previousAlarms);
+      addToast({
+        type: 'error',
+        message: '알람 삭제에 실패했어요.',
+        duration: 3000,
+      });
     }
   };
 
