@@ -318,7 +318,7 @@ export function AddAlarmPage() {
           </div>
           <div className="bottom-sheet-cta bottom-sheet-cta-double">
             <Button
-              size="xlarge"
+              size="large"
               display="block"
               color="dark"
               variant="weak"
@@ -326,15 +326,16 @@ export function AddAlarmPage() {
               style={{
                 '--button-background-color': '#f2f4f6',
                 '--button-color': '#6b7684',
+                flex: 1,
               }}
             >
               나중에 하기
             </Button>
-            <Spacing size={8} />
             <Button
-              size="xlarge"
+              size="large"
               display="block"
               onClick={handleNotificationAgree}
+              style={{ flex: 1 }}
             >
               동의하기
             </Button>
