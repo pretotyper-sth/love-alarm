@@ -223,7 +223,7 @@
 /* 버튼 섹션 - 하단 고정 */
 .add-alarm-button-section {
   position: fixed;
-  bottom: 0;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   max-width: 376px;
@@ -274,74 +274,79 @@
 
 /* Toast 스타일은 App.css에서 공통으로 관리 */
 
-/* 알림 허용 BottomSheet 스타일 */
-.notification-sheet-overlay {
+/* 커스텀 BottomSheet 스타일 (AlarmListPage와 동일) */
+.custom-bottom-sheet-overlay {
   position: fixed;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 376px;
-  height: 100%;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.4);
   z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
 }
 
-.notification-sheet-container {
+.custom-bottom-sheet-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.custom-bottom-sheet {
   position: fixed;
-  bottom: 0;
+  bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 376px;
+  transform: translateX(-50%) translateY(calc(100% + 20px));
+  width: calc(100% - 16px);
+  max-width: 360px;
   background: #ffffff;
-  border-radius: 24px 24px 0 0;
+  border-radius: 24px;
   z-index: 9999;
+  transition: transform 0.3s ease-out;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  animation: slideUp 0.3s ease-out;
 }
 
-/* 모바일에서는 전체 너비 사용 */
-@media (max-width: 480px) {
-  .notification-sheet-overlay {
-    max-width: 100%;
-  }
-  .notification-sheet-container {
-    max-width: 100%;
-  }
+.custom-bottom-sheet.show {
+  transform: translateX(-50%) translateY(0);
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.notification-sheet-content {
+.bottom-sheet-header {
   padding: 24px 24px 0 24px;
   text-align: left;
 }
 
-.notification-sheet-title {
+.bottom-sheet-title {
   margin: 0 0 8px 0;
   font-size: 19px;
   font-weight: bold;
   color: #191f28;
 }
 
-.notification-sheet-description {
+.bottom-sheet-description {
   margin: 0;
   font-size: 15px;
   color: #6b7684;
   line-height: 1.5;
 }
 
-.notification-sheet-image {
+.bottom-sheet-content {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 24px 0;
+  padding: 24px;
+}
+
+.bottom-sheet-image {
+  width: 100px;
+  height: 100px;
+}
+
+.bottom-sheet-cta {
+  padding: 0 24px 24px 24px;
+}
+
+.bottom-sheet-cta-double {
+  display: flex;
+  flex-direction: column;
 }

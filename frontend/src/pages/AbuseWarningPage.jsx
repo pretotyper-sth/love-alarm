@@ -23,73 +23,9 @@ export function AbuseWarningPage() {
 
   return (
     <div className="abuse-warning-page-container">
-      {/* Quick_Navigation - 상단 네비게이션 바 */}
-      <div className="quick-navigation">
-        {/* Left Container */}
-        <div className="nav-left-container">
-          {/* Back Button */}
-          <button
-            className="nav-back-button"
-            onClick={() => navigate(-1)}
-            aria-label="뒤로가기"
-          >
-            <Asset.Icon
-              frameShape={Asset.frameShape.CleanW24}
-              backgroundColor="transparent"
-              name="icon-arrow-back-ios-mono"
-              color={adaptive.grey900}
-              aria-hidden={true}
-              ratio="1/1"
-            />
-          </button>
-          {/* Title Area */}
-          <div className="nav-title-area">
-            <div className="nav-title-content">
-              <Asset.Image
-                frameShape={Asset.frameShape.CleanW16}
-                backgroundColor="transparent"
-                src="https://static.toss.im/appsintoss/9737/f6aa6697-d258-40c2-a59f-91f8e8bab8be.png"
-                aria-hidden={true}
-                style={{ aspectRatio: '1/1' }}
-              />
-              <Text color={adaptive.grey900} typography="t6" fontWeight="semibold">
-                좋아하면 울리는
-              </Text>
-            </div>
-          </div>
-        </div>
-        {/* Right Container */}
-        <div className="nav-right-container">
-          {/* Fixed Icon Area */}
-          <div className="nav-fixed-icon-area">
-            <button className="nav-icon-button" aria-label="더보기">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-dots-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-            <div className="nav-divider"></div>
-            <button className="nav-icon-button" aria-label="닫기">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-x-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* 콘텐츠 영역 */}
       <div className="abuse-warning-content">
-        <Spacing size={176} />
+        <Spacing size={132} />
         
         {/* 이모지 이미지 */}
         <div className="abuse-warning-image">
@@ -115,7 +51,7 @@ export function AbuseWarningPage() {
             lineHeight: 1.4,
           }}
         >
-          다른 사람을 사칭하는 등 적절하지 않게 사용하면 알람이 삭제되거나 쓸 수 없어요
+          다른 사람을 사칭하는 등 적절하지 않게 사용 시 알람이 삭제되거나 접속이 제한돼요
         </Text>
 
         <Spacing size={20} />
@@ -149,4 +85,7 @@ export function AbuseWarningPage() {
 export function hasConfirmedAbuseWarning() {
   return localStorage.getItem(ABUSE_WARNING_CONFIRMED_KEY) === 'true';
 }
+
+
+
 

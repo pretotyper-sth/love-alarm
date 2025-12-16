@@ -365,4 +365,22 @@
   padding: 8px 24px 24px 24px;
 }
 
+/* 되돌리기 스켈레톤 스타일 */
+.skeleton-alarm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.skeleton-icon {
+  flex-shrink: 0;
+}
+
+.skeleton-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 

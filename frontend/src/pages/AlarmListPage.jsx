@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Asset,
-  Text,
   Top,
   ListRow,
   Spacing,
   Button,
+  Skeleton,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -91,6 +90,12 @@ export function AlarmListPage() {
   const { user } = useAuth();
   const [alarms, setAlarms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRestoring, setIsRestoring] = useState(false); // 되돌리기 중 상태
+  const [lastAlarmCount, setLastAlarmCount] = useState(() => {
+    // 이전에 저장된 알람 개수 불러오기 (초기 로딩 스켈레톤용)
+    const saved = localStorage.getItem('love_alarm_last_count');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   const [toasts, setToasts] = useState([]); // 토스트 스택
   const [showLimitSheet, setShowLimitSheet] = useState(false);
   // TODO: 결제 연동 시 아래 주석 해제
@@ -215,6 +220,9 @@ export function AlarmListPage() {
       setIsLoading(true);
       const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
+      // 알람 개수 저장 (다음 로딩 시 스켈레톤 개수용)
+      localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
+      setLastAlarmCount(fetchedAlarms.length);
       // TODO: 결제 연동 시 아래 주석 해제
       // const user = api.getCurrentUser();
       // setMaxSlots(user?.maxSlots || 2);
@@ -295,6 +303,7 @@ export function AlarmListPage() {
       undoAction: async () => {
         // 버튼 클릭 즉시 토스트 제거 (중복 클릭 방지)
         removeToast(toastId);
+        setIsRestoring(true); // 스켈레톤 표시
         try {
           // 새로 생성하고 결과로 받은 새 ID로 목록 갱신 (fromInstagramId 포함)
           const result = await api.createAlarm(alarmToRemove.fromInstagramId, alarmToRemove.targetInstagramId);
@@ -311,6 +320,8 @@ export function AlarmListPage() {
           });
         } catch (error) {
           console.error('되돌리기 실패:', error);
+        } finally {
+          setIsRestoring(false); // 스켈레톤 숨김
         }
       },
     });
@@ -332,83 +343,6 @@ export function AlarmListPage() {
 
   return (
     <div className="alarm-list-page-container">
-      {/* Quick_Navigation - 상단 네비게이션 바 */}
-      <div className="quick-navigation">
-        {/* Left Container */}
-        <div className="nav-left-container">
-          {/* Back Button */}
-          <button
-            className="nav-back-button"
-            onClick={() => navigate(-1)}
-            aria-label="뒤로가기"
-          >
-            <Asset.Icon
-              frameShape={Asset.frameShape.CleanW24}
-              backgroundColor="transparent"
-              name="icon-arrow-back-ios-mono"
-              color={adaptive.grey900}
-              aria-hidden={true}
-              ratio="1/1"
-            />
-          </button>
-          {/* Title Area */}
-          <div className="nav-title-area">
-            <div className="nav-title-content">
-              <Asset.Image
-                frameShape={Asset.frameShape.CleanW16}
-                backgroundColor="transparent"
-                src="https://static.toss.im/appsintoss/9737/f6aa6697-d258-40c2-a59f-91f8e8bab8be.png"
-                aria-hidden={true}
-                style={{ aspectRatio: '1/1' }}
-              />
-              <Text color={adaptive.grey900} typography="t6" fontWeight="semibold">
-                좋아하면 울리는
-              </Text>
-            </div>
-          </div>
-        </div>
-        {/* Right Container */}
-        <div className="nav-right-container">
-          {/* Dynamic Icon Area */}
-          <div className="nav-dynamic-icon-area">
-            <button className="nav-icon-button" aria-label="하트">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-heart-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-          </div>
-          {/* Fixed Icon Area */}
-          <div className="nav-fixed-icon-area">
-            <button className="nav-icon-button" aria-label="더보기">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-dots-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-            <div className="nav-divider"></div>
-            <button className="nav-icon-button" aria-label="닫기">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-x-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <Spacing size={14} />
 
       <div className="alarm-list-top-section">
@@ -453,7 +387,15 @@ export function AlarmListPage() {
           onClick={handleAddAlarm}
         />
 
-        {/* 알람 목록 - 로딩 완료 후에만 표시 (알람 없으면 빈 상태) */}
+        {/* 초기 로딩 중 스켈레톤 - 이전 알람 개수만큼 표시 */}
+        {isLoading && lastAlarmCount > 0 && (
+          <Skeleton 
+            custom={['listWithIcon']} 
+            repeatLastItemCount={lastAlarmCount} 
+          />
+        )}
+
+        {/* 알람 목록 */}
         {!isLoading && alarms.map((alarm, index) => (
           <AlarmItem 
             key={alarm.id} 
@@ -463,6 +405,14 @@ export function AlarmListPage() {
             listRowRef={(el) => { alarmRefsRef.current[index] = el; }}
           />
         ))}
+
+        {/* 되돌리기 중 스켈레톤 - 1줄만 표시 */}
+        {isRestoring && (
+          <Skeleton 
+            custom={['listWithIcon']} 
+            repeatLastItemCount={1} 
+          />
+        )}
       </div>
 
       {/* 토스트 스택 */}

@@ -148,7 +148,7 @@
 /* 하단 고정 버튼 - AddAlarmPage와 동일한 위치 */
 .match-fixed-bottom-cta {
   position: fixed;
-  bottom: 0;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   max-width: 376px;

@@ -6,8 +6,6 @@ import {
   TextField,
   Spacing,
   Button,
-  BottomCTA,
-  CTAButton,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
@@ -115,7 +113,7 @@ export function AddAlarmPage() {
       
       // 3. 완료 후 페이지 이동
       if (result.matched) {
-        navigate('/match-success', { state: { alarmId: result.alarm.id } });
+        navigate('/match-success', { state: { alarmId: result.alarm.id, targetInstagramId: targetIdTrimmed } });
       } else {
         navigate('/alarms', { state: { showAddedToast: true } });
       }
@@ -173,83 +171,6 @@ export function AddAlarmPage() {
 
   return (
     <div className="add-alarm-page-container">
-      {/* Quick_Navigation - 상단 네비게이션 바 */}
-      <div className="quick-navigation">
-        {/* Left Container */}
-        <div className="nav-left-container">
-          {/* Back Button */}
-          <button
-            className="nav-back-button"
-            onClick={() => navigate(-1)}
-            aria-label="뒤로가기"
-          >
-            <Asset.Icon
-              frameShape={Asset.frameShape.CleanW24}
-              backgroundColor="transparent"
-              name="icon-arrow-back-ios-mono"
-              color={adaptive.grey900}
-              aria-hidden={true}
-              ratio="1/1"
-            />
-          </button>
-          {/* Title Area */}
-          <div className="nav-title-area">
-            <div className="nav-title-content">
-              <Asset.Image
-                frameShape={Asset.frameShape.CleanW16}
-                backgroundColor="transparent"
-                src="https://static.toss.im/appsintoss/9737/f6aa6697-d258-40c2-a59f-91f8e8bab8be.png"
-                aria-hidden={true}
-                style={{ aspectRatio: '1/1' }}
-              />
-              <Text color={adaptive.grey900} typography="t6" fontWeight="semibold">
-                좋아하면 울리는
-              </Text>
-            </div>
-          </div>
-        </div>
-        {/* Right Container */}
-        <div className="nav-right-container">
-          {/* Dynamic Icon Area */}
-          <div className="nav-dynamic-icon-area">
-            <button className="nav-icon-button" aria-label="하트">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-heart-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-          </div>
-          {/* Fixed Icon Area */}
-          <div className="nav-fixed-icon-area">
-            <button className="nav-icon-button" aria-label="더보기">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-dots-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-            <div className="nav-divider"></div>
-            <button className="nav-icon-button" aria-label="닫기">
-              <Asset.Icon
-                frameShape={Asset.frameShape.CleanW20}
-                backgroundColor="transparent"
-                name="icon-x-mono"
-                color={adaptive.greyOpacity600}
-                aria-hidden={true}
-                ratio="1/1"
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-
       <Spacing size={14} />
 
       <div className="add-alarm-top-section">
@@ -381,48 +302,45 @@ export function AddAlarmPage() {
         </div>
       </div>
 
-      {/* 알림 허용 BottomSheet */}
-      {showNotificationSheet && (
-        <>
-          <div className="notification-sheet-overlay" onClick={handleNotificationClose} />
-          <div className="notification-sheet-container">
-            <div className="notification-sheet-content">
-              <h3 className="notification-sheet-title">알림 받기</h3>
-              <p className="notification-sheet-description">
-                알람이 추가됐어요.<br />상대 마음도 같다면 바로 알려드릴게요.
-              </p>
-              <div className="notification-sheet-image">
-                <img 
-                  src="https://static.toss.im/3d-emojis/u1F514-apng.png" 
-                  alt="알림" 
-                  width={100}
-                  height={100}
-                />
-              </div>
-            </div>
-            <BottomCTA.Double
-              leftButton={
-                <CTAButton 
-                  color="dark" 
-                  variant="weak" 
-                  onClick={handleNotificationClose}
-                  style={{
-                    '--button-background-color': '#f2f4f6',
-                    '--button-color': '#6b7684',
-                  }}
-                >
-                  나중에 하기
-                </CTAButton>
-              }
-              rightButton={
-                <CTAButton onClick={handleNotificationAgree}>
-                  동의하기
-                </CTAButton>
-              }
+      {/* 알림 허용 BottomSheet - limit sheet 형식 */}
+      <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>
+        <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="bottom-sheet-header">
+            <h3 className="bottom-sheet-title">알림 받기</h3>
+            <p className="bottom-sheet-description">알람이 추가됐어요.<br />상대 마음도 같다면 바로 알려드릴게요.</p>
+          </div>
+          <div className="bottom-sheet-content">
+            <img 
+              src="https://static.toss.im/3d-emojis/u1F514-apng.png" 
+              alt="알림" 
+              className="bottom-sheet-image"
             />
           </div>
-        </>
-      )}
+          <div className="bottom-sheet-cta bottom-sheet-cta-double">
+            <Button
+              size="xlarge"
+              display="block"
+              color="dark"
+              variant="weak"
+              onClick={handleNotificationClose}
+              style={{
+                '--button-background-color': '#f2f4f6',
+                '--button-color': '#6b7684',
+              }}
+            >
+              나중에 하기
+            </Button>
+            <Spacing size={8} />
+            <Button
+              size="xlarge"
+              display="block"
+              onClick={handleNotificationAgree}
+            >
+              동의하기
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
