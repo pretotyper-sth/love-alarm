@@ -14,6 +14,7 @@ export async function checkMatching(prisma, currentUser, fromInstagramId, target
     where: {
       fromInstagramId: targetInstagramId,  // 상대방의 본인 ID
       targetInstagramId: fromInstagramId,   // 상대방이 나를 등록
+      deletedAt: null,  // 👈 Soft Delete: 활성 알람만
     },
     include: { user: true },
   });

@@ -15,8 +15,12 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: 'userId가 필요합니다.' });
     }
 
+    // Soft Delete: deletedAt이 null인 것만 조회
     const alarms = await req.prisma.alarm.findMany({
-      where: { userId },
+      where: { 
+        userId,
+        deletedAt: null,  // 👈 삭제되지 않은 알람만
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -55,21 +59,38 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: '자기 자신에게는 알람을 등록할 수 없습니다.' });
     }
 
-    // 이미 같은 대상에게 알람이 있는지 확인
+    // Soft Delete: 기존 알람 확인 (삭제된 것 포함)
     const existingAlarm = await req.prisma.alarm.findUnique({
       where: {
         userId_targetInstagramId: { userId, targetInstagramId },
       },
     });
 
-    if (existingAlarm) {
-      return res.status(409).json({ error: '이미 등록된 알람입니다.' });
-    }
+    let alarm;
 
-    // 알람 생성 (fromInstagramId 포함)
-    const alarm = await req.prisma.alarm.create({
-      data: { userId, fromInstagramId, targetInstagramId },
-    });
+    if (existingAlarm) {
+      if (existingAlarm.deletedAt) {
+        // 👉 Soft-deleted 상태 → 복구!
+        alarm = await req.prisma.alarm.update({
+          where: { id: existingAlarm.id },
+          data: { 
+            deletedAt: null, 
+            fromInstagramId,
+            status: 'waiting',  // 상태 초기화
+            updatedAt: new Date(),
+          },
+        });
+        console.log(`♻️ 알람 복구: ${alarm.id}`);
+      } else {
+        // 👉 이미 활성 알람 있음 → 에러
+        return res.status(409).json({ error: '이미 등록된 알람입니다.' });
+      }
+    } else {
+      // 👉 신규 생성
+      alarm = await req.prisma.alarm.create({
+        data: { userId, fromInstagramId, targetInstagramId },
+      });
+    }
 
     // 매칭 확인 (fromInstagramId 기반)
     const matchResult = await checkMatching(req.prisma, user, fromInstagramId, targetInstagramId);
@@ -106,9 +127,12 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. 삭제할 알람 조회
-    const alarmToDelete = await req.prisma.alarm.findUnique({
-      where: { id },
+    // 1. 삭제할 알람 조회 (이미 삭제된 것 제외)
+    const alarmToDelete = await req.prisma.alarm.findFirst({
+      where: { 
+        id,
+        deletedAt: null,  // 👈 활성 알람만
+      },
       include: { user: true },
     });
 
@@ -118,11 +142,12 @@ router.delete('/:id', async (req, res) => {
 
     // 2. 매칭 상태였다면 상대방 알람도 초기화
     if (alarmToDelete.status === 'matched' && alarmToDelete.fromInstagramId) {
-      // 상대방의 알람 찾기 (fromInstagramId 기반)
+      // 상대방의 알람 찾기 (fromInstagramId 기반, 활성 알람만)
       const reverseAlarm = await req.prisma.alarm.findFirst({
         where: {
           fromInstagramId: alarmToDelete.targetInstagramId,
           targetInstagramId: alarmToDelete.fromInstagramId,
+          deletedAt: null,  // 👈 활성 알람만
         },
         include: { user: true },
       });
@@ -156,11 +181,13 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
-    // 3. 알람 삭제
-    await req.prisma.alarm.delete({
+    // 3. Soft Delete: deletedAt 설정 (실제 삭제 X)
+    await req.prisma.alarm.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
+    console.log(`🗑️ 알람 Soft Delete: ${id}`);
     res.json({ success: true });
   } catch (error) {
     console.error('Delete alarm error:', error);

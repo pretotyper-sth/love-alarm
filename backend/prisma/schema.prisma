@@ -26,13 +26,14 @@ model User {
 
 // 알람 (좋아요) 테이블
 model Alarm {
-  id                 String   @id @default(uuid())
+  id                 String    @id @default(uuid())
   userId             String                          // 알람을 등록한 사용자
   fromInstagramId    String                          // 본인 인스타그램 ID (알람별로 다를 수 있음)
   targetInstagramId  String                          // 대상의 인스타그램 ID
-  status             String   @default("waiting")    // waiting | matched
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  status             String    @default("waiting")   // waiting | matched
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?                       // Soft Delete용 (null = 활성, 값 있으면 = 삭제됨)
 
   // Relations
   user               User     @relation("UserAlarms", fields: [userId], references: [id], onDelete: Cascade)
