@@ -1,9 +1,9 @@
 // API 클라이언트
 import { io } from 'socket.io-client';
 
-// 환경 변수에서 API URL을 가져오거나, 없으면 로컬 개발용 URL 사용
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api';
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// API URL 설정 (Render 서버)
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com') + '/api';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com';
 
 // 현재 사용자 정보 (로그인 후 저장)
 let currentUser = null;

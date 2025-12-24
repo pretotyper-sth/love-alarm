@@ -38,7 +38,7 @@ export async function checkMatching(prisma, currentUser, fromInstagramId, target
   });
 
   if (existingMatch) {
-    return { matched: true, match: existingMatch, reason: 'already_matched', targetUserId: targetUser.id };
+    return { matched: true, match: existingMatch, reason: 'already_matched', targetUserId: targetUser.id, targetUser };
   }
 
   // 새 매칭 생성
@@ -60,7 +60,7 @@ export async function checkMatching(prisma, currentUser, fromInstagramId, target
     data: { status: 'matched' },
   });
 
-  // targetUserId 포함해서 반환 (WebSocket 알림용)
-  return { matched: true, match, reason: 'new_match', targetUserId: targetUser.id };
+  // targetUser 포함해서 반환 (WebSocket + 푸시 알림용)
+  return { matched: true, match, reason: 'new_match', targetUserId: targetUser.id, targetUser };
 }
 

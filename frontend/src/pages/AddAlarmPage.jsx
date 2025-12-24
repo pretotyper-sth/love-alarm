@@ -303,7 +303,7 @@ export function AddAlarmPage() {
           disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
           loading={isSubmitting}
         >
-          저장하기
+          추가하기
         </Button>
       </div>
 

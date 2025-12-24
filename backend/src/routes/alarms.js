@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { checkMatching } from '../services/matching.js';
+import { notifyConnectionSuccess } from '../services/pushNotification.js';
 
 const router = Router();
 
@@ -89,6 +90,7 @@ router.post('/', async (req, res) => {
     const matchResult = await checkMatching(req.prisma, user, fromInstagramId, targetInstagramId);
 
     if (matchResult.matched && matchResult.targetUserId) {
+      // WebSocket 알림 (실시간)
       const targetSocketId = req.userSockets.get(matchResult.targetUserId);
       if (targetSocketId) {
         req.io.to(targetSocketId).emit('matched', {
@@ -96,6 +98,18 @@ router.post('/', async (req, res) => {
           matchedWith: user.instagramId,
         });
         console.log(`🔔 매칭 알림 전송: ${matchResult.targetUserId}`);
+      }
+
+      // 푸시 알림 발송 (새 매칭인 경우에만)
+      if (matchResult.reason === 'new_match' && matchResult.targetUser) {
+        // 비동기로 푸시 발송 (응답 지연 방지)
+        notifyConnectionSuccess(user, matchResult.targetUser)
+          .then(result => {
+            console.log('💌 푸시 알림 발송 결과:', result);
+          })
+          .catch(error => {
+            console.error('❌ 푸시 알림 발송 실패:', error);
+          });
       }
     }
 
