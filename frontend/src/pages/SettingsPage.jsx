@@ -14,9 +14,20 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import './SettingsPage.css';
 
+// 앱 다시 시작용 (React Native 환경)
+const restartApp = () => {
+  // localStorage 클리어
+  localStorage.removeItem('love_alarm_user');
+  localStorage.removeItem('love_alarm_device_id');
+  // 페이지 새로고침 시도
+  if (typeof window !== 'undefined') {
+    window.location.href = '/';
+  }
+};
+
 export function SettingsPage() {
   const navigate = useNavigate();
-  const { user, setUser } = useAuth();
+  const { user, setUser, relogin } = useAuth();
   
   const [pushEnabled, setPushEnabled] = useState(false);
   const [tossAppEnabled, setTossAppEnabled] = useState(false);
@@ -133,6 +144,43 @@ export function SettingsPage() {
           />
         </List>
       )}
+
+      {/* 개발용: userKey 표시 + 다시 로그인 */}
+      <Spacing size={40} />
+      <div style={{ padding: '0 16px' }}>
+        {user?.tossUserId && (
+          <Text color="#8b95a1" typography="t7">
+            [개발용] userKey: {user.tossUserId}
+          </Text>
+        )}
+        <Spacing size={16} />
+        <button
+          onClick={async () => {
+            try {
+              // localStorage 클리어
+              localStorage.removeItem('love_alarm_user');
+              localStorage.removeItem('love_alarm_device_id');
+              // 토스 로그인 다시 수행
+              const newUser = await relogin();
+              alert('로그인 성공! userKey: ' + newUser.tossUserId);
+            } catch (error) {
+              alert('로그인 실패: ' + error.message);
+            }
+          }}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#3182f6',
+            border: 'none',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          🔄 토스 로그인 다시하기
+        </button>
+      </div>
 
     </div>
   );

@@ -9,6 +9,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const {
   TOSS_CLIENT_CERT_PATH,
   TOSS_CLIENT_KEY_PATH,
+  TOSS_CLIENT_CERT_BASE64,  // Base64 인코딩된 인증서 (Render용)
+  TOSS_CLIENT_KEY_BASE64,   // Base64 인코딩된 키 (Render용)
 } = process.env;
 
 // 토스 API 설정
@@ -27,14 +29,26 @@ function getHttpsAgent() {
   if (httpsAgent) return httpsAgent;
 
   try {
-    const certPath = path.resolve(__dirname, '../../', TOSS_CLIENT_CERT_PATH);
-    const keyPath = path.resolve(__dirname, '../../', TOSS_CLIENT_KEY_PATH);
+    let cert, key;
 
-    const cert = fs.readFileSync(certPath);
-    const key = fs.readFileSync(keyPath);
+    // 1. Base64 환경 변수 우선 사용 (Render 배포용)
+    if (TOSS_CLIENT_CERT_BASE64 && TOSS_CLIENT_KEY_BASE64) {
+      cert = Buffer.from(TOSS_CLIENT_CERT_BASE64, 'base64');
+      key = Buffer.from(TOSS_CLIENT_KEY_BASE64, 'base64');
+      console.log('✅ 푸시 알림용 mTLS 인증서 로드 (환경 변수에서)');
+    } 
+    // 2. 파일 경로 사용 (로컬 개발용)
+    else if (TOSS_CLIENT_CERT_PATH && TOSS_CLIENT_KEY_PATH) {
+      const certPath = path.resolve(__dirname, '../../', TOSS_CLIENT_CERT_PATH);
+      const keyPath = path.resolve(__dirname, '../../', TOSS_CLIENT_KEY_PATH);
+      cert = fs.readFileSync(certPath);
+      key = fs.readFileSync(keyPath);
+      console.log('✅ 푸시 알림용 mTLS 인증서 로드 (파일에서)');
+    } else {
+      throw new Error('인증서 설정이 없습니다.');
+    }
 
     httpsAgent = new https.Agent({ cert, key });
-    console.log('✅ 푸시 알림용 mTLS 인증서 로드 완료');
     return httpsAgent;
   } catch (error) {
     console.error('❌ mTLS 인증서 로드 실패:', error.message);
