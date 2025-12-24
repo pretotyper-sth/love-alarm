@@ -1,0 +1,185 @@
+import https from 'https';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// 환경 변수
+const {
+  TOSS_CLIENT_CERT_PATH,
+  TOSS_CLIENT_KEY_PATH,
+  TOSS_DECRYPTION_KEY,
+  TOSS_AAD,
+} = process.env;
+
+// mTLS 인증서 로드
+let httpsAgent = null;
+
+function getHttpsAgent() {
+  if (httpsAgent) return httpsAgent;
+
+  try {
+    const certPath = path.resolve(__dirname, '../../', TOSS_CLIENT_CERT_PATH);
+    const keyPath = path.resolve(__dirname, '../../', TOSS_CLIENT_KEY_PATH);
+
+    const cert = fs.readFileSync(certPath);
+    const key = fs.readFileSync(keyPath);
+
+    httpsAgent = new https.Agent({ cert, key });
+    console.log('✅ mTLS 인증서 로드 완료');
+    return httpsAgent;
+  } catch (error) {
+    console.error('❌ mTLS 인증서 로드 실패:', error.message);
+    return null;
+  }
+}
+
+/**
+ * 토스 API에서 AccessToken 발급
+ * @param {string} authorizationCode - appLogin()에서 받은 인가 코드
+ * @param {string} referrer - appLogin()에서 받은 referrer
+ */
+export async function getAccessToken(authorizationCode, referrer) {
+  const agent = getHttpsAgent();
+  if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
+
+  const response = await fetch('https://oauth2.toss.im/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: authorizationCode,
+      referrer: referrer,
+    }),
+    agent,
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    console.error('토스 토큰 발급 실패:', data);
+    throw new Error(data.error_description || '토큰 발급 실패');
+  }
+
+  return data;
+}
+
+/**
+ * 토스 API에서 사용자 정보 조회
+ * @param {string} accessToken - getAccessToken()에서 받은 토큰
+ */
+export async function getUserInfo(accessToken) {
+  const agent = getHttpsAgent();
+  if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
+
+  const response = await fetch('https://oauth2.toss.im/me', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    agent,
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    console.error('토스 사용자 정보 조회 실패:', data);
+    throw new Error(data.error_description || '사용자 정보 조회 실패');
+  }
+
+  // 암호화된 필드 복호화
+  const decryptedData = decryptUserInfo(data.success || data);
+  
+  return decryptedData;
+}
+
+/**
+ * 암호화된 사용자 정보 복호화
+ * AES-256-GCM 알고리즘 사용
+ */
+function decryptUserInfo(userInfo) {
+  const fields = ['name', 'gender', 'birthday', 'ci', 'phone', 'email', 'nationality'];
+  const decrypted = { ...userInfo };
+
+  for (const field of fields) {
+    const value = userInfo[field];
+    if (typeof value === 'string' && value.length > 0) {
+      try {
+        decrypted[field] = decryptField(value);
+      } catch (error) {
+        console.error(`${field} 복호화 실패:`, error.message);
+        decrypted[field] = null;
+      }
+    }
+  }
+
+  return decrypted;
+}
+
+/**
+ * 개별 필드 복호화 (AES-256-GCM)
+ * 형식: base64(iv + ciphertext + authTag)
+ */
+function decryptField(encryptedValue) {
+  const key = Buffer.from(TOSS_DECRYPTION_KEY, 'base64');
+  const aad = Buffer.from(TOSS_AAD, 'utf-8');
+  
+  // Base64 디코딩
+  const encrypted = Buffer.from(encryptedValue, 'base64');
+  
+  // IV (12바이트), AuthTag (16바이트), Ciphertext (나머지)
+  const iv = encrypted.subarray(0, 12);
+  const authTag = encrypted.subarray(encrypted.length - 16);
+  const ciphertext = encrypted.subarray(12, encrypted.length - 16);
+  
+  // 복호화
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(authTag);
+  decipher.setAAD(aad);
+  
+  let decrypted = decipher.update(ciphertext, null, 'utf-8');
+  decrypted += decipher.final('utf-8');
+  
+  return decrypted;
+}
+
+/**
+ * AccessToken 갱신
+ * @param {string} refreshToken - 기존 refreshToken
+ */
+export async function refreshAccessToken(refreshToken) {
+  const agent = getHttpsAgent();
+  if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
+
+  const response = await fetch('https://oauth2.toss.im/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    }),
+    agent,
+  });
+
+  const data = await response.json();
+  
+  if (!response.ok) {
+    console.error('토스 토큰 갱신 실패:', data);
+    throw new Error(data.error_description || '토큰 갱신 실패');
+  }
+
+  return data;
+}
+
+export default {
+  getAccessToken,
+  getUserInfo,
+  refreshAccessToken,
+};
+

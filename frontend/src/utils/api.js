@@ -15,8 +15,33 @@ export const api = {
   // ==================== 인증 ====================
   
   /**
+   * 토스 로그인 (전체 플로우)
+   * appLogin()에서 받은 authorizationCode와 referrer를 서버로 전송
+   */
+  tossLogin: async (authorizationCode, referrer) => {
+    const response = await fetch(`${API_BASE_URL}/auth/toss-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ authorizationCode, referrer }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '토스 로그인 실패');
+    }
+    
+    const data = await response.json();
+    currentUser = data.user;
+    
+    // localStorage에 사용자 정보 저장 (앱 재시작 시 복원용)
+    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    
+    return data;
+  },
+
+  /**
    * 토스 계정으로 로그인 (Mock: tossUserId를 직접 전달)
-   * 실제 연동 시 토스 SDK에서 받아온 ID 사용
+   * 개발용 - 실제 운영에서는 tossLogin 사용
    */
   login: async (tossUserId) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import tossAuth from '../services/tossAuth.js';
 
 const router = Router();
 
@@ -9,8 +10,90 @@ const DISCONNECT_AUTH = {
 };
 
 /**
+ * POST /api/auth/toss-login
+ * 토스 로그인 (전체 플로우 처리)
+ * 
+ * Body: { 
+ *   authorizationCode: string,  // appLogin()에서 받은 인가 코드
+ *   referrer: string            // appLogin()에서 받은 referrer
+ * }
+ * Response: { user: User, isNewUser: boolean }
+ */
+router.post('/toss-login', async (req, res) => {
+  try {
+    const { authorizationCode, referrer } = req.body;
+
+    if (!authorizationCode || !referrer) {
+      return res.status(400).json({ error: 'authorizationCode와 referrer가 필요합니다.' });
+    }
+
+    // 1. 토스 API에서 AccessToken 발급
+    console.log('🔐 토스 토큰 발급 요청...');
+    const tokenData = await tossAuth.getAccessToken(authorizationCode, referrer);
+    const { access_token: accessToken } = tokenData;
+
+    if (!accessToken) {
+      throw new Error('AccessToken을 받지 못했습니다.');
+    }
+    console.log('✅ 토스 토큰 발급 완료');
+
+    // 2. 토스 API에서 사용자 정보 조회 (복호화 포함)
+    console.log('👤 토스 사용자 정보 조회...');
+    const userInfo = await tossAuth.getUserInfo(accessToken);
+    console.log('✅ 토스 사용자 정보 조회 완료:', {
+      userKey: userInfo.userKey,
+      name: userInfo.name ? '***' : null,
+      gender: userInfo.gender,
+      birthday: userInfo.birthday ? '****-**-**' : null,
+    });
+
+    // 3. DB에 사용자 생성/업데이트
+    const tossUserId = userInfo.userKey;
+    
+    let user = await req.prisma.user.findUnique({
+      where: { tossUserId },
+    });
+
+    let isNewUser = false;
+
+    if (!user) {
+      // 새 사용자 생성
+      user = await req.prisma.user.create({
+        data: { 
+          tossUserId,
+          name: userInfo.name || null,
+          gender: userInfo.gender || null,
+          birthday: userInfo.birthday ? new Date(userInfo.birthday) : null,
+        },
+      });
+      isNewUser = true;
+      console.log(`👤 새 사용자 가입: ${tossUserId}`);
+    } else {
+      // 기존 사용자 - 프로필 정보 업데이트 (새 정보가 있으면)
+      const updateData = {};
+      if (userInfo.name && !user.name) updateData.name = userInfo.name;
+      if (userInfo.gender && !user.gender) updateData.gender = userInfo.gender;
+      if (userInfo.birthday && !user.birthday) updateData.birthday = new Date(userInfo.birthday);
+
+      if (Object.keys(updateData).length > 0) {
+        user = await req.prisma.user.update({
+          where: { tossUserId },
+          data: updateData,
+        });
+        console.log(`👤 사용자 프로필 업데이트: ${tossUserId}`);
+      }
+    }
+
+    res.json({ user, isNewUser });
+  } catch (error) {
+    console.error('Toss login error:', error);
+    res.status(500).json({ error: error.message || '토스 로그인 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * POST /api/auth/login
- * 토스 계정으로 로그인/회원가입
+ * 토스 계정으로 로그인/회원가입 (간단 버전 - Mock용)
  * 
  * Body: { 
  *   tossUserId: string,      // 필수: 토스 계정 고유 ID
