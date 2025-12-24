@@ -96,11 +96,15 @@ export async function getUserInfo(accessToken) {
   const agent = getHttpsAgent();
   if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
 
+  // Bearer 접두사 추가 (tokenType이 Bearer이므로)
+  const authHeader = accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`;
+  console.log('🔍 사용자 정보 조회 요청 (Authorization 길이):', authHeader.length);
+
   const response = await fetch(`${TOSS_API_BASE}/api-partner/v1/apps-in-toss/user/oauth2/login-me`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': accessToken,  // Bearer 없이 직접 전달
+      'Authorization': authHeader,
     },
     agent,
   });
