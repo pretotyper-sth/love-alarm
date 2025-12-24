@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { sendConnectionSuccessNotification } from '../services/pushNotification.js';
 
 const router = Router();
 
@@ -86,6 +87,50 @@ router.patch('/:id/settings', async (req, res) => {
   } catch (error) {
     console.error('Update settings error:', error);
     res.status(500).json({ error: '설정 변경 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * POST /api/users/:id/test-push
+ * [개발용] 푸시 알림 테스트
+ * 
+ * 1계정으로 푸시 알림 테스트할 때 사용
+ */
+router.post('/:id/test-push', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await req.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    console.log(`🧪 푸시 테스트 시작: ${user.tossUserId}`);
+    console.log(`   - pushEnabled: ${user.pushEnabled}`);
+    console.log(`   - tossAppEnabled: ${user.tossAppEnabled}`);
+
+    // 강제로 알림 발송 테스트 (설정 무시)
+    const testUser = { ...user, pushEnabled: true, tossAppEnabled: true };
+    const result = await sendConnectionSuccessNotification(testUser);
+
+    console.log(`🧪 푸시 테스트 결과:`, result);
+
+    res.json({ 
+      success: result.success, 
+      result,
+      user: {
+        id: user.id,
+        tossUserId: user.tossUserId,
+        pushEnabled: user.pushEnabled,
+        tossAppEnabled: user.tossAppEnabled,
+      }
+    });
+  } catch (error) {
+    console.error('Test push error:', error);
+    res.status(500).json({ error: error.message || '푸시 테스트 중 오류가 발생했습니다.' });
   }
 });
 
