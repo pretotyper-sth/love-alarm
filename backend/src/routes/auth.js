@@ -3,10 +3,10 @@ import tossAuth from '../services/tossAuth.js';
 
 const router = Router();
 
-// Basic Auth 검증용 (토스 연결 끊기 콜백)
+// Basic Auth 검증용 (토스 연결 끊기 콜백) - 환경 변수에서 로드
 const DISCONNECT_AUTH = {
-  username: 'love-alarm',
-  password: 'disconnect-secret-2024',
+  username: process.env.DISCONNECT_AUTH_USERNAME || 'love-alarm',
+  password: process.env.DISCONNECT_AUTH_PASSWORD || 'disconnect-secret-2024',
 };
 
 /**
