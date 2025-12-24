@@ -20,7 +20,7 @@ const {
 // mTLS 인증서 로드
 let httpsAgent = null;
 
-function getHttpsAgent() {
+export function getHttpsAgent() {
   if (httpsAgent) return httpsAgent;
 
   try {
@@ -51,8 +51,12 @@ function getHttpsAgent() {
   }
 }
 
+// 토스 API Base URL
+const TOSS_API_BASE = 'https://apps-in-toss-api.toss.im';
+
 /**
  * 토스 API에서 AccessToken 발급
+ * 참고: https://developers-apps-in-toss.toss.im/login/develop.html
  * @param {string} authorizationCode - appLogin()에서 받은 인가 코드
  * @param {string} referrer - appLogin()에서 받은 referrer
  */
@@ -60,54 +64,57 @@ export async function getAccessToken(authorizationCode, referrer) {
   const agent = getHttpsAgent();
   if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
 
-  const response = await fetch('https://oauth2.toss.im/token', {
+  const response = await fetch(`${TOSS_API_BASE}/api-partner/v1/apps-in-toss/user/oauth2/generate-token`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: authorizationCode,
-      referrer: referrer,
+    body: JSON.stringify({
+      authorizationCode,
+      referrer,
     }),
     agent,
   });
 
   const data = await response.json();
   
-  if (!response.ok) {
+  if (!response.ok || data.resultType === 'FAIL') {
     console.error('토스 토큰 발급 실패:', data);
-    throw new Error(data.error_description || '토큰 발급 실패');
+    throw new Error(data.error?.reason || data.error || '토큰 발급 실패');
   }
 
-  return data;
+  // success 객체에서 토큰 정보 추출
+  return data.success || data;
 }
 
 /**
  * 토스 API에서 사용자 정보 조회
+ * 참고: https://developers-apps-in-toss.toss.im/login/develop.html
  * @param {string} accessToken - getAccessToken()에서 받은 토큰
  */
 export async function getUserInfo(accessToken) {
   const agent = getHttpsAgent();
   if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
 
-  const response = await fetch('https://oauth2.toss.im/me', {
+  const response = await fetch(`${TOSS_API_BASE}/api-partner/v1/apps-in-toss/user/oauth2/login-me`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'Authorization': accessToken,  // Bearer 없이 직접 전달
     },
     agent,
   });
 
   const data = await response.json();
   
-  if (!response.ok) {
+  if (!response.ok || data.resultType === 'FAIL') {
     console.error('토스 사용자 정보 조회 실패:', data);
-    throw new Error(data.error_description || '사용자 정보 조회 실패');
+    throw new Error(data.error?.reason || '사용자 정보 조회 실패');
   }
 
   // 암호화된 필드 복호화
-  const decryptedData = decryptUserInfo(data.success || data);
+  const userInfo = data.success || data;
+  const decryptedData = decryptUserInfo(userInfo);
   
   return decryptedData;
 }
@@ -164,32 +171,32 @@ function decryptField(encryptedValue) {
 
 /**
  * AccessToken 갱신
+ * 참고: https://developers-apps-in-toss.toss.im/login/develop.html
  * @param {string} refreshToken - 기존 refreshToken
  */
 export async function refreshAccessToken(refreshToken) {
   const agent = getHttpsAgent();
   if (!agent) throw new Error('mTLS 인증서를 로드할 수 없습니다.');
 
-  const response = await fetch('https://oauth2.toss.im/token', {
+  const response = await fetch(`${TOSS_API_BASE}/api-partner/v1/apps-in-toss/user/oauth2/refresh-token`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
+    body: JSON.stringify({
+      refreshToken,
     }),
     agent,
   });
 
   const data = await response.json();
   
-  if (!response.ok) {
+  if (!response.ok || data.resultType === 'FAIL') {
     console.error('토스 토큰 갱신 실패:', data);
-    throw new Error(data.error_description || '토큰 갱신 실패');
+    throw new Error(data.error?.reason || '토큰 갱신 실패');
   }
 
-  return data;
+  return data.success || data;
 }
 
 export default {
