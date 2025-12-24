@@ -2,6 +2,12 @@ import { Router } from 'express';
 
 const router = Router();
 
+// Basic Auth 검증용 (토스 연결 끊기 콜백)
+const DISCONNECT_AUTH = {
+  username: 'love-alarm',
+  password: 'disconnect-secret-2024',
+};
+
 /**
  * POST /api/auth/login
  * 토스 계정으로 로그인/회원가입
@@ -68,9 +74,29 @@ router.post('/login', async (req, res) => {
  * POST /api/auth/disconnect
  * 토스 앱에서 서비스 연결 끊기 콜백
  * (토스 콘솔에서 콜백 URL로 등록)
+ * 
+ * Header: Authorization: Basic {base64(username:password)}
+ * Body: { tossUserId: string }
  */
 router.post('/disconnect', async (req, res) => {
   try {
+    // Basic Auth 검증
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      console.log('🔒 연결 끊기 요청 - 인증 헤더 없음');
+      return res.status(401).json({ error: '인증이 필요합니다.' });
+    }
+
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+    const [username, password] = credentials.split(':');
+
+    if (username !== DISCONNECT_AUTH.username || password !== DISCONNECT_AUTH.password) {
+      console.log('🔒 연결 끊기 요청 - 인증 실패');
+      return res.status(401).json({ error: '인증에 실패했습니다.' });
+    }
+
+    // 인증 성공 - 사용자 삭제 진행
     const { tossUserId } = req.body;
 
     if (!tossUserId) {
