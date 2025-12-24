@@ -30,9 +30,13 @@ router.post('/toss-login', async (req, res) => {
     // 1. 토스 API에서 AccessToken 발급
     console.log('🔐 토스 토큰 발급 요청...');
     const tokenData = await tossAuth.getAccessToken(authorizationCode, referrer);
-    const { access_token: accessToken } = tokenData;
+    console.log('📦 토스 토큰 응답:', JSON.stringify(tokenData, null, 2));
+    
+    // 토스 API는 camelCase로 응답 (accessToken, refreshToken)
+    const accessToken = tokenData.accessToken;
 
     if (!accessToken) {
+      console.error('❌ accessToken 없음! 응답:', tokenData);
       throw new Error('AccessToken을 받지 못했습니다.');
     }
     console.log('✅ 토스 토큰 발급 완료');
