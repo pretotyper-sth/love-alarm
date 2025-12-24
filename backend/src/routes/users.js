@@ -56,6 +56,40 @@ router.put('/:id/instagram', async (req, res) => {
 });
 
 /**
+ * PATCH /api/users/:id/settings
+ * 알림 설정 변경
+ * 
+ * Body: { pushEnabled?: boolean, tossAppEnabled?: boolean }
+ */
+router.patch('/:id/settings', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { pushEnabled, tossAppEnabled } = req.body;
+
+    // 최소 하나의 설정값이 있어야 함
+    if (pushEnabled === undefined && tossAppEnabled === undefined) {
+      return res.status(400).json({ error: '변경할 설정이 없습니다.' });
+    }
+
+    const updateData = {};
+    if (pushEnabled !== undefined) updateData.pushEnabled = pushEnabled;
+    if (tossAppEnabled !== undefined) updateData.tossAppEnabled = tossAppEnabled;
+
+    const user = await req.prisma.user.update({
+      where: { id },
+      data: updateData,
+    });
+
+    console.log(`🔔 알림 설정 변경: ${id}, push=${user.pushEnabled}, tossApp=${user.tossAppEnabled}`);
+
+    res.json({ user });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({ error: '설정 변경 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * POST /api/users/:id/purchase-slot
  * 알람 슬롯 구매 (결제 성공 후 호출)
  * 

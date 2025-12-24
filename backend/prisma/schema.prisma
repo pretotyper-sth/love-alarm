@@ -11,12 +11,14 @@ datasource db {
 
 // 사용자 테이블
 model User {
-  id           String   @id @default(uuid())
-  tossUserId   String   @unique // 토스 계정 고유 ID
-  instagramId  String?           // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
-  maxSlots     Int      @default(2) // 최대 알람 슬롯 수 (기본 2개, 결제로 증가)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(uuid())
+  tossUserId      String   @unique // 토스 계정 고유 ID
+  instagramId     String?           // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
+  maxSlots        Int      @default(2) // 최대 알람 슬롯 수 (기본 2개, 결제로 증가)
+  pushEnabled     Boolean  @default(false) // 푸시 알림 허용 여부
+  tossAppEnabled  Boolean  @default(false) // 토스 앱 알림 허용 여부
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
   alarms       Alarm[]  @relation("UserAlarms")      // 내가 등록한 알람들

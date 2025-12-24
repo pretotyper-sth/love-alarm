@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Text,
   Top,
@@ -6,43 +6,71 @@ import {
   ListRow,
   Switch,
   Spacing,
+  Skeleton,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { api } from '../utils/api';
 import './SettingsPage.css';
-
-// 알림 설정 키
-const NOTIFICATION_SETTINGS_KEY = 'love_alarm_notification_settings';
-
-// 알림 설정 가져오기
-export function getNotificationSettings() {
-  try {
-    const saved = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error('Failed to get notification settings:', e);
-  }
-  return { pushNotification: false, tossAppNotification: false };
-}
-
-// 알림 설정 저장하기
-export function setNotificationSettings(settings) {
-  try {
-    localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
-  } catch (e) {
-    console.error('Failed to save notification settings:', e);
-  }
-}
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const { user, setUser } = useAuth();
   
-  // localStorage에서 초기값 로드 (기본값: false)
-  const savedSettings = getNotificationSettings();
-  const [pushNotification, setPushNotification] = useState(savedSettings.pushNotification);
-  const [tossAppNotification, setTossAppNotification] = useState(savedSettings.tossAppNotification);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [tossAppEnabled, setTossAppEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 사용자 정보에서 알림 설정 로드
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // 최신 사용자 정보 가져오기
+        const userData = await api.getUser();
+        setPushEnabled(userData.pushEnabled ?? false);
+        setTossAppEnabled(userData.tossAppEnabled ?? false);
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        // 에러 시 로컬 user 정보 사용
+        if (user) {
+          setPushEnabled(user.pushEnabled ?? false);
+          setTossAppEnabled(user.tossAppEnabled ?? false);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [user]);
+
+  // 설정 변경 핸들러
+  const handleSettingChange = async (field, value) => {
+    // Optimistic UI
+    if (field === 'pushEnabled') {
+      setPushEnabled(value);
+    } else {
+      setTossAppEnabled(value);
+    }
+
+    setIsSaving(true);
+    try {
+      const updatedUser = await api.updateSettings({ [field]: value });
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      // 롤백
+      if (field === 'pushEnabled') {
+        setPushEnabled(!value);
+      } else {
+        setTossAppEnabled(!value);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="settings-page-container">
@@ -64,51 +92,48 @@ export function SettingsPage() {
 
       <Spacing size={24} />
 
-      <List>
-        {/* 연결 시 푸시 알림 */}
-        <ListRow
-          contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              연결 시 푸시 알림
-            </Text>
-          }
-          right={
-            <Switch
-              checked={pushNotification}
-              onChange={() => {
-                const newValue = !pushNotification;
-                setPushNotification(newValue);
-                setNotificationSettings({ pushNotification: newValue, tossAppNotification });
-              }}
-            />
-          }
-          verticalPadding="large"
-          horizontalPadding="medium"
-        />
+      {isLoading ? (
+        <Skeleton custom={['listWithIcon']} repeatLastItemCount={2} />
+      ) : (
+        <List>
+          {/* 연결 시 푸시 알림 */}
+          <ListRow
+            contents={
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                연결 시 푸시 알림
+              </Text>
+            }
+            right={
+              <Switch
+                checked={pushEnabled}
+                disabled={isSaving}
+                onChange={() => handleSettingChange('pushEnabled', !pushEnabled)}
+              />
+            }
+            verticalPadding="large"
+            horizontalPadding="medium"
+          />
 
-        {/* 연결 시 토스 앱 알림 */}
-        <ListRow
-          contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              연결 시 토스 앱 알림
-            </Text>
-          }
-          right={
-            <Switch
-              checked={tossAppNotification}
-              onChange={() => {
-                const newValue = !tossAppNotification;
-                setTossAppNotification(newValue);
-                setNotificationSettings({ pushNotification, tossAppNotification: newValue });
-              }}
-            />
-          }
-          verticalPadding="large"
-          horizontalPadding="medium"
-        />
-      </List>
+          {/* 연결 시 토스 앱 알림 */}
+          <ListRow
+            contents={
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                연결 시 토스 앱 알림
+              </Text>
+            }
+            right={
+              <Switch
+                checked={tossAppEnabled}
+                disabled={isSaving}
+                onChange={() => handleSettingChange('tossAppEnabled', !tossAppEnabled)}
+              />
+            }
+            verticalPadding="large"
+            horizontalPadding="medium"
+          />
+        </List>
+      )}
 
     </div>
   );
 }
-

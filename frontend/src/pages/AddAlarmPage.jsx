@@ -9,8 +9,8 @@ import {
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
-import { getNotificationSettings, setNotificationSettings } from './SettingsPage';
 import './AddAlarmPage.css';
 
 // 최초 알람 등록 여부 키
@@ -18,6 +18,7 @@ const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
 
 export function AddAlarmPage() {
   const navigate = useNavigate();
+  const { user, setUser } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,10 +66,13 @@ export function AddAlarmPage() {
 
     // 최초 알람 등록인지 확인
     const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
-    const settings = getNotificationSettings();
     
     // 최초 등록이고 알림이 아직 활성화되지 않았으면 팝업 표시
-    if (isFirstAlarm && !settings.pushNotification && !settings.tossAppNotification) {
+    // user 객체에서 알림 설정 확인
+    const pushEnabled = user?.pushEnabled ?? false;
+    const tossAppEnabled = user?.tossAppEnabled ?? false;
+    
+    if (isFirstAlarm && !pushEnabled && !tossAppEnabled) {
       setPendingAlarmData({ myId: myIdLower, targetId: targetIdLower });
       setShowNotificationSheet(true);
       return;
@@ -79,8 +83,17 @@ export function AddAlarmPage() {
 
   // 알림 동의하기 클릭
   const handleNotificationAgree = async () => {
-    // 알림 설정 켜기
-    setNotificationSettings({ pushNotification: true, tossAppNotification: true });
+    try {
+      // 알림 설정 켜기 (API 호출)
+      const updatedUser = await api.updateSettings({ 
+        pushEnabled: true, 
+        tossAppEnabled: true 
+      });
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Failed to update notification settings:', error);
+    }
+    
     // 최초 등록 완료 표시
     localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
     // 팝업 닫기

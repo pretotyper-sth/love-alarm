@@ -184,6 +184,32 @@ export const api = {
   },
 
   /**
+   * 알림 설정 변경
+   */
+  updateSettings: async (settings) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/users/${user.id}/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '설정 변경 실패');
+    }
+
+    const data = await response.json();
+    // 로컬 사용자 정보 업데이트
+    currentUser = data.user;
+    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    
+    return data.user;
+  },
+
+  /**
    * 인스타그램 ID 등록/수정
    */
   updateInstagramId: async (instagramId) => {
