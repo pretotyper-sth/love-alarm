@@ -52,7 +52,8 @@ router.post('/toss-login', async (req, res) => {
     });
 
     // 3. DB에 사용자 생성/업데이트
-    const tossUserId = userInfo.userKey;
+    // userKey가 숫자로 올 수 있으므로 문자열로 변환
+    const tossUserId = String(userInfo.userKey);
     
     let user = await req.prisma.user.findUnique({
       where: { tossUserId },
