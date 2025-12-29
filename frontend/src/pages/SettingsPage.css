@@ -110,6 +110,13 @@
   background-color: #e5e8eb !important; /* grey200 */
 }
 
+/* 구분선 */
+.settings-divider {
+  height: 1px;
+  background-color: var(--token-tds-color-grey-200, #e5e8eb);
+  margin: 0 16px;
+}
+
 /* Toast 스타일 */
 .single-toast {
   position: fixed;

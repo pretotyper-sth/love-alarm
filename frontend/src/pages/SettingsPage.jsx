@@ -7,7 +7,6 @@ import {
   Switch,
   Spacing,
   Skeleton,
-  Divider,
   Asset,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
@@ -189,7 +188,7 @@ export function SettingsPage() {
 
       {/* 구분선 */}
       <Spacing size={24} />
-      <Divider />
+      <div className="settings-divider" />
       <Spacing size={8} />
 
       {/* 공유 및 피드백 섹션 */}
