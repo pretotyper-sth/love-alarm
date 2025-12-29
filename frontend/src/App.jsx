@@ -6,6 +6,7 @@ import { AddAlarmPage } from './pages/AddAlarmPage';
 import { AbuseWarningPage } from './pages/AbuseWarningPage';
 import { MatchSuccessPage } from './pages/MatchSuccessPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { ErrorPage } from './pages/ErrorPage';
 import { ApiTestPage } from './pages/ApiTestPage';
 import { storage } from './utils/storage';
@@ -34,6 +35,7 @@ function App() {
           <Route path="/add-alarm" element={<AddAlarmPage />} />
           <Route path="/match-success" element={<MatchSuccessPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/error" element={<ErrorPage />} />
           <Route path="/api-test" element={<ApiTestPage />} />
         </Routes>

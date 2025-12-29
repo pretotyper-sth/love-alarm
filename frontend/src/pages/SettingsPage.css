@@ -110,3 +110,51 @@
   background-color: #e5e8eb !important; /* grey200 */
 }
 
+/* Toast 스타일 */
+.single-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #191f28;
+  color: #ffffff;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+  max-width: calc(100% - 32px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.single-toast.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.custom-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-toast-success-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #00c853;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.custom-toast-text {
+  flex: 1;
+}
+
