@@ -32,8 +32,15 @@ export function FeedbackPage() {
 
   const showErrorToast = (message) => {
     setErrorToast({ show: true, message });
+    
+    // 3초 후 fade out 시작
     setTimeout(() => {
       setErrorToast((prev) => ({ ...prev, show: false }));
+      
+      // fade out 애니메이션 후 완전히 제거
+      setTimeout(() => {
+        setErrorToast({ show: false, message: '' });
+      }, 300);
     }, 3000);
   };
 
@@ -106,20 +113,6 @@ export function FeedbackPage() {
             className={`category-field-wrapper ${showCategorySheet ? 'is-focused' : ''}`}
             onClick={() => {
               setShowCategorySheet(true);
-              // 라벨 요소 확인
-              setTimeout(() => {
-                const wrapper = document.querySelector('.category-field-wrapper');
-                if (wrapper) {
-                  // 모든 자식 요소 출력
-                  const allElements = wrapper.querySelectorAll('*');
-                  console.log('🔵 총 요소 수:', allElements.length);
-                  allElements.forEach((el, i) => {
-                    if (el.textContent?.includes('카테고리')) {
-                      console.log(`🔵 라벨 발견! 인덱스 ${i}:`, el.tagName, '클래스:', el.className, 'style.color:', getComputedStyle(el).color);
-                    }
-                  });
-                }
-              }, 100);
             }}
           >
             <TextField
@@ -198,12 +191,14 @@ export function FeedbackPage() {
       </div>
 
       {/* 에러 Toast */}
-      <div className={`single-toast ${errorToast.show ? 'show' : ''}`}>
-        <div className="custom-toast-content">
-          <span className="custom-toast-error-icon">!</span>
-          <span className="custom-toast-text">{errorToast.message}</span>
+      {errorToast.message && (
+        <div className={`single-toast ${errorToast.show ? 'show' : ''}`}>
+          <div className="custom-toast-content">
+            <span className="custom-toast-error-icon">!</span>
+            <span className="custom-toast-text">{errorToast.message}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 카테고리 선택 BottomSheet */}
       <div className={`custom-bottom-sheet-overlay ${showCategorySheet ? 'show' : ''}`} onClick={() => setShowCategorySheet(false)}>
@@ -216,7 +211,6 @@ export function FeedbackPage() {
               <div
                 key={option.value}
                 onClick={() => {
-                  console.log('🔵 카테고리 선택:', option.name);
                   setSelectedCategoryValue(option.value);
                   setCategory(option.name);
                   setShowCategorySheet(false);

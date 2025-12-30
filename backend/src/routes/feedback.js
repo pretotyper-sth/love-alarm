@@ -17,12 +17,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: '최소 10자 이상 입력해 주세요.' });
     }
 
-    // 피드백 저장 (userId 없이 저장 - 외래키 제약 문제 방지)
+    // 피드백 저장
     const feedback = await prisma.feedback.create({
       data: {
         category,
         content: content.trim(),
-        // userId는 일단 저장하지 않음 (나중에 필요하면 추가)
+        userId: userId || null, // 비로그인 시 null
       },
     });
 

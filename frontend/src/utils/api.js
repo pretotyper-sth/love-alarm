@@ -325,7 +325,8 @@ export const api = {
    */
   healthCheck: async () => {
     try {
-      const response = await fetch('http://localhost:8080/health');
+      const baseUrl = import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com';
+      const response = await fetch(`${baseUrl}/health`);
       return response.ok;
     } catch {
       return false;
