@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Text,
   Top,
@@ -9,7 +9,7 @@ import {
   Border,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { share } from '@apps-in-toss/web-framework';
@@ -74,12 +74,29 @@ const restartApp = () => {
 
 export function SettingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, setUser, relogin } = useAuth();
   
   // 즉시 캐시된 값으로 초기화 (스켈레톤 없이 바로 표시)
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
   const [tossAppEnabled, setTossAppEnabled] = useState(user?.tossAppEnabled ?? false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // 성공 토스트 상태
+  const [successToast, setSuccessToast] = useState({ show: false, message: '' });
+  const toastShownRef = useRef(false);
+
+  // 피드백 제출 성공 토스트 표시
+  useEffect(() => {
+    if (location.state?.showFeedbackSuccess && !toastShownRef.current) {
+      toastShownRef.current = true;
+      setSuccessToast({ show: true, message: '의견이 제출되었습니다' });
+      setTimeout(() => {
+        setSuccessToast({ show: false, message: '' });
+      }, 3000);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // 백그라운드에서 서버와 조용히 동기화
   useEffect(() => {
@@ -278,6 +295,17 @@ export function SettingsPage() {
           🔄 토스 로그인 다시하기
         </button>
       </div>
+
+      {/* 성공 토스트 */}
+      {successToast.show && (
+        <div className="settings-toast success-toast">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="10" fill="#00C853"/>
+            <path d="M6 10L9 13L14 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>{successToast.message}</span>
+        </div>
+      )}
 
     </div>
   );
