@@ -318,33 +318,6 @@ export const api = {
     return await response.json();
   },
 
-  // ==================== 피드백 ====================
-
-  /**
-   * 피드백 제출
-   */
-  submitFeedback: async ({ category, content }) => {
-    const user = api.getCurrentUser();
-    if (!user) throw new Error('로그인이 필요합니다.');
-
-    const response = await fetch(`${API_BASE_URL}/feedback`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user.id,
-        category,
-        content,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '피드백 전송 실패');
-    }
-
-    return await response.json();
-  },
-
   // ==================== 헬스체크 ====================
 
   /**
