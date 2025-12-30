@@ -331,6 +331,53 @@ export const api = {
       return false;
     }
   },
+
+  // ==================== 피드백 ====================
+
+  /**
+   * 피드백 제출
+   */
+  submitFeedback: async (category, content) => {
+    const user = api.getCurrentUser();
+
+    const response = await fetch(`${API_BASE_URL}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category,
+        content,
+        userId: user?.id || null,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '피드백 제출 실패');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * 피드백 목록 조회 (관리자용)
+   */
+  getFeedbacks: async (options = {}) => {
+    const { status, category, page = 1, limit = 20 } = options;
+    
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (category) params.append('category', category);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/feedback?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error('피드백 조회 실패');
+    }
+
+    return await response.json();
+  },
 };
 
 export default api;

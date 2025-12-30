@@ -24,9 +24,10 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   // Relations
-  alarms       Alarm[]  @relation("UserAlarms")      // 내가 등록한 알람들
-  matchesAsUser1 Match[] @relation("MatchUser1")
-  matchesAsUser2 Match[] @relation("MatchUser2")
+  alarms       Alarm[]    @relation("UserAlarms")      // 내가 등록한 알람들
+  matchesAsUser1 Match[]  @relation("MatchUser1")
+  matchesAsUser2 Match[]  @relation("MatchUser2")
+  feedbacks    Feedback[]                              // 내가 보낸 피드백들
 }
 
 // 알람 (좋아요) 테이블
@@ -58,5 +59,19 @@ model Match {
   user2     User     @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
 
   @@unique([user1Id, user2Id]) // 같은 매칭 중복 방지
+}
+
+// 피드백 테이블
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String?                         // 로그인한 사용자 ID (비로그인 시 null)
+  category  String                          // 카테고리: 건의, 버그, 신고, 칭찬, 기타
+  content   String                          // 피드백 내용
+  status    String   @default("pending")    // pending | reviewed | resolved
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 

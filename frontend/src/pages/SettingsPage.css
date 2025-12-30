@@ -110,3 +110,16 @@
   background-color: #e5e8eb !important; /* grey200 */
 }
 
+/* 화살표 아이콘 색상 - grey700 (#6b7684) */
+.settings-page-container svg path {
+  fill: #6b7684 !important;
+}
+
+.settings-page-container [data-icon-name*="arrow"] path,
+.settings-page-container [class*="arrow"] path,
+.settings-page-container [class*="Arrow"] path {
+  fill: #6b7684 !important;
+  stroke: #6b7684 !important;
+}
+
+

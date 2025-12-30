@@ -9,6 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import alarmRoutes from './routes/alarms.js';
+import feedbackRoutes from './routes/feedback.js';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
