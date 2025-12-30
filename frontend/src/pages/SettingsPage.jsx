@@ -12,14 +12,14 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
-import { share } from '@apps-in-toss/web-framework';
 import './SettingsPage.css';
 
 // 공유 기능 헬퍼 함수
 const handleShare = async (message) => {
   try {
-    // 1. 토스 앱인토스 share 함수 시도
+    // 1. 토스 앱인토스 share 함수 시도 (동적 import)
     try {
+      const { share } = await import('@apps-in-toss/web-framework');
       await share({ message });
       return;
     } catch (shareError) {
@@ -90,7 +90,7 @@ export function SettingsPage() {
   useEffect(() => {
     if (location.state?.showFeedbackSuccess && !toastShownRef.current) {
       toastShownRef.current = true;
-      setSuccessToast({ show: true, message: '의견이 제출되었습니다' });
+      setSuccessToast({ show: true, message: '의견을 제출했어요' });
       
       // 3초 후 fade out 시작
       setTimeout(() => {

@@ -42,28 +42,6 @@ export function AddAlarmPage() {
   };
 
   const handleSubmit = async () => {
-    if (!myId.trim() || !targetId.trim()) {
-      showErrorToast('인스타그램 ID를 모두 입력해주세요.');
-      return;
-    }
-
-    // 인스타그램 ID 형식 검증
-    const idPattern = /^[a-z0-9._]+$/;
-    const myIdLower = myId.trim().toLowerCase();
-    const targetIdLower = targetId.trim().toLowerCase();
-    
-    if (!idPattern.test(myIdLower) || myIdLower.length > 30 ||
-        !idPattern.test(targetIdLower) || targetIdLower.length > 30) {
-      showErrorToast('인스타그램 ID 형식에 맞춰 정확하게 입력해주세요.');
-      return;
-    }
-
-    // 본인 ID와 상대 ID가 같으면 제한
-    if (myId.trim().toLowerCase() === targetId.trim().toLowerCase()) {
-      showErrorToast('상대 ID는 본인 ID와 같을 수 없어요.');
-      return;
-    }
-
     // 최초 알람 등록인지 확인
     const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
     
@@ -132,7 +110,7 @@ export function AddAlarmPage() {
       }
     } catch (error) {
       console.error('❌ 알람 추가 실패:', error);
-      showErrorToast(error.message || '알람 추가에 실패했습니다.');
+      showErrorToast(error.message || '알람 추가에 실패했어요');
     } finally {
       setIsSubmitting(false);
     }
@@ -167,17 +145,17 @@ export function AddAlarmPage() {
   // 에러 메시지
   const getMyIdErrorMessage = () => {
     if (isInvalidInstagramId(myId)) {
-      return '인스타그램 ID 형식에 맞춰 정확하게 입력해주세요.';
+      return '인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요';
     }
     return null;
   };
 
   const getTargetIdErrorMessage = () => {
     if (isInvalidInstagramId(targetId)) {
-      return '인스타그램 ID 형식에 맞춰 정확하게 입력해주세요.';
+      return '인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요';
     }
     if (isSameId) {
-      return '상대 ID는 본인 ID와 같을 수 없어요.';
+      return '상대 ID는 본인 ID와 같을 수 없어요';
     }
     return null;
   };

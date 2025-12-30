@@ -148,7 +148,7 @@ export function AlarmListPage() {
       console.log('💔 실시간 연결 해제:', data);
       addToast({
         type: 'remove',
-        message: '상대와의 연결이 끊겼어요.',
+        message: '상대와의 연결이 끊겼어요',
         duration: 3000,
       });
       loadAlarms(); // 목록 새로고침
@@ -208,7 +208,7 @@ export function AlarmListPage() {
       toastShownRef.current = true;
       addToast({
         type: 'success',
-        message: '알람을 추가했어요.',
+        message: '알람을 추가했어요',
         duration: 3000,
       });
       window.history.replaceState({}, document.title);
@@ -273,7 +273,7 @@ export function AlarmListPage() {
       console.error('슬롯 구매 실패:', error);
       addToast({
         type: 'error',
-        message: '슬롯 구매에 실패했어요.',
+        message: '슬롯 구매에 실패했어요',
         duration: 3000,
       });
     } finally {
@@ -298,7 +298,7 @@ export function AlarmListPage() {
     // 제거 Toast 표시 (되돌리기 버튼 포함)
     const toastId = addToast({
       type: 'remove',
-      message: '알람을 제거했어요.',
+      message: '알람을 제거했어요',
       duration: 5000,
       undoAction: async () => {
         // 버튼 클릭 즉시 토스트 제거 (중복 클릭 방지)
@@ -335,7 +335,7 @@ export function AlarmListPage() {
       setAlarms(previousAlarms);
       addToast({
         type: 'error',
-        message: '알람 삭제에 실패했어요.',
+        message: '알람 삭제에 실패했어요',
         duration: 3000,
       });
     }
@@ -429,6 +429,9 @@ export function AlarmListPage() {
             <div className="custom-toast-content">
               {toast.type === 'success' && (
                 <span className="custom-toast-icon">✓</span>
+              )}
+              {toast.type === 'error' && (
+                <span className="custom-toast-error-icon">!</span>
               )}
               <span className="custom-toast-text">{toast.message}</span>
               {toast.undoAction && (

@@ -47,12 +47,12 @@ export function FeedbackPage() {
   const handleSubmit = async () => {
     // 유효성 검사
     if (!category) {
-      showErrorToast('카테고리를 선택해 주세요.');
+      showErrorToast('카테고리를 선택해 주세요');
       return;
     }
 
     if (content.trim().length < 10) {
-      showErrorToast('최소 10자 이상 입력해 주세요.');
+      showErrorToast('최소 10자 이상 입력해 주세요');
       return;
     }
 
@@ -65,7 +65,7 @@ export function FeedbackPage() {
       navigate('/settings', { state: { showFeedbackSuccess: true } });
     } catch (error) {
       console.error('❌ 피드백 제출 실패:', error);
-      showErrorToast(error.message || '피드백 제출에 실패했습니다.');
+      showErrorToast(error.message || '피드백 제출에 실패했어요');
     } finally {
       setIsSubmitting(false);
     }
@@ -173,9 +173,9 @@ export function FeedbackPage() {
         onClick={() => {
           // 비활성화 상태에서 클릭 시 안내 토스트
           if (!category) {
-            showErrorToast('카테고리를 선택해 주세요.');
+            showErrorToast('카테고리를 선택해 주세요');
           } else if (content.trim().length < 10) {
-            showErrorToast('최소 10자 이상 입력해 주세요.');
+            showErrorToast('최소 10자 이상 입력해 주세요');
           }
         }}
       >
