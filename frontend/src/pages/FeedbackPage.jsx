@@ -175,7 +175,17 @@ export function FeedbackPage() {
           </div>
       </div>
 
-      <div className="add-alarm-button-section">
+      <div 
+        className="add-alarm-button-section"
+        onClick={() => {
+          // 비활성화 상태에서 클릭 시 안내 토스트
+          if (!category) {
+            showErrorToast('카테고리를 선택해 주세요.');
+          } else if (content.trim().length < 10) {
+            showErrorToast('최소 10자 이상 입력해 주세요.');
+          }
+        }}
+      >
         <Button
           size="xlarge"
           display="block"

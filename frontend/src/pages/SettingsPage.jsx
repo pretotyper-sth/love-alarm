@@ -296,16 +296,17 @@ export function SettingsPage() {
         </button>
       </div>
 
-      {/* 성공 토스트 */}
-      {successToast.show && (
-        <div className="settings-toast success-toast">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="10" cy="10" r="10" fill="#00C853"/>
-            <path d="M6 10L9 13L14 7" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span>{successToast.message}</span>
-        </div>
-      )}
+      {/* 성공 토스트 - 기존 구조와 동일 */}
+      <div className="toast-stack">
+        {successToast.show && (
+          <div className="custom-toast show">
+            <div className="custom-toast-content">
+              <span className="custom-toast-icon">✓</span>
+              <span className="custom-toast-text">{successToast.message}</span>
+            </div>
+          </div>
+        )}
+      </div>
 
     </div>
   );
