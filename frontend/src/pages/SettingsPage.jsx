@@ -91,9 +91,17 @@ export function SettingsPage() {
     if (location.state?.showFeedbackSuccess && !toastShownRef.current) {
       toastShownRef.current = true;
       setSuccessToast({ show: true, message: '의견이 제출되었습니다' });
+      
+      // 3초 후 fade out 시작
       setTimeout(() => {
-        setSuccessToast({ show: false, message: '' });
+        setSuccessToast(prev => ({ ...prev, show: false }));
+        
+        // fade out 애니메이션 후 완전히 제거
+        setTimeout(() => {
+          setSuccessToast({ show: false, message: '' });
+        }, 300);
       }, 3000);
+      
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -298,8 +306,8 @@ export function SettingsPage() {
 
       {/* 성공 토스트 - 기존 구조와 동일 */}
       <div className="toast-stack">
-        {successToast.show && (
-          <div className="custom-toast show">
+        {successToast.message && (
+          <div className={`custom-toast ${successToast.show ? 'show' : ''}`}>
             <div className="custom-toast-content">
               <span className="custom-toast-icon">✓</span>
               <span className="custom-toast-text">{successToast.message}</span>
