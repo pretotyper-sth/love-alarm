@@ -42,6 +42,10 @@ export function AddAlarmPage() {
   };
 
   const handleSubmit = async () => {
+    console.log('🔔 handleSubmit 호출됨');
+    console.log('🔔 myId:', myId, 'targetId:', targetId);
+    console.log('🔔 isSubmitting:', isSubmitting, 'myIdHasError:', myIdHasError, 'targetIdHasError:', targetIdHasError);
+    
     // 최초 알람 등록인지 확인
     const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
     
@@ -91,10 +95,12 @@ export function AddAlarmPage() {
   };
 
   const addAlarm = async () => {
+    console.log('🔔 addAlarm 호출됨');
     setIsSubmitting(true);
     try {
       const myIdTrimmed = myId.trim().toLowerCase();
       const targetIdTrimmed = targetId.trim().toLowerCase();
+      console.log('🔔 API 호출 시작:', myIdTrimmed, targetIdTrimmed);
 
       // 1. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
       localStorage.setItem('love_alarm_my_instagram_id', myIdTrimmed);
