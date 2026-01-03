@@ -10,6 +10,63 @@ const DISCONNECT_AUTH = {
 };
 
 /**
+ * 생년월일 문자열을 안전하게 Date 객체로 변환
+ * 토스에서 오는 birthday 형식: "YYYY-MM-DD" 또는 "YYYYMMDD" 등
+ * @param {string} birthdayStr - 생년월일 문자열
+ * @returns {Date|null} - 유효한 Date 객체 또는 null
+ */
+function parseBirthday(birthdayStr) {
+  if (!birthdayStr || typeof birthdayStr !== 'string') {
+    return null;
+  }
+
+  // 공백 제거
+  const cleaned = birthdayStr.trim();
+  if (!cleaned) {
+    return null;
+  }
+
+  try {
+    // 다양한 형식 시도
+    let date;
+    
+    // YYYYMMDD 형식 (예: 19900101)
+    if (/^\d{8}$/.test(cleaned)) {
+      const year = cleaned.substring(0, 4);
+      const month = cleaned.substring(4, 6);
+      const day = cleaned.substring(6, 8);
+      date = new Date(`${year}-${month}-${day}`);
+    }
+    // YYYY-MM-DD 또는 YYYY/MM/DD 형식
+    else if (/^\d{4}[-/]\d{2}[-/]\d{2}$/.test(cleaned)) {
+      date = new Date(cleaned.replace(/\//g, '-'));
+    }
+    // 기타 형식
+    else {
+      date = new Date(cleaned);
+    }
+
+    // 유효성 검사
+    if (isNaN(date.getTime())) {
+      console.warn(`⚠️ 유효하지 않은 생년월일 형식: "${birthdayStr}"`);
+      return null;
+    }
+
+    // 합리적인 범위 검사 (1900년 ~ 현재)
+    const year = date.getFullYear();
+    if (year < 1900 || year > new Date().getFullYear()) {
+      console.warn(`⚠️ 생년월일 범위 벗어남: ${year}년`);
+      return null;
+    }
+
+    return date;
+  } catch (error) {
+    console.error(`❌ 생년월일 파싱 오류: "${birthdayStr}"`, error.message);
+    return null;
+  }
+}
+
+/**
  * POST /api/auth/toss-login
  * 토스 로그인 (전체 플로우 처리)
  * 
@@ -61,6 +118,10 @@ router.post('/toss-login', async (req, res) => {
 
     let isNewUser = false;
 
+    // 생년월일 안전하게 파싱
+    const parsedBirthday = parseBirthday(userInfo.birthday);
+    console.log(`📅 생년월일 파싱: "${userInfo.birthday}" → ${parsedBirthday}`);
+
     if (!user) {
       // 새 사용자 생성
       user = await req.prisma.user.create({
@@ -68,7 +129,7 @@ router.post('/toss-login', async (req, res) => {
           tossUserId,
           name: userInfo.name || null,
           gender: userInfo.gender || null,
-          birthday: userInfo.birthday ? new Date(userInfo.birthday) : null,
+          birthday: parsedBirthday,
         },
       });
       isNewUser = true;
@@ -78,7 +139,7 @@ router.post('/toss-login', async (req, res) => {
       const updateData = {};
       if (userInfo.name && !user.name) updateData.name = userInfo.name;
       if (userInfo.gender && !user.gender) updateData.gender = userInfo.gender;
-      if (userInfo.birthday && !user.birthday) updateData.birthday = new Date(userInfo.birthday);
+      if (parsedBirthday && !user.birthday) updateData.birthday = parsedBirthday;
 
       if (Object.keys(updateData).length > 0) {
         user = await req.prisma.user.update({
@@ -123,6 +184,9 @@ router.post('/login', async (req, res) => {
 
     let isNewUser = false;
 
+    // 생년월일 안전하게 파싱
+    const parsedBirthday = parseBirthday(birthday);
+
     if (!user) {
       // 새 사용자 생성
       user = await req.prisma.user.create({
@@ -130,7 +194,7 @@ router.post('/login', async (req, res) => {
           tossUserId,
           name: name || null,
           gender: gender || null,
-          birthday: birthday ? new Date(birthday) : null,
+          birthday: parsedBirthday,
         },
       });
       isNewUser = true;
@@ -140,7 +204,7 @@ router.post('/login', async (req, res) => {
       const updateData = {};
       if (name && !user.name) updateData.name = name;
       if (gender && !user.gender) updateData.gender = gender;
-      if (birthday && !user.birthday) updateData.birthday = new Date(birthday);
+      if (parsedBirthday && !user.birthday) updateData.birthday = parsedBirthday;
 
       if (Object.keys(updateData).length > 0) {
         user = await req.prisma.user.update({
