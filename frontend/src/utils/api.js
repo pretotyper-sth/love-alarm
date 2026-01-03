@@ -121,7 +121,6 @@ export const api = {
     socket = io(SOCKET_URL);
 
     socket.on('connect', () => {
-      console.log('🔌 WebSocket 연결됨:', socket.id);
       // 사용자 등록
       const user = api.getCurrentUser();
       if (user) {
@@ -130,7 +129,7 @@ export const api = {
     });
 
     socket.on('disconnect', () => {
-      console.log('🔌 WebSocket 연결 해제됨');
+      // WebSocket 연결 해제됨
     });
 
     return socket;

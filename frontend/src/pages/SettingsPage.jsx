@@ -25,7 +25,6 @@ const handleShare = async (message) => {
     } catch (shareError) {
       // 사용자가 취소한 경우 조용히 종료
       if (shareError?.name === 'AbortError' || shareError?.message?.includes('cancel')) {
-        console.log('사용자가 공유를 취소했습니다.');
         return;
       }
       
@@ -39,7 +38,6 @@ const handleShare = async (message) => {
         } catch (webShareError) {
           // 사용자가 취소한 경우 조용히 종료
           if (webShareError?.name === 'AbortError' || webShareError?.message?.includes('cancel')) {
-            console.log('사용자가 공유를 취소했습니다.');
             return;
           }
           throw webShareError;
@@ -61,21 +59,10 @@ const handleShare = async (message) => {
   }
 };
 
-// 앱 다시 시작용 (React Native 환경)
-const restartApp = () => {
-  // localStorage 클리어
-  localStorage.removeItem('love_alarm_user');
-  localStorage.removeItem('love_alarm_device_id');
-  // 페이지 새로고침 시도
-  if (typeof window !== 'undefined') {
-    window.location.href = '/';
-  }
-};
-
 export function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser, relogin } = useAuth();
+  const { user, setUser } = useAuth();
   
   // 즉시 캐시된 값으로 초기화 (스켈레톤 없이 바로 표시)
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
@@ -266,43 +253,6 @@ export function SettingsPage() {
           }}
         />
       </List>
-
-      {/* 개발용: userKey 표시 + 다시 로그인 */}
-      <Spacing size={40} />
-      <div style={{ padding: '0 16px' }}>
-        {user?.tossUserId && (
-          <Text color="#8b95a1" typography="t7">
-            [개발용] userKey: {user.tossUserId}
-          </Text>
-        )}
-        <Spacing size={16} />
-        <button
-          onClick={async () => {
-            try {
-              // localStorage 클리어
-              localStorage.removeItem('love_alarm_user');
-              localStorage.removeItem('love_alarm_device_id');
-              // 토스 로그인 다시 수행
-              const newUser = await relogin();
-              alert('로그인 성공! userKey: ' + newUser.tossUserId);
-            } catch (error) {
-              alert('로그인 실패: ' + error.message);
-            }
-          }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#3182f6',
-            border: 'none',
-            borderRadius: '8px',
-            color: '#fff',
-            fontSize: '14px',
-            cursor: 'pointer',
-          }}
-        >
-          🔄 토스 로그인 다시하기
-        </button>
-      </div>
 
       {/* 성공 토스트 - 기존 구조와 동일 */}
       <div className="toast-stack">
