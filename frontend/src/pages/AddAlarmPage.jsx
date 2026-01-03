@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Asset,
   Text,
@@ -26,6 +26,8 @@ export function AddAlarmPage() {
   const [targetId, setTargetId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
+  const [isAdLoaded, setIsAdLoaded] = useState(false);
+  const adCleanupRef = useRef(null);
 
   // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
   useEffect(() => {
@@ -33,6 +35,42 @@ export function AddAlarmPage() {
     if (savedMyId) {
       setMyId(savedMyId);
     }
+  }, []);
+
+  // 페이지 진입 시 광고 사전 로드 (Preload) - 검수 필수 요건
+  useEffect(() => {
+    const preloadAd = async () => {
+      try {
+        const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
+        
+        if (GoogleAdMob.loadAppsInTossAdMob.isSupported() !== true) {
+          setIsAdLoaded(true); // SDK 미지원 시 로드 완료로 처리
+          return;
+        }
+        
+        adCleanupRef.current = GoogleAdMob.loadAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (event) => {
+            if (event.type === 'loaded') {
+              setIsAdLoaded(true);
+              adCleanupRef.current?.();
+            }
+          },
+          onError: () => {
+            setIsAdLoaded(true); // 로드 실패해도 진행 가능하도록
+            adCleanupRef.current?.();
+          },
+        });
+      } catch {
+        setIsAdLoaded(true); // 오류 시 로드 완료로 처리
+      }
+    };
+    
+    preloadAd();
+    
+    return () => {
+      adCleanupRef.current?.();
+    };
   }, []);
 
   const showErrorToast = (message) => {
@@ -52,30 +90,32 @@ export function AddAlarmPage() {
       const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
       
       // SDK 지원 여부 확인
-      if (GoogleAdMob.loadAppsInTossAdMob.isSupported() !== true) {
+      if (GoogleAdMob.showAppsInTossAdMob.isSupported() !== true) {
         // SDK 미지원 환경 (로컬 개발 등)
         await new Promise(resolve => setTimeout(resolve, 500));
         return { rewarded: true, skipped: true };
       }
       
-      // 1. 광고 로드 (콜백 기반 → Promise 래핑)
-      await new Promise((resolve, reject) => {
-        const cleanup = GoogleAdMob.loadAppsInTossAdMob({
-          options: { adGroupId: REWARDED_AD_GROUP_ID },
-          onEvent: (event) => {
-            if (event.type === 'loaded') {
+      // 사전 로드가 안 됐으면 다시 로드 시도
+      if (!isAdLoaded) {
+        await new Promise((resolve, reject) => {
+          const cleanup = GoogleAdMob.loadAppsInTossAdMob({
+            options: { adGroupId: REWARDED_AD_GROUP_ID },
+            onEvent: (event) => {
+              if (event.type === 'loaded') {
+                cleanup?.();
+                resolve();
+              }
+            },
+            onError: (error) => {
               cleanup?.();
-              resolve();
-            }
-          },
-          onError: (error) => {
-            cleanup?.();
-            reject(error);
-          },
+              reject(error);
+            },
+          });
         });
-      });
+      }
       
-      // 2. 광고 표시 및 보상 확인
+      // 광고 표시 및 보상 확인
       const result = await new Promise((resolve, reject) => {
         let rewarded = false;
         
@@ -96,6 +136,9 @@ export function AddAlarmPage() {
           },
         });
       });
+      
+      // 광고 표시 후 다음 광고 미리 로드 (load → show → 다음 load)
+      setIsAdLoaded(false);
       
       return result;
       
