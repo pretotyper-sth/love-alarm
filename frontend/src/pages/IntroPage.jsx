@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Asset,
@@ -9,14 +10,31 @@ import {
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { storage } from '../utils/storage';
+import { useAuth } from '../contexts/AuthContext';
 import './IntroPage.css';
 
 export function IntroPage() {
   const navigate = useNavigate();
+  const { relogin } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleConfirm = () => {
-    storage.set('has_visited_intro', true);
-    navigate('/alarms');
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      // 토스 로그인 수행
+      await relogin();
+      // 온보딩 완료 표시
+      storage.set('has_visited_intro', true);
+      // 알람 목록으로 이동
+      navigate('/alarms');
+    } catch (error) {
+      console.error('로그인 실패:', error);
+      // 로그인 실패해도 진행 (개발 환경 등)
+      storage.set('has_visited_intro', true);
+      navigate('/alarms');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,6 +108,8 @@ export function IntroPage() {
           size="xlarge"
           display="block"
           onClick={handleConfirm}
+          loading={isLoading}
+          disabled={isLoading}
         >
           확인했어요
         </Button>

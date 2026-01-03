@@ -9,37 +9,23 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 앱 시작 시 저장된 사용자 복원 또는 토스 로그인
+    // 앱 시작 시 저장된 사용자 복원만 수행
+    // 토스 로그인은 IntroPage에서 명시적으로 호출
     const initAuth = async () => {
       try {
         // 저장된 사용자 확인
-        let currentUser = api.getCurrentUser();
+        const currentUser = api.getCurrentUser();
         
-        if (!currentUser) {
-          // 저장된 사용자가 없으면 토스 로그인 시도
-          console.log('🔐 토스 로그인 시작...');
-          currentUser = await performTossLogin();
-        }
-
         if (currentUser) {
           setUser(currentUser);
           // WebSocket 연결
           api.connectSocket();
+          console.log('✅ 저장된 사용자 복원 완료');
+        } else {
+          console.log('ℹ️ 저장된 사용자 없음 - 로그인 필요');
         }
       } catch (error) {
         console.error('Auth init error:', error);
-        // 에러 발생 시 개발 모드면 Mock 로그인 시도
-        if (import.meta.env.DEV) {
-          console.log('🔧 개발 모드: Mock 로그인 시도');
-          try {
-            const deviceId = getOrCreateDeviceId();
-            const result = await api.login(deviceId);
-            setUser(result.user);
-            api.connectSocket();
-          } catch (mockError) {
-            console.error('Mock login error:', mockError);
-          }
-        }
       } finally {
         setLoading(false);
       }
