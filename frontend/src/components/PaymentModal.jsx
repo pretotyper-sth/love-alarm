@@ -42,42 +42,52 @@ export function PaymentModal({ onClose, onSuccess }) {
     
     try {
       // Step 1: IAP 모듈 가져오기
-      alert('[1] IAP 모듈 로드 시작...');
       let IAP = iapModuleRef.current;
       if (!IAP) {
         const module = await import('@apps-in-toss/web-framework');
         IAP = module.IAP;
-        alert(`[2] IAP 모듈 동적 로드 완료\nIAP 객체: ${typeof IAP}\n메서드들: ${IAP ? Object.keys(IAP).join(', ') : 'N/A'}`);
-      } else {
-        alert('[2] IAP 모듈 캐시 사용');
       }
       
       // Step 2: SDK 지원 여부 확인
-      if (!IAP) {
-        alert('[ERROR] IAP 모듈이 undefined');
-        await ensureMinLoadTime();
-        setError('IAP 모듈을 불러올 수 없어요.');
-        setIsProcessing(false);
-        return;
-      }
-      
-      if (typeof IAP.createOneTimePurchaseOrder !== 'function') {
-        alert(`[ERROR] createOneTimePurchaseOrder가 함수가 아님\n타입: ${typeof IAP.createOneTimePurchaseOrder}`);
+      if (!IAP || typeof IAP.createOneTimePurchaseOrder !== 'function') {
         await ensureMinLoadTime();
         setError('이 환경에서는 결제를 지원하지 않아요.');
         setIsProcessing(false);
         return;
       }
       
-      alert(`[3] SDK 확인 완료\n상품 ID: ${PRODUCT_ID}`);
+      // Step 3: 상품 목록 조회 (샌드박스에서는 mock 상품 반환)
+      let productIdToUse = PRODUCT_ID;
       
-      // Step 3: 결제 요청
-      alert('[4] 결제 요청 시작...');
+      if (typeof IAP.getProductItemList === 'function') {
+        try {
+          const products = await IAP.getProductItemList();
+          alert(`[DEBUG] 상품 목록:\n${JSON.stringify(products, null, 2)}`);
+          
+          // 상품이 있으면 첫 번째 상품 사용 (샌드박스 mock 상품)
+          if (products && products.length > 0) {
+            // 실제 상품 ID가 있으면 사용, 없으면 첫 번째 mock 상품 사용
+            const realProduct = products.find(p => p.productId === PRODUCT_ID || p.sku === PRODUCT_ID);
+            if (realProduct) {
+              productIdToUse = realProduct.productId || realProduct.sku;
+            } else {
+              // 샌드박스: mock 상품 사용
+              productIdToUse = products[0].productId || products[0].sku;
+              alert(`[INFO] 샌드박스 mock 상품 사용: ${productIdToUse}`);
+            }
+          }
+        } catch (listErr) {
+          alert(`[WARN] 상품 목록 조회 실패: ${listErr.message}\n실제 상품 ID로 시도합니다.`);
+        }
+      }
+      
+      // Step 4: 결제 요청
+      alert(`[DEBUG] 결제 요청\n상품 ID: ${productIdToUse}`);
       const result = await IAP.createOneTimePurchaseOrder({
-        productId: PRODUCT_ID,
+        productId: productIdToUse,
       });
       
-      alert(`[5] 결제 완료!\nresult: ${JSON.stringify(result, null, 2)}`);
+      alert(`[SUCCESS] 결제 완료!\n${JSON.stringify(result, null, 2)}`);
       
       await ensureMinLoadTime();
       
@@ -86,7 +96,7 @@ export function PaymentModal({ onClose, onSuccess }) {
       
     } catch (err) {
       // 상세 에러 로그
-      alert(`[ERROR] 결제 실패!\n\n코드: ${err?.code || 'N/A'}\n이름: ${err?.name || 'N/A'}\n메시지: ${err?.message || err}\n\n전체 에러:\n${JSON.stringify(err, Object.getOwnPropertyNames(err), 2)}`);
+      alert(`[ERROR] 결제 실패!\n\n코드: ${err?.code || 'N/A'}\n메시지: ${err?.message || err}`);
       
       await ensureMinLoadTime();
       
