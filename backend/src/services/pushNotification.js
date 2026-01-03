@@ -36,7 +36,6 @@ function getHttpsAgent() {
     if (TOSS_CLIENT_CERT_BASE64 && TOSS_CLIENT_KEY_BASE64) {
       cert = Buffer.from(TOSS_CLIENT_CERT_BASE64, 'base64');
       key = Buffer.from(TOSS_CLIENT_KEY_BASE64, 'base64');
-      console.log('✅ 푸시 알림용 mTLS 인증서 로드 (환경 변수에서)');
     } 
     // 2. 파일 경로 사용 (로컬 개발용)
     else if (TOSS_CLIENT_CERT_PATH && TOSS_CLIENT_KEY_PATH) {
@@ -44,7 +43,6 @@ function getHttpsAgent() {
       const keyPath = path.resolve(__dirname, '../../', TOSS_CLIENT_KEY_PATH);
       cert = fs.readFileSync(certPath);
       key = fs.readFileSync(keyPath);
-      console.log('✅ 푸시 알림용 mTLS 인증서 로드 (파일에서)');
     } else {
       throw new Error('인증서 설정이 없습니다.');
     }
@@ -52,7 +50,7 @@ function getHttpsAgent() {
     httpsAgent = new https.Agent({ cert, key });
     return httpsAgent;
   } catch (error) {
-    console.error('❌ mTLS 인증서 로드 실패:', error.message);
+    console.error('mTLS 인증서 로드 실패:', error.message);
     return null;
   }
 }
@@ -66,7 +64,6 @@ function getHttpsAgent() {
 async function sendPushNotification(userKey, templateSetCode, context = {}) {
   const agent = getHttpsAgent();
   if (!agent) {
-    console.error('❌ 푸시 발송 실패: mTLS 인증서 없음');
     return { success: false, error: 'mTLS 인증서를 로드할 수 없습니다.' };
   }
 
@@ -87,17 +84,13 @@ async function sendPushNotification(userKey, templateSetCode, context = {}) {
     const data = await response.json();
 
     if (data.resultType === 'SUCCESS') {
-      console.log(`✅ 푸시 발송 성공: ${userKey}`, {
-        pushCount: data.result?.sentPushCount,
-        inboxCount: data.result?.sentInboxCount,
-      });
       return { success: true, data };
     } else {
-      console.error(`❌ 푸시 발송 실패: ${userKey}`, data.error || data);
+      console.error(`푸시 발송 실패: ${userKey}`, data.error || data);
       return { success: false, error: data.error || data };
     }
   } catch (error) {
-    console.error(`❌ 푸시 발송 에러: ${userKey}`, error.message);
+    console.error(`푸시 발송 에러: ${userKey}`, error.message);
     return { success: false, error: error.message };
   }
 }
@@ -109,7 +102,6 @@ async function sendPushNotification(userKey, templateSetCode, context = {}) {
 export async function sendConnectionSuccessNotification(user) {
   // 사용자 설정 확인 (둘 다 꺼져있으면 발송 안 함)
   if (!user.pushEnabled && !user.tossAppEnabled) {
-    console.log(`⏭️ 알림 설정 꺼짐, 발송 스킵: ${user.tossUserId}`);
     return { success: false, reason: '알림 설정 꺼짐' };
   }
 
@@ -127,8 +119,6 @@ export async function sendConnectionSuccessNotification(user) {
  * @param {object} user2 - 두 번째 사용자
  */
 export async function notifyConnectionSuccess(user1, user2) {
-  console.log(`💕 연결 성공 알림 발송: ${user1.tossUserId} <-> ${user2.tossUserId}`);
-
   const [result1, result2] = await Promise.all([
     sendConnectionSuccessNotification(user1),
     sendConnectionSuccessNotification(user2),
@@ -145,4 +135,3 @@ export default {
   notifyConnectionSuccess,
   TEMPLATE_CODES,
 };
-

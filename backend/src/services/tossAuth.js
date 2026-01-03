@@ -30,7 +30,6 @@ export function getHttpsAgent() {
     if (TOSS_CLIENT_CERT_BASE64 && TOSS_CLIENT_KEY_BASE64) {
       cert = Buffer.from(TOSS_CLIENT_CERT_BASE64, 'base64');
       key = Buffer.from(TOSS_CLIENT_KEY_BASE64, 'base64');
-      console.log('✅ mTLS 인증서 로드 (환경 변수에서)');
     } 
     // 2. 파일 경로 사용 (로컬 개발용)
     else if (TOSS_CLIENT_CERT_PATH && TOSS_CLIENT_KEY_PATH) {
@@ -38,7 +37,6 @@ export function getHttpsAgent() {
       const keyPath = path.resolve(__dirname, '../../', TOSS_CLIENT_KEY_PATH);
       cert = fs.readFileSync(certPath);
       key = fs.readFileSync(keyPath);
-      console.log('✅ mTLS 인증서 로드 (파일에서)');
     } else {
       throw new Error('인증서 설정이 없습니다.');
     }
@@ -98,7 +96,6 @@ export async function getUserInfo(accessToken) {
 
   // Bearer 접두사 추가 (tokenType이 Bearer이므로)
   const authHeader = accessToken.startsWith('Bearer ') ? accessToken : `Bearer ${accessToken}`;
-  console.log('🔍 사용자 정보 조회 요청 (Authorization 길이):', authHeader.length);
 
   const response = await fetch(`${TOSS_API_BASE}/api-partner/v1/apps-in-toss/user/oauth2/login-me`, {
     method: 'GET',

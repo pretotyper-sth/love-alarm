@@ -48,20 +48,17 @@ function parseBirthday(birthdayStr) {
 
     // 유효성 검사
     if (isNaN(date.getTime())) {
-      console.warn(`⚠️ 유효하지 않은 생년월일 형식: "${birthdayStr}"`);
       return null;
     }
 
     // 합리적인 범위 검사 (1900년 ~ 현재)
     const year = date.getFullYear();
     if (year < 1900 || year > new Date().getFullYear()) {
-      console.warn(`⚠️ 생년월일 범위 벗어남: ${year}년`);
       return null;
     }
 
     return date;
   } catch (error) {
-    console.error(`❌ 생년월일 파싱 오류: "${birthdayStr}"`, error.message);
     return null;
   }
 }
@@ -85,31 +82,17 @@ router.post('/toss-login', async (req, res) => {
     }
 
     // 1. 토스 API에서 AccessToken 발급
-    console.log('🔐 토스 토큰 발급 요청...');
     const tokenData = await tossAuth.getAccessToken(authorizationCode, referrer);
-    console.log('📦 토스 토큰 응답:', JSON.stringify(tokenData, null, 2));
-    
-    // 토스 API는 camelCase로 응답 (accessToken, refreshToken)
     const accessToken = tokenData.accessToken;
 
     if (!accessToken) {
-      console.error('❌ accessToken 없음! 응답:', tokenData);
       throw new Error('AccessToken을 받지 못했습니다.');
     }
-    console.log('✅ 토스 토큰 발급 완료');
 
     // 2. 토스 API에서 사용자 정보 조회 (복호화 포함)
-    console.log('👤 토스 사용자 정보 조회...');
     const userInfo = await tossAuth.getUserInfo(accessToken);
-    console.log('✅ 토스 사용자 정보 조회 완료:', {
-      userKey: userInfo.userKey,
-      name: userInfo.name ? '***' : null,
-      gender: userInfo.gender,
-      birthday: userInfo.birthday ? '****-**-**' : null,
-    });
 
     // 3. DB에 사용자 생성/업데이트
-    // userKey가 숫자로 올 수 있으므로 문자열로 변환
     const tossUserId = String(userInfo.userKey);
     
     let user = await req.prisma.user.findUnique({
@@ -117,10 +100,7 @@ router.post('/toss-login', async (req, res) => {
     });
 
     let isNewUser = false;
-
-    // 생년월일 안전하게 파싱
     const parsedBirthday = parseBirthday(userInfo.birthday);
-    console.log(`📅 생년월일 파싱: "${userInfo.birthday}" → ${parsedBirthday}`);
 
     if (!user) {
       // 새 사용자 생성
@@ -133,7 +113,6 @@ router.post('/toss-login', async (req, res) => {
         },
       });
       isNewUser = true;
-      console.log(`👤 새 사용자 가입: ${tossUserId}`);
     } else {
       // 기존 사용자 - 프로필 정보 업데이트 (새 정보가 있으면)
       const updateData = {};
@@ -146,7 +125,6 @@ router.post('/toss-login', async (req, res) => {
           where: { tossUserId },
           data: updateData,
         });
-        console.log(`👤 사용자 프로필 업데이트: ${tossUserId}`);
       }
     }
 
@@ -183,8 +161,6 @@ router.post('/login', async (req, res) => {
     });
 
     let isNewUser = false;
-
-    // 생년월일 안전하게 파싱
     const parsedBirthday = parseBirthday(birthday);
 
     if (!user) {
@@ -198,7 +174,6 @@ router.post('/login', async (req, res) => {
         },
       });
       isNewUser = true;
-      console.log(`👤 새 사용자 가입: ${tossUserId}, 이름: ${name || '미제공'}`);
     } else {
       // 기존 사용자 - 프로필 정보 업데이트 (새 정보가 있으면)
       const updateData = {};
@@ -211,7 +186,6 @@ router.post('/login', async (req, res) => {
           where: { tossUserId },
           data: updateData,
         });
-        console.log(`👤 사용자 프로필 업데이트: ${tossUserId}`, updateData);
       }
     }
 
@@ -235,7 +209,6 @@ router.post('/disconnect', async (req, res) => {
     // Basic Auth 검증
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Basic ')) {
-      console.log('🔒 연결 끊기 요청 - 인증 헤더 없음');
       return res.status(401).json({ error: '인증이 필요합니다.' });
     }
 
@@ -244,7 +217,6 @@ router.post('/disconnect', async (req, res) => {
     const [username, password] = credentials.split(':');
 
     if (username !== DISCONNECT_AUTH.username || password !== DISCONNECT_AUTH.password) {
-      console.log('🔒 연결 끊기 요청 - 인증 실패');
       return res.status(401).json({ error: '인증에 실패했습니다.' });
     }
 
@@ -264,7 +236,6 @@ router.post('/disconnect', async (req, res) => {
       await req.prisma.user.delete({
         where: { tossUserId },
       });
-      console.log(`🔌 서비스 연결 끊김: ${tossUserId}`);
     }
 
     res.json({ success: true });

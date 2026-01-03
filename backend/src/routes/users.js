@@ -81,8 +81,6 @@ router.patch('/:id/settings', async (req, res) => {
       data: updateData,
     });
 
-    console.log(`🔔 알림 설정 변경: ${id}, push=${user.pushEnabled}, tossApp=${user.tossAppEnabled}`);
-
     res.json({ user });
   } catch (error) {
     console.error('Update settings error:', error);
@@ -108,15 +106,9 @@ router.post('/:id/test-push', async (req, res) => {
       return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
     }
 
-    console.log(`🧪 푸시 테스트 시작: ${user.tossUserId}`);
-    console.log(`   - pushEnabled: ${user.pushEnabled}`);
-    console.log(`   - tossAppEnabled: ${user.tossAppEnabled}`);
-
     // 강제로 알림 발송 테스트 (설정 무시)
     const testUser = { ...user, pushEnabled: true, tossAppEnabled: true };
     const result = await sendConnectionSuccessNotification(testUser);
-
-    console.log(`🧪 푸시 테스트 결과:`, result);
 
     res.json({ 
       success: result.success, 
@@ -158,8 +150,6 @@ router.post('/:id/purchase-slot', async (req, res) => {
       where: { id },
       data: { maxSlots: user.maxSlots + 1 },
     });
-
-    console.log(`🎫 슬롯 구매 완료: ${id}, ${user.maxSlots} -> ${updatedUser.maxSlots}`);
 
     res.json({ user: updatedUser, newMaxSlots: updatedUser.maxSlots });
   } catch (error) {

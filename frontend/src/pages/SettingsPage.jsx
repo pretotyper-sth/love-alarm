@@ -302,56 +302,6 @@ export function SettingsPage() {
         >
           🔄 토스 로그인 다시하기
         </button>
-        <Spacing size={8} />
-        <button
-          onClick={() => {
-            // 첫 알람 등록 상태 초기화 (알림 팝업 다시 보기)
-            localStorage.removeItem('love_alarm_first_registered');
-            localStorage.removeItem('love_alarm_my_instagram_id');
-            localStorage.removeItem('love_alarm_last_count');
-            alert('캐시 초기화 완료! 알람 추가 시 알림 팝업이 다시 표시됩니다.');
-          }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#6b7684',
-            border: 'none',
-            borderRadius: '8px',
-            color: '#fff',
-            fontSize: '14px',
-            cursor: 'pointer',
-          }}
-        >
-          🗑️ 캐시 초기화 (테스트용)
-        </button>
-        <Spacing size={8} />
-        <button
-          onClick={() => {
-            // api.logout() 호출하여 메모리 캐시도 초기화
-            api.logout();
-            // 모든 localStorage 완전 초기화 (온보딩/로그인 테스트용)
-            localStorage.removeItem('love_alarm_user');
-            localStorage.removeItem('love_alarm_device_id');
-            localStorage.removeItem('love_alarm_first_registered');
-            localStorage.removeItem('love_alarm_my_instagram_id');
-            localStorage.removeItem('love_alarm_last_count');
-            localStorage.removeItem('love_alarm_abuse_warning_confirmed');
-            localStorage.removeItem('has_visited_intro'); // 온보딩 다시 표시
-            alert('전체 초기화 완료! 앱을 다시 시작하면 온보딩/로그인부터 시작됩니다.');
-          }}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: '#f04452',
-            border: 'none',
-            borderRadius: '8px',
-            color: '#fff',
-            fontSize: '14px',
-            cursor: 'pointer',
-          }}
-        >
-          🔥 전체 초기화 (온보딩/로그인 테스트)
-        </button>
       </div>
 
       {/* 성공 토스트 - 기존 구조와 동일 */}

@@ -55,7 +55,6 @@ export function AddAlarmPage() {
       
       if (!isInTossApp) {
         // 개발 환경에서는 광고 시뮬레이션
-        console.log('📺 [개발 환경] 리워드 광고 시뮬레이션');
         await new Promise(resolve => setTimeout(resolve, 1000));
         return { rewarded: true };
       }
@@ -63,36 +62,27 @@ export function AddAlarmPage() {
       // @apps-in-toss/web-framework에서 Ad 모듈 동적 import
       const { Ad } = await import('@apps-in-toss/web-framework');
       
-      console.log('📺 리워드 광고 로드 시작:', REWARDED_AD_GROUP_ID);
-      
       // 광고 로드
       await Ad.loadRewardedAd({
         adGroupId: REWARDED_AD_GROUP_ID,
       });
-      
-      console.log('📺 리워드 광고 표시');
       
       // 광고 표시 및 결과 반환
       const result = await Ad.showRewardedAd({
         adGroupId: REWARDED_AD_GROUP_ID,
       });
       
-      console.log('📺 리워드 광고 결과:', result);
       return result;
       
     } catch (error) {
-      console.error('📺 리워드 광고 오류:', error);
-      
       // 광고 로드 실패 시에도 알람 추가는 진행
       // (광고가 없거나 네트워크 오류 등)
       if (error?.code === 'AD_NOT_READY' || error?.code === 'AD_LOAD_FAILED') {
-        console.log('📺 광고 로드 실패, 알람 추가 진행');
         return { rewarded: true, skipped: true };
       }
       
       // 사용자가 광고를 닫은 경우
       if (error?.code === 'USER_CANCELLED' || error?.message?.includes('cancel')) {
-        console.log('📺 사용자가 광고를 닫음');
         return { rewarded: false, cancelled: true };
       }
       

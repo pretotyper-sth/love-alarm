@@ -35,12 +35,9 @@ const io = new Server(httpServer, {
 const userSockets = new Map();
 
 io.on('connection', (socket) => {
-  console.log('🔌 소켓 연결됨:', socket.id);
-
   // 사용자 등록 (로그인 후 호출)
   socket.on('register', (userId) => {
     userSockets.set(userId, socket.id);
-    console.log(`👤 사용자 등록: ${userId} → ${socket.id}`);
   });
 
   // 연결 해제
@@ -49,7 +46,6 @@ io.on('connection', (socket) => {
     for (const [userId, socketId] of userSockets.entries()) {
       if (socketId === socket.id) {
         userSockets.delete(userId);
-        console.log(`👋 사용자 연결 해제: ${userId}`);
         break;
       }
     }

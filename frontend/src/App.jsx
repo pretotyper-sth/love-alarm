@@ -8,7 +8,6 @@ import { MatchSuccessPage } from './pages/MatchSuccessPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { ErrorPage } from './pages/ErrorPage';
-import { ApiTestPage } from './pages/ApiTestPage';
 import { storage } from './utils/storage';
 import './App.css';
 
@@ -37,7 +36,6 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/error" element={<ErrorPage />} />
-          <Route path="/api-test" element={<ApiTestPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

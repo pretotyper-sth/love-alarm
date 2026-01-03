@@ -26,8 +26,6 @@ router.post('/', async (req, res) => {
       },
     });
 
-    console.log('📝 새 피드백 등록:', { id: feedback.id, category, contentLength: content.length });
-
     res.status(201).json({
       success: true,
       message: '피드백이 성공적으로 제출되었습니다.',

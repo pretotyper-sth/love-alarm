@@ -130,29 +130,27 @@ export function AlarmListPage() {
     }, 300);
   };
 
-  // 알람 목록 로드
+  // user가 있을 때 알람 목록 + maxSlots 동시 로드
   useEffect(() => {
-    loadAlarms();
-  }, []);
-
-  // user 정보 변경 시 maxSlots 업데이트
-  useEffect(() => {
-    if (user?.maxSlots) {
-      setMaxSlots(user.maxSlots);
+    if (user) {
+      // maxSlots 즉시 설정
+      if (user.maxSlots) {
+        setMaxSlots(user.maxSlots);
+      }
+      // 알람 목록 로드
+      loadAlarms();
     }
-  }, [user?.maxSlots]);
+  }, [user]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
   useEffect(() => {
     // 매칭 성공 이벤트
-    api.onMatched((data) => {
-      console.log('🎉 실시간 매칭 알림:', data);
+    api.onMatched(() => {
       loadAlarms(); // 목록 새로고침 (아이콘으로 구별)
     });
 
     // 연결 해제 이벤트
-    api.onMatchCanceled((data) => {
-      console.log('💔 실시간 연결 해제:', data);
+    api.onMatchCanceled(() => {
       addToast({
         type: 'remove',
         message: '상대와의 연결이 끊겼어요',

@@ -77,7 +77,6 @@ router.post('/', async (req, res) => {
             updatedAt: new Date(),
           },
         });
-        console.log(`♻️ 알람 복구: ${alarm.id}`);
       } else {
         return res.status(409).json({ error: '이미 등록된 알람입니다.' });
       }
@@ -97,19 +96,12 @@ router.post('/', async (req, res) => {
           message: '매칭 성공! 🎉',
           matchedWith: user.instagramId,
         });
-        console.log(`🔔 매칭 알림 전송: ${matchResult.targetUserId}`);
       }
 
       // 푸시 알림 발송 (새 매칭인 경우에만)
       if (matchResult.reason === 'new_match' && matchResult.targetUser) {
         // 비동기로 푸시 발송 (응답 지연 방지)
-        notifyConnectionSuccess(user, matchResult.targetUser)
-          .then(result => {
-            console.log('💌 푸시 알림 발송 결과:', result);
-          })
-          .catch(error => {
-            console.error('❌ 푸시 알림 발송 실패:', error);
-          });
+        notifyConnectionSuccess(user, matchResult.targetUser).catch(() => {});
       }
     }
 
@@ -175,7 +167,6 @@ router.delete('/:id', async (req, res) => {
             message: '매칭이 해제되었습니다',
             canceledBy: alarmToDelete.fromInstagramId,
           });
-          console.log(`🔔 매칭 해제 알림 전송: ${reverseAlarm.userId}`);
         }
       }
     }
@@ -186,7 +177,6 @@ router.delete('/:id', async (req, res) => {
       data: { deletedAt: new Date() },
     });
 
-    console.log(`🗑️ 알람 Soft Delete: ${id}`);
     res.json({ success: true });
   } catch (error) {
     console.error('Delete alarm error:', error);

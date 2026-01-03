@@ -17,46 +17,44 @@ export const api = {
   /**
    * 토스 로그인 (전체 플로우)
    * appLogin()에서 받은 authorizationCode와 referrer를 서버로 전송
+   * 토스 앱에서 복귀 시 네트워크 불안정 대응: 최대 3회 재시도 (500ms 간격)
    */
   tossLogin: async (authorizationCode, referrer) => {
-    console.log('🔐 [API] tossLogin 호출 시작');
-    console.log('🔐 [API] 서버 URL:', `${API_BASE_URL}/auth/toss-login`);
+    const requestBody = JSON.stringify({ authorizationCode, referrer });
+    const MAX_RETRIES = 3;
     
-    let response;
-    try {
-      response = await fetch(`${API_BASE_URL}/auth/toss-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorizationCode, referrer }),
-      });
-    } catch (networkError) {
-      console.error('🔐 [API] 네트워크 오류:', networkError);
-      throw new Error(`서버 연결 실패: ${networkError.message}`);
-    }
-    
-    console.log('🔐 [API] 응답 상태:', response.status, response.statusText);
-    
-    if (!response.ok) {
-      let errorMessage = '토스 로그인 실패';
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const errorData = await response.json();
-        console.error('🔐 [API] 서버 에러 응답:', errorData);
-        errorMessage = errorData.error || errorData.message || `서버 오류 (${response.status})`;
-      } catch (parseError) {
-        console.error('🔐 [API] 에러 응답 파싱 실패:', parseError);
-        errorMessage = `서버 오류 (${response.status}: ${response.statusText})`;
+        const response = await fetch(`${API_BASE_URL}/auth/toss-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(JSON.parse(errorText).error || `서버 오류 (${response.status})`);
+        }
+        
+        const data = await response.json();
+        currentUser = data.user;
+        localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+        
+        return data;
+      } catch (error) {
+        // 네트워크 에러일 경우에만 재시도 (서버 에러는 재시도 안함)
+        const isNetworkError = error.message?.includes('Load failed') || 
+                               error.message?.includes('network') ||
+                               error.message?.includes('서버 연결');
+        
+        if (isNetworkError && attempt < MAX_RETRIES) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          continue;
+        }
+        
+        throw error;
       }
-      throw new Error(errorMessage);
     }
-    
-    const data = await response.json();
-    console.log('🔐 [API] 로그인 성공:', data.isNewUser ? '새 사용자' : '기존 사용자');
-    currentUser = data.user;
-    
-    // localStorage에 사용자 정보 저장 (앱 재시작 시 복원용)
-    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
-    
-    return data;
   },
 
   /**
