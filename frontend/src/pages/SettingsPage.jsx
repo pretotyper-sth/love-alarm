@@ -324,6 +324,31 @@ export function SettingsPage() {
         >
           🗑️ 캐시 초기화 (테스트용)
         </button>
+        <Spacing size={8} />
+        <button
+          onClick={() => {
+            // 모든 localStorage 완전 초기화 (온보딩/로그인 테스트용)
+            localStorage.removeItem('love_alarm_user');
+            localStorage.removeItem('love_alarm_device_id');
+            localStorage.removeItem('love_alarm_first_registered');
+            localStorage.removeItem('love_alarm_my_instagram_id');
+            localStorage.removeItem('love_alarm_last_count');
+            localStorage.removeItem('love_alarm_abuse_warning_confirmed');
+            alert('전체 초기화 완료! 앱을 다시 시작하면 온보딩/로그인부터 시작됩니다.');
+          }}
+          style={{
+            width: '100%',
+            padding: '12px',
+            backgroundColor: '#f04452',
+            border: 'none',
+            borderRadius: '8px',
+            color: '#fff',
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          🔥 전체 초기화 (온보딩/로그인 테스트)
+        </button>
       </div>
 
       {/* 성공 토스트 - 기존 구조와 동일 */}
