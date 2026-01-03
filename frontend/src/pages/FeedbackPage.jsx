@@ -124,11 +124,13 @@ export function FeedbackPage() {
               placeholder="선택"
               readOnly={true}
               right={
-                <img 
-                  src="https://static.toss.im/icons/png/4x/icon-arrow-down-mono.png"
-                  alt="아래 화살표"
-                  style={{ width: '20px', height: '20px', opacity: 0.6 }}
-                />
+                category ? (
+                  <img 
+                    src="https://static.toss.im/icons/png/4x/icon-arrow-down-mono.png"
+                    alt="아래 화살표"
+                    style={{ width: '20px', height: '20px', opacity: 0.6 }}
+                  />
+                ) : null
               }
               style={{ pointerEvents: 'none' }}
             />

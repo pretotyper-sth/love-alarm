@@ -368,9 +368,9 @@
 }
 
 .bottom-sheet-title {
-  margin: 0 0 8px 0;
-  font-size: 19px;
-  font-weight: bold;
+  margin: 0 0 12px 0;
+  font-size: 22px;
+  font-weight: 700;
   color: #191f28;
 }
 
@@ -378,7 +378,7 @@
   margin: 0;
   font-size: 15px;
   color: #6b7684;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .bottom-sheet-content {

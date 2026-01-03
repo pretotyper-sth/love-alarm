@@ -16,6 +16,9 @@ import './AddAlarmPage.css';
 // 최초 알람 등록 여부 키
 const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
 
+// 리워드 광고 그룹 ID (콘솔에서 발급)
+const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
+
 export function AddAlarmPage() {
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
@@ -23,8 +26,6 @@ export function AddAlarmPage() {
   const [targetId, setTargetId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
-  const [showNotificationSheet, setShowNotificationSheet] = useState(false);
-  const [pendingAlarmData, setPendingAlarmData] = useState(null);
 
   // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
   useEffect(() => {
@@ -42,77 +43,109 @@ export function AddAlarmPage() {
   };
 
   const handleSubmit = async () => {
-    console.log('🔔 handleSubmit 호출됨');
-    console.log('🔔 myId:', myId, 'targetId:', targetId);
-    console.log('🔔 isSubmitting:', isSubmitting, 'myIdHasError:', myIdHasError, 'targetIdHasError:', targetIdHasError);
-    
-    // 최초 알람 등록인지 확인
-    const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
-    
-    // 최초 등록이고 알림이 아직 활성화되지 않았으면 팝업 표시
-    // user 객체에서 알림 설정 확인
-    const pushEnabled = user?.pushEnabled ?? false;
-    const tossAppEnabled = user?.tossAppEnabled ?? false;
-    
-    if (isFirstAlarm && !pushEnabled && !tossAppEnabled) {
-      setPendingAlarmData({ myId: myIdLower, targetId: targetIdLower });
-      setShowNotificationSheet(true);
-      return;
-    }
-
     await addAlarm();
   };
 
-  // 알림 동의하기 클릭
-  const handleNotificationAgree = async () => {
+  // 리워드 광고 표시 함수
+  const showRewardedAd = async () => {
     try {
-      // 알림 설정 켜기 (API 호출)
-      const updatedUser = await api.updateSettings({ 
-        pushEnabled: true, 
-        tossAppEnabled: true 
+      // 토스 앱 환경인지 확인
+      const isInTossApp = typeof window !== 'undefined' && 
+        (window.__GRANITE_ENV__ || window.appsInToss);
+      
+      if (!isInTossApp) {
+        // 개발 환경에서는 광고 시뮬레이션
+        console.log('📺 [개발 환경] 리워드 광고 시뮬레이션');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return { rewarded: true };
+      }
+      
+      // @apps-in-toss/web-framework에서 Ad 모듈 동적 import
+      const { Ad } = await import('@apps-in-toss/web-framework');
+      
+      console.log('📺 리워드 광고 로드 시작:', REWARDED_AD_GROUP_ID);
+      
+      // 광고 로드
+      await Ad.loadRewardedAd({
+        adGroupId: REWARDED_AD_GROUP_ID,
       });
-      setUser(updatedUser);
+      
+      console.log('📺 리워드 광고 표시');
+      
+      // 광고 표시 및 결과 반환
+      const result = await Ad.showRewardedAd({
+        adGroupId: REWARDED_AD_GROUP_ID,
+      });
+      
+      console.log('📺 리워드 광고 결과:', result);
+      return result;
+      
     } catch (error) {
-      console.error('Failed to update notification settings:', error);
+      console.error('📺 리워드 광고 오류:', error);
+      
+      // 광고 로드 실패 시에도 알람 추가는 진행
+      // (광고가 없거나 네트워크 오류 등)
+      if (error?.code === 'AD_NOT_READY' || error?.code === 'AD_LOAD_FAILED') {
+        console.log('📺 광고 로드 실패, 알람 추가 진행');
+        return { rewarded: true, skipped: true };
+      }
+      
+      // 사용자가 광고를 닫은 경우
+      if (error?.code === 'USER_CANCELLED' || error?.message?.includes('cancel')) {
+        console.log('📺 사용자가 광고를 닫음');
+        return { rewarded: false, cancelled: true };
+      }
+      
+      // 기타 오류는 알람 추가 진행
+      return { rewarded: true, error: true };
     }
-    
-    // 최초 등록 완료 표시
-    localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
-    // 팝업 닫기
-    setShowNotificationSheet(false);
-    // 알람 저장
-    await addAlarm();
-  };
-
-  // 알림 닫기 클릭 (동의 안 함)
-  const handleNotificationClose = async () => {
-    // 최초 등록 완료 표시 (다시 팝업 안 뜨게)
-    localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
-    // 팝업 닫기
-    setShowNotificationSheet(false);
-    // 알람은 저장
-    await addAlarm();
   };
 
   const addAlarm = async () => {
-    console.log('🔔 addAlarm 호출됨');
     setIsSubmitting(true);
     try {
+      // 1. 리워드 광고 표시
+      const adResult = await showRewardedAd();
+      
+      // 광고를 끝까지 보지 않으면 알람 추가 안 함
+      if (!adResult.rewarded) {
+        if (adResult.cancelled) {
+          showErrorToast('시청을 완료해 주세요');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+      
       const myIdTrimmed = myId.trim().toLowerCase();
       const targetIdTrimmed = targetId.trim().toLowerCase();
-      console.log('🔔 API 호출 시작:', myIdTrimmed, targetIdTrimmed);
 
-      // 1. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
+      // 2. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
       localStorage.setItem('love_alarm_my_instagram_id', myIdTrimmed);
 
-      // 2. API로 알람 생성 (fromInstagramId 포함)
+      // 3. API로 알람 생성 (fromInstagramId 포함)
       const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed);
       
-      // 3. 완료 후 페이지 이동
+      // 4. 최초 알람 등록인지 확인 (알림 팝업 표시 여부)
+      const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
+      const pushEnabled = user?.pushEnabled ?? false;
+      const tossAppEnabled = user?.tossAppEnabled ?? false;
+      const shouldShowNotificationSheet = isFirstAlarm && !pushEnabled && !tossAppEnabled;
+      
+      // 최초 등록 완료 표시
+      if (isFirstAlarm) {
+        localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
+      }
+      
+      // 5. 완료 후 페이지 이동
       if (result.matched) {
         navigate('/match-success', { state: { alarmId: result.alarm.id, targetInstagramId: targetIdTrimmed } });
       } else {
-        navigate('/alarms', { state: { showAddedToast: true } });
+        navigate('/alarms', { 
+          state: { 
+            showAddedToast: true,
+            showNotificationSheet: shouldShowNotificationSheet 
+          } 
+        });
       }
     } catch (error) {
       console.error('❌ 알람 추가 실패:', error);
@@ -299,46 +332,6 @@ export function AddAlarmPage() {
         </div>
       </div>
 
-      {/* 알림 허용 BottomSheet - limit sheet 형식 */}
-      <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>
-        <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
-          <div className="bottom-sheet-header">
-            <h3 className="bottom-sheet-title">알림 받기</h3>
-            <p className="bottom-sheet-description">알람이 추가됐어요.<br />상대 마음도 같다면 바로 알려드릴게요.</p>
-          </div>
-          <div className="bottom-sheet-content">
-            <img 
-              src="https://static.toss.im/3d-emojis/u1F514-apng.png" 
-              alt="알림" 
-              className="bottom-sheet-image"
-            />
-          </div>
-          <div className="bottom-sheet-cta bottom-sheet-cta-double">
-            <Button
-              size="large"
-              display="block"
-              color="dark"
-              variant="weak"
-              onClick={handleNotificationClose}
-              style={{
-                '--button-background-color': '#f2f4f6',
-                '--button-color': '#6b7684',
-                flex: 1,
-              }}
-            >
-              나중에 하기
-            </Button>
-            <Button
-              size="large"
-              display="block"
-              onClick={handleNotificationAgree}
-              style={{ flex: 1 }}
-            >
-              동의하기
-            </Button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

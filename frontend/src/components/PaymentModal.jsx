@@ -63,36 +63,35 @@ export function PaymentModal({ onClose, onSuccess }) {
     (window.__GRANITE_ENV__ || window.appsInToss);
 
   return (
-    <div className="payment-modal-overlay" onClick={onClose}>
-      <div className="payment-modal-container" onClick={(e) => e.stopPropagation()}>
-        <div className="payment-modal-handle" />
-        
-        <div className="payment-modal-content">
+    <>
+      <div className="payment-modal-overlay show" onClick={onClose} />
+      <div className="payment-modal-container show" onClick={(e) => e.stopPropagation()}>
+        <div className="payment-modal-header">
           <h3 className="payment-modal-title">결제하기</h3>
           <p className="payment-modal-description">
             소중한 인연을 놓치지 않도록,<br />
             알람 슬롯을 하나 더 추가해보세요.<br />
             구매한 슬롯은 영구적으로 누적돼요.
           </p>
-          
-          {error && (
-            <p className="payment-modal-error">{error}</p>
-          )}
         </div>
+        
+        {error && (
+          <p className="payment-modal-error">{error}</p>
+        )}
         
         <div className="payment-modal-cta">
           <Button
-            size="xlarge"
+            size="large"
             display="block"
             onClick={isInTossApp ? handlePurchase : handleDevPurchase}
             disabled={isProcessing}
             loading={isProcessing}
           >
-            알람 슬롯 추가하기 (1,000원)
+            알람 슬롯 추가하기 (990원)
           </Button>
           <Spacing size={8} />
           <Button
-            size="xlarge"
+            size="large"
             display="block"
             color="dark"
             variant="weak"
@@ -107,6 +106,6 @@ export function PaymentModal({ onClose, onSuccess }) {
           </Button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

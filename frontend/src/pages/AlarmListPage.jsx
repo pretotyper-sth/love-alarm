@@ -88,7 +88,7 @@ function AlarmItem({ alarm, onRemove, onMatchedClick, listRowRef }) {
 export function AlarmListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [alarms, setAlarms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false); // 되돌리기 중 상태
@@ -99,9 +99,11 @@ export function AlarmListPage() {
   });
   const [toasts, setToasts] = useState([]); // 토스트 스택
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   const [maxSlots, setMaxSlots] = useState(user?.maxSlots || 2); // 기본 슬롯 2개
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
+  const notificationSheetShownRef = useRef(false);
 
   // 토스트 추가 함수
   const addToast = (toast) => {
@@ -132,6 +134,13 @@ export function AlarmListPage() {
   useEffect(() => {
     loadAlarms();
   }, []);
+
+  // user 정보 변경 시 maxSlots 업데이트
+  useEffect(() => {
+    if (user?.maxSlots) {
+      setMaxSlots(user.maxSlots);
+    }
+  }, [user?.maxSlots]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
   useEffect(() => {
@@ -209,9 +218,42 @@ export function AlarmListPage() {
         message: '알람을 추가했어요',
         duration: 3000,
       });
+    }
+    
+    // 알람 추가 후 알림 팝업 표시 (최초 알람일 경우)
+    if (location.state?.showNotificationSheet && !notificationSheetShownRef.current) {
+      notificationSheetShownRef.current = true;
+      // 토스트가 먼저 보이고 나서 팝업 표시
+      setTimeout(() => {
+        setShowNotificationSheet(true);
+      }, 500);
+    }
+    
+    // state 정리
+    if (location.state) {
       window.history.replaceState({}, document.title);
     }
   }, []);
+
+  // 알림 동의하기 클릭
+  const handleNotificationAgree = async () => {
+    try {
+      // 알림 설정 켜기 (API 호출)
+      const updatedUser = await api.updateSettings({ 
+        pushEnabled: true, 
+        tossAppEnabled: true 
+      });
+      setUser(updatedUser);
+    } catch (error) {
+      console.error('Failed to update notification settings:', error);
+    }
+    setShowNotificationSheet(false);
+  };
+
+  // 알림 닫기 클릭 (동의 안 함)
+  const handleNotificationClose = () => {
+    setShowNotificationSheet(false);
+  };
 
   const loadAlarms = async () => {
     try {
@@ -221,9 +263,17 @@ export function AlarmListPage() {
       // 알람 개수 저장 (다음 로딩 시 스켈레톤 개수용)
       localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
       setLastAlarmCount(fetchedAlarms.length);
-      // TODO: 결제 연동 시 아래 주석 해제
-      // const user = api.getCurrentUser();
-      // setMaxSlots(user?.maxSlots || 2);
+      
+      // 서버에서 최신 user 정보 가져와서 maxSlots 업데이트
+      try {
+        const latestUser = await api.getUser();
+        if (latestUser?.maxSlots) {
+          setMaxSlots(latestUser.maxSlots);
+        }
+      } catch (userError) {
+        console.error('사용자 정보 조회 실패:', userError);
+      }
+      
       // ref 배열 초기화
       alarmRefsRef.current = [];
     } catch (error) {
@@ -362,7 +412,7 @@ export function AlarmListPage() {
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top={`추가하기 (${alarms.length}/2)`}
+              top={`추가하기 (${alarms.length}/${maxSlots})`}
               topProps={{ color: '#4e5968' }}
             />
           }
@@ -438,6 +488,47 @@ export function AlarmListPage() {
           onSuccess={handlePaymentSuccess}
         />
       )}
+
+      {/* 알림 허용 BottomSheet */}
+      <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>
+        <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="bottom-sheet-header">
+            <h3 className="bottom-sheet-title">알림 받기</h3>
+            <p className="bottom-sheet-description">알람이 추가됐어요.<br />상대 마음도 같다면 바로 알려드릴게요.</p>
+          </div>
+          <div className="bottom-sheet-content">
+            <img 
+              src="https://static.toss.im/3d-emojis/u1F514-apng.png" 
+              alt="알림" 
+              className="bottom-sheet-image"
+            />
+          </div>
+          <div className="bottom-sheet-cta bottom-sheet-cta-double">
+            <Button
+              size="large"
+              display="block"
+              color="dark"
+              variant="weak"
+              onClick={handleNotificationClose}
+              style={{
+                '--button-background-color': '#f2f4f6',
+                '--button-color': '#6b7684',
+                flex: 1,
+              }}
+            >
+              나중에 하기
+            </Button>
+            <Button
+              size="large"
+              display="block"
+              onClick={handleNotificationAgree}
+              style={{ flex: 1 }}
+            >
+              동의하기
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
