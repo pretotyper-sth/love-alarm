@@ -334,6 +334,7 @@ export function SettingsPage() {
             localStorage.removeItem('love_alarm_my_instagram_id');
             localStorage.removeItem('love_alarm_last_count');
             localStorage.removeItem('love_alarm_abuse_warning_confirmed');
+            localStorage.removeItem('has_visited_intro'); // 온보딩 다시 표시
             alert('전체 초기화 완료! 앱을 다시 시작하면 온보딩/로그인부터 시작됩니다.');
           }}
           style={{
