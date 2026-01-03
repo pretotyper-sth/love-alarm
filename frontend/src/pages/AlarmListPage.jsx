@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { hasConfirmedAbuseWarning } from './AbuseWarningPage';
+import { PaymentModal } from '../components/PaymentModal';
 import './AlarmListPage.css';
 
 // 알람 아이템 컴포넌트
@@ -97,11 +98,8 @@ export function AlarmListPage() {
     return saved ? parseInt(saved, 10) : 0;
   });
   const [toasts, setToasts] = useState([]); // 토스트 스택
-  const [showLimitSheet, setShowLimitSheet] = useState(false);
-  // TODO: 결제 연동 시 아래 주석 해제
-  // const [showPaymentSheet, setShowPaymentSheet] = useState(false);
-  // const [maxSlots, setMaxSlots] = useState(2); // 기본 슬롯 2개
-  // const [isPurchasing, setIsPurchasing] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [maxSlots, setMaxSlots] = useState(user?.maxSlots || 2); // 기본 슬롯 2개
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
 
@@ -241,46 +239,32 @@ export function AlarmListPage() {
       navigate('/abuse-warning');
       return;
     }
-    // 알람이 2개 이상이면 제한 팝업 표시
-    if (alarms.length >= 2) {
-      setShowLimitSheet(true);
-      return;
-    }
-    navigate('/add-alarm');
-  };
-
-  /* TODO: 결제 연동 시 아래 주석 해제
-  const handleAddAlarm = () => {
     // 현재 알람 수가 최대 슬롯에 도달하면 결제 팝업 표시
     if (alarms.length >= maxSlots) {
-      setShowPaymentSheet(true);
+      setShowPaymentModal(true);
       return;
     }
     navigate('/add-alarm');
   };
 
-  // 슬롯 구매 처리
-  const handlePurchaseSlot = async () => {
-    setIsPurchasing(true);
+  // 결제 성공 시 슬롯 증가 처리
+  const handlePaymentSuccess = async () => {
     try {
-      // TODO: 실제 결제 연동 시 여기에 결제 API 호출 추가
-      // 결제 성공 후 슬롯 증가 API 호출
+      // 백엔드에 슬롯 구매 기록 및 증가 요청
       const result = await api.purchaseSlot();
       setMaxSlots(result.newMaxSlots);
-      setShowPaymentSheet(false);
+      setShowPaymentModal(false);
+      // 결제 성공 후 알람 추가 페이지로 이동
       navigate('/add-alarm');
     } catch (error) {
-      console.error('슬롯 구매 실패:', error);
+      console.error('슬롯 증가 실패:', error);
       addToast({
         type: 'error',
-        message: '슬롯 구매에 실패했어요',
+        message: '처리 중 오류가 발생했어요',
         duration: 3000,
       });
-    } finally {
-      setIsPurchasing(false);
     }
   };
-  */
 
   const handleMatchedClick = (alarm) => {
     navigate('/match-success', { state: { alarmId: alarm.id, targetInstagramId: alarm.targetInstagramId } });
@@ -447,76 +431,13 @@ export function AlarmListPage() {
         ))}
       </div>
 
-      {/* 알람 추가 제한 BottomSheet */}
-      <div className={`custom-bottom-sheet-overlay ${showLimitSheet ? 'show' : ''}`} onClick={() => setShowLimitSheet(false)}>
-        <div className={`custom-bottom-sheet ${showLimitSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
-          <div className="bottom-sheet-header">
-            <h3 className="bottom-sheet-title">알람 추가 제한</h3>
-            <p className="bottom-sheet-description">아쉽지만 아직은 2개까지만 추가할 수 있어요.</p>
-          </div>
-          <div className="bottom-sheet-content">
-            <img 
-              src="https://static.toss.im/2d-emojis/png/4x/u26A0.png" 
-              alt="경고" 
-              className="bottom-sheet-image"
-            />
-          </div>
-          <div className="bottom-sheet-cta">
-            <Button
-              size="xlarge"
-              display="block"
-              onClick={() => setShowLimitSheet(false)}
-            >
-              확인
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* TODO: 결제 연동 시 아래 주석 해제하고 위 제한 팝업 제거
-      {showPaymentSheet && (
-        <>
-          <div className="payment-sheet-overlay" onClick={() => setShowPaymentSheet(false)} />
-          <div className="payment-sheet-container">
-            <div className="payment-sheet-handle" />
-            <div className="payment-sheet-content">
-              <h3 className="payment-sheet-title">결제하기</h3>
-              <p className="payment-sheet-description">
-                소중한 인연을 놓치지 않도록,<br />
-                알람 슬롯을 하나 더 추가해보세요.<br />
-                구매한 슬롯은 영구적으로 누적돼요.
-              </p>
-            </div>
-            <div className="payment-sheet-cta">
-              <Button
-                size="xlarge"
-                display="block"
-                onClick={handlePurchaseSlot}
-                disabled={isPurchasing}
-                loading={isPurchasing}
-              >
-                알람 슬롯 추가하기 (1,000원)
-              </Button>
-              <Spacing size={8} />
-              <Button
-                size="xlarge"
-                display="block"
-                color="dark"
-                variant="weak"
-                onClick={() => setShowPaymentSheet(false)}
-                disabled={isPurchasing}
-                style={{
-                  '--button-background-color': '#f2f4f6',
-                  '--button-color': '#6b7684',
-                }}
-              >
-                나중에 하기
-              </Button>
-            </div>
-          </div>
-        </>
+      {/* 결제 모달 */}
+      {showPaymentModal && (
+        <PaymentModal
+          onClose={() => setShowPaymentModal(false)}
+          onSuccess={handlePaymentSuccess}
+        />
       )}
-      */}
     </div>
   );
 }

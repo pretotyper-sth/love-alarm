@@ -215,8 +215,8 @@ export function SettingsPage() {
       {/* 여백 12px */}
       <Spacing size={12} />
 
-      {/* 구분선 16px */}
-      <div style={{ width: '100%', height: '16px', backgroundColor: '#f9fafb' }} />
+      {/* 구분선 8px */}
+      <div style={{ width: '100%', height: '8px', backgroundColor: '#f9fafb' }} />
 
       {/* 여백 12px */}
       <Spacing size={12} />

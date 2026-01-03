@@ -1,31 +1,73 @@
-.payment-modal {
-  padding: 24px;
-  max-width: 400px;
-  width: 100%;
+/* Payment Modal - BottomSheet 스타일 */
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.payment-title {
-  font-size: 20px;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.payment-modal-container {
+  background-color: white;
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 12px 20px 34px 20px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.payment-modal-handle {
+  width: 36px;
+  height: 4px;
+  background-color: #d1d6db;
+  border-radius: 2px;
+  margin: 0 auto 20px auto;
+}
+
+.payment-modal-content {
+  text-align: center;
+  padding: 0 4px;
+}
+
+.payment-modal-title {
+  font-size: 22px;
   font-weight: 700;
   color: #191f28;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
 }
 
-.payment-description {
-  font-size: 14px;
-  color: #4e5968;
+.payment-modal-description {
+  font-size: 15px;
+  color: #6b7684;
   line-height: 1.6;
   margin: 0 0 24px 0;
 }
 
-.payment-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.payment-modal-error {
+  font-size: 14px;
+  color: #f04452;
+  margin: 0 0 16px 0;
+  padding: 12px;
+  background-color: #fff0f1;
+  border-radius: 8px;
 }
 
-.purchase-button,
-.cancel-button {
-  width: 100%;
+.payment-modal-cta {
+  padding: 0 4px;
 }
-
