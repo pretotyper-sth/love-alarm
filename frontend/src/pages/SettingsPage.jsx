@@ -327,6 +327,8 @@ export function SettingsPage() {
         <Spacing size={8} />
         <button
           onClick={() => {
+            // api.logout() 호출하여 메모리 캐시도 초기화
+            api.logout();
             // 모든 localStorage 완전 초기화 (온보딩/로그인 테스트용)
             localStorage.removeItem('love_alarm_user');
             localStorage.removeItem('love_alarm_device_id');
