@@ -57,14 +57,16 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-const corsOrigin = process.env.CORS_ORIGIN === '*' 
-  ? '*' 
-  : (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000').split(',');
-
+// 토스 미니앱 환경에서의 요청을 허용하기 위해 모든 origin 허용
 app.use(cors({
-  origin: corsOrigin,
-  credentials: corsOrigin !== '*'
+  origin: true, // 모든 origin 허용 (credentials와 함께 사용 가능)
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// Preflight 요청 명시적 처리
+app.options('*', cors());
 app.use(express.json());
 
 // Prisma와 io를 req에 추가
