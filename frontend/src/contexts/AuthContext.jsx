@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { appLogin } from '@apps-in-toss/web-framework';
 import { api } from '../utils/api';
+import { storage } from '../utils/storage';
 
 const AuthContext = createContext(null);
 
@@ -8,34 +9,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // 앱 시작 시 저장된 사용자 복원만 수행
-    // 토스 로그인은 IntroPage에서 명시적으로 호출
-    const initAuth = async () => {
-      try {
-        // 저장된 사용자 확인
-        const currentUser = api.getCurrentUser();
-        
-        if (currentUser) {
-          setUser(currentUser);
-          // WebSocket 연결
-          api.connectSocket();
-          console.log('✅ 저장된 사용자 복원 완료');
-        } else {
-          console.log('ℹ️ 저장된 사용자 없음 - 로그인 필요');
-        }
-      } catch (error) {
-        console.error('Auth init error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-  }, []);
-
-  // 토스 로그인 수행
-  const performTossLogin = async () => {
+  // 토스 로그인 수행 (내부 함수)
+  const performTossLoginInternal = async () => {
     try {
       // 1. 토스 SDK에서 인가 코드 받기
       const { authorizationCode, referrer } = await appLogin();
@@ -51,6 +26,50 @@ export function AuthProvider({ children }) {
       throw error;
     }
   };
+
+  useEffect(() => {
+    // 앱 시작 시 인증 초기화
+    const initAuth = async () => {
+      try {
+        // 1. 저장된 사용자 확인
+        const currentUser = api.getCurrentUser();
+        
+        if (currentUser) {
+          setUser(currentUser);
+          api.connectSocket();
+          console.log('✅ 저장된 사용자 복원 완료');
+        } else {
+          // 2. 저장된 사용자가 없는 경우
+          const hasVisited = storage.get('has_visited_intro');
+          
+          if (hasVisited) {
+            // 온보딩은 완료했지만 사용자 정보가 없는 경우 (세션 만료, 앱 재설치 등)
+            // → 토스 로그인 자동 시도 (토스가 기존 사용자 인식)
+            console.log('ℹ️ 재방문 사용자 - 자동 로그인 시도');
+            try {
+              const newUser = await performTossLoginInternal();
+              setUser(newUser);
+              api.connectSocket();
+              console.log('✅ 자동 로그인 완료');
+            } catch (loginError) {
+              // 자동 로그인 실패 시 온보딩 리셋 (IntroPage로 유도)
+              console.error('자동 로그인 실패 - 온보딩 리셋:', loginError);
+              storage.remove('has_visited_intro');
+            }
+          } else {
+            console.log('ℹ️ 첫 방문 사용자 - IntroPage에서 로그인 필요');
+          }
+        }
+      } catch (error) {
+        console.error('Auth init error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
 
   // 인스타그램 ID 업데이트
   const updateInstagramId = async (instagramId) => {
@@ -73,10 +92,10 @@ export function AuthProvider({ children }) {
   const relogin = async () => {
     setLoading(true);
     try {
-      const currentUser = await performTossLogin();
-      setUser(currentUser);
+      const newUser = await performTossLoginInternal();
+      setUser(newUser);
       api.connectSocket();
-      return currentUser;
+      return newUser;
     } catch (error) {
       console.error('Relogin error:', error);
       throw error;
@@ -98,14 +117,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-// 기기 고유 ID 생성/조회 (개발용 - 실제로는 토스 사용자 ID 사용)
-function getOrCreateDeviceId() {
-  let deviceId = localStorage.getItem('love_alarm_device_id');
-  if (!deviceId) {
-    deviceId = 'device_' + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem('love_alarm_device_id', deviceId);
-  }
-  return deviceId;
 }
