@@ -2,11 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import './PaymentModal.css';
 
-// 상품 ID (콘솔에서 등록한 값)
-const PRODUCT_ID = 'ait.0000015595.2522bade.4f8d898420.7421896636';
-
-// 최소 로딩 시간 (깜빡임 방지)
-const MIN_LOADING_TIME = 1500;
+// 상품 SKU (콘솔에서 등록한 값)
+const PRODUCT_SKU = 'ait.0000015595.2522bade.4f8d898420.7421896636';
 
 export function PaymentModal({ onClose, onSuccess }) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,76 +27,56 @@ export function PaymentModal({ onClose, onSuccess }) {
     setIsProcessing(true);
     setError(null);
     
-    const startTime = Date.now();
-    
-    // 최소 로딩 시간 보장 함수
-    const ensureMinLoadTime = async () => {
-      const elapsed = Date.now() - startTime;
-      if (elapsed < MIN_LOADING_TIME) {
-        await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
-      }
-    };
-    
     try {
-      // Step 1: IAP 모듈 가져오기
+      // IAP 모듈 가져오기
       let IAP = iapModuleRef.current;
       if (!IAP) {
         const module = await import('@apps-in-toss/web-framework');
         IAP = module.IAP;
       }
       
-      // Step 2: SDK 지원 여부 확인
+      // SDK 지원 여부 확인
       if (!IAP || typeof IAP.createOneTimePurchaseOrder !== 'function') {
-        await ensureMinLoadTime();
         setError('이 환경에서는 결제를 지원하지 않아요.');
         setIsProcessing(false);
         return;
       }
       
-      // Step 3: 상품 목록 조회 (샌드박스에서는 mock 상품 반환)
-      let productIdToUse = PRODUCT_ID;
-      
-      if (typeof IAP.getProductItemList === 'function') {
-        try {
-          const products = await IAP.getProductItemList();
-          alert(`[DEBUG] 상품 목록:\n${JSON.stringify(products, null, 2)}`);
-          
-          // 상품이 있으면 첫 번째 상품 사용 (샌드박스 mock 상품)
-          if (products && products.length > 0) {
-            // 실제 상품 ID가 있으면 사용, 없으면 첫 번째 mock 상품 사용
-            const realProduct = products.find(p => p.productId === PRODUCT_ID || p.sku === PRODUCT_ID);
-            if (realProduct) {
-              productIdToUse = realProduct.productId || realProduct.sku;
-            } else {
-              // 샌드박스: mock 상품 사용
-              productIdToUse = products[0].productId || products[0].sku;
-              alert(`[INFO] 샌드박스 mock 상품 사용: ${productIdToUse}`);
-            }
+      // 결제 요청 (SDK 1.1.3+ 콜백 방식)
+      // 참고: https://developers-apps-in-toss.toss.im/bedrock/reference/framework/인앱%20결제/IAP.html
+      const cleanup = IAP.createOneTimePurchaseOrder({
+        options: {
+          sku: PRODUCT_SKU,
+          processProductGrant: ({ orderId }) => {
+            // 상품 지급 로직 - 서버에서 슬롯 증가 처리
+            // 여기서는 true를 반환하고, onSuccess에서 실제 처리
+            return true;
           }
-        } catch (listErr) {
-          alert(`[WARN] 상품 목록 조회 실패: ${listErr.message}\n실제 상품 ID로 시도합니다.`);
-        }
-      }
-      
-      // Step 4: 결제 요청
-      alert(`[DEBUG] 결제 요청\n상품 ID: ${productIdToUse}`);
-      const result = await IAP.createOneTimePurchaseOrder({
-        productId: productIdToUse,
+        },
+        onEvent: (event) => {
+          if (event.type === 'success') {
+            cleanup?.();
+            onSuccess();
+          }
+        },
+        onError: (error) => {
+          cleanup?.();
+          
+          // 사용자가 취소한 경우 - 조용히 닫기
+          if (error?.code === 'USER_CANCELLED' || 
+              error?.message?.includes('cancel') || 
+              error?.message?.includes('취소')) {
+            setIsProcessing(false);
+            return;
+          }
+          
+          // 기타 오류
+          setError('결제에 실패했어요. 다시 시도해주세요.');
+          setIsProcessing(false);
+        },
       });
       
-      alert(`[SUCCESS] 결제 완료!\n${JSON.stringify(result, null, 2)}`);
-      
-      await ensureMinLoadTime();
-      
-      // 결제 성공
-      onSuccess();
-      
     } catch (err) {
-      // 상세 에러 로그
-      alert(`[ERROR] 결제 실패!\n\n코드: ${err?.code || 'N/A'}\n메시지: ${err?.message || err}`);
-      
-      await ensureMinLoadTime();
-      
       // 사용자가 취소한 경우 - 조용히 닫기
       if (err?.code === 'USER_CANCELLED' || 
           err?.message?.includes('cancel') || 
@@ -109,8 +86,7 @@ export function PaymentModal({ onClose, onSuccess }) {
       }
       
       // 기타 오류
-      setError(`결제 실패: ${err?.message || '알 수 없는 오류'}`);
-    } finally {
+      setError('결제에 실패했어요. 다시 시도해주세요.');
       setIsProcessing(false);
     }
   };

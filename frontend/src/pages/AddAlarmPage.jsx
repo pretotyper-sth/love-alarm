@@ -377,7 +377,7 @@ export function AddAlarmPage() {
           disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
           loading={isSubmitting}
         >
-          광고 보고 추가하기
+          추가하기
         </Button>
       </div>
 
