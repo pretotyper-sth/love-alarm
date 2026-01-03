@@ -5,7 +5,7 @@
   background: var(--adaptiveBackground, #ffffff);
 }
 
-/* List/ListRow 레이아웃 안정화 - 모든 애니메이션/트랜지션 비활성화 */
+/* List/ListRow 레이아웃 안정화 */
 .settings-page-container [class*="List"],
 .settings-page-container [class*="ListRow"],
 .settings-page-container [class*="ListRow"] * {
@@ -14,12 +14,26 @@
   animation: none !important;
 }
 
-/* ListRow 텍스트 위치 고정 */
-.settings-page-container [class*="ListRow"] [class*="Texts"] {
-  position: relative;
-  left: 0;
-  margin-left: 0;
-  padding-left: 0;
+/* ListRow 내부 flex 컨테이너 고정 */
+.settings-page-container [class*="ListRow"] > div {
+  width: 100% !important;
+  min-width: 100% !important;
+  flex-shrink: 0 !important;
+}
+
+/* ListRow contents 영역 (텍스트) - flex-grow 고정 */
+.settings-page-container [class*="ListRow"] [class*="contents"],
+.settings-page-container [class*="ListRow"] [class*="Contents"] {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* ListRow right 영역 (화살표) - 크기 고정 */
+.settings-page-container [class*="ListRow"] [class*="right"],
+.settings-page-container [class*="ListRow"] [class*="Right"] {
+  flex-shrink: 0 !important;
+  width: auto !important;
+  min-width: fit-content !important;
 }
 
 /* Quick_Navigation 스타일 */
