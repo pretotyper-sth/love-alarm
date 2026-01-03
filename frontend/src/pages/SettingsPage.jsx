@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Text,
   Top,
@@ -68,17 +68,6 @@ export function SettingsPage() {
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
   const [tossAppEnabled, setTossAppEnabled] = useState(user?.tossAppEnabled ?? false);
   const [isSaving, setIsSaving] = useState(false);
-  
-  // 레이아웃 안정화 후 표시 (레이아웃 시프트 방지)
-  const [isLayoutReady, setIsLayoutReady] = useState(false);
-  
-  useLayoutEffect(() => {
-    // 다음 프레임에서 표시 (레이아웃 계산 완료 후)
-    const frameId = requestAnimationFrame(() => {
-      setIsLayoutReady(true);
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, []);
   
   // 성공 토스트 상태
   const [successToast, setSuccessToast] = useState({ show: false, message: '' });
@@ -219,53 +208,51 @@ export function SettingsPage() {
       {/* 여백 12px */}
       <Spacing size={12} />
 
-      {/* 추가 메뉴 섹션 - visibility로 레이아웃 시프트 방지 */}
-      <div style={{ visibility: isLayoutReady ? 'visible' : 'hidden' }}>
-        <List>
-          <ListRow
-            contents={
-              <Text color="#4e5968" typography="t5" fontWeight="semibold">
-                내 마음이 닿도록 앱 소문내기
-              </Text>
-            }
-            right={
-              <img 
-                src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
-                alt="오른쪽 화살표"
-                style={{ width: '20px', height: '20px', opacity: 0.6 }}
-              />
-            }
-            verticalPadding="large"
-            horizontalPadding="medium"
-            onClick={() => {
-              handleShare(
-                '토스 앱 | 좋아하면 울리는\n' +
-                '#토스 #앱인토스 #설치없이시작가능\n\n' +
-                window.location.origin
-              );
-            }}
-          />
-          <ListRow
-            contents={
-              <Text color="#4e5968" typography="t5" fontWeight="semibold">
-                의견 보내기
-              </Text>
-            }
-            right={
-              <img 
-                src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
-                alt="오른쪽 화살표"
-                style={{ width: '20px', height: '20px', opacity: 0.6 }}
-              />
-            }
-            verticalPadding="large"
-            horizontalPadding="medium"
-            onClick={() => {
-              navigate('/feedback');
-            }}
-          />
-        </List>
-      </div>
+      {/* 추가 메뉴 섹션 */}
+      <List>
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              내 마음이 닿도록 앱 소문내기
+            </Text>
+          }
+          right={
+            <img 
+              src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
+              alt="오른쪽 화살표"
+              style={{ width: '20px', height: '20px', opacity: 0.6 }}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+          onClick={() => {
+            handleShare(
+              '토스 앱 | 좋아하면 울리는\n' +
+              '#토스 #앱인토스 #설치없이시작가능\n\n' +
+              window.location.origin
+            );
+          }}
+        />
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              의견 보내기
+            </Text>
+          }
+          right={
+            <img 
+              src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
+              alt="오른쪽 화살표"
+              style={{ width: '20px', height: '20px', opacity: 0.6 }}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+          onClick={() => {
+            navigate('/feedback');
+          }}
+        />
+      </List>
 
       {/* 성공 토스트 - 기존 구조와 동일 */}
       <div className="toast-stack">
