@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import './PaymentModal.css';
 
@@ -6,11 +6,25 @@ import './PaymentModal.css';
 const PRODUCT_ID = 'ait.0000015595.2522bade.4f8d898420.7421896636';
 
 // 최소 로딩 시간 (깜빡임 방지)
-const MIN_LOADING_TIME = 800;
+const MIN_LOADING_TIME = 1500;
 
 export function PaymentModal({ onClose, onSuccess }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const iapModuleRef = useRef(null);
+
+  // 컴포넌트 마운트 시 IAP 모듈 사전 로드
+  useEffect(() => {
+    const preloadIAP = async () => {
+      try {
+        const { IAP } = await import('@apps-in-toss/web-framework');
+        iapModuleRef.current = IAP;
+      } catch (e) {
+        // 로드 실패 시 무시
+      }
+    };
+    preloadIAP();
+  }, []);
 
   const handlePurchase = async () => {
     setIsProcessing(true);
@@ -18,41 +32,63 @@ export function PaymentModal({ onClose, onSuccess }) {
     
     const startTime = Date.now();
     
+    // 최소 로딩 시간 보장 함수
+    const ensureMinLoadTime = async () => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_LOADING_TIME) {
+        await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
+      }
+    };
+    
     try {
-      // 항상 SDK 호출 시도 (QR 테스트/샌드박스 환경에서도 동작해야 함)
-      const { IAP } = await import('@apps-in-toss/web-framework');
+      // IAP 모듈 가져오기 (사전 로드되었으면 캐시 사용)
+      let IAP = iapModuleRef.current;
+      if (!IAP) {
+        const module = await import('@apps-in-toss/web-framework');
+        IAP = module.IAP;
+      }
+      
+      // IAP SDK 지원 여부 확인
+      if (!IAP || typeof IAP.createOneTimePurchaseOrder !== 'function') {
+        // SDK 미지원 환경 - 디버그용 알림 표시
+        await ensureMinLoadTime();
+        alert('[테스트] IAP SDK를 사용할 수 없는 환경입니다.\n실제 토스 앱에서 테스트해주세요.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      // isSupported 체크 (있는 경우)
+      if (typeof IAP.createOneTimePurchaseOrder.isSupported === 'function' 
+          && !IAP.createOneTimePurchaseOrder.isSupported()) {
+        await ensureMinLoadTime();
+        alert('[테스트] 이 환경에서는 인앱결제를 지원하지 않습니다.');
+        setIsProcessing(false);
+        return;
+      }
       
       // 일회성 상품 구매 요청
       const result = await IAP.createOneTimePurchaseOrder({
         productId: PRODUCT_ID,
       });
       
-      // 결제 성공 시 최소 로딩 시간 보장
-      const elapsed = Date.now() - startTime;
-      if (elapsed < MIN_LOADING_TIME) {
-        await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
-      }
+      await ensureMinLoadTime();
       
-      // 결제 성공 시 백엔드에서 슬롯 증가 처리
-      if (result) {
-        onSuccess();
-      }
+      // 결제 성공
+      onSuccess();
       
     } catch (err) {
-      // 사용자가 취소한 경우 - 조용히 처리
-      if (err?.code === 'USER_CANCELLED' || err?.message?.includes('cancel')) {
+      await ensureMinLoadTime();
+      
+      // 사용자가 취소한 경우 - 조용히 닫기
+      if (err?.code === 'USER_CANCELLED' || 
+          err?.message?.includes('cancel') || 
+          err?.message?.includes('취소')) {
+        setIsProcessing(false);
         return;
       }
       
-      // SDK 미지원 환경 (로컬 개발 등) - 시뮬레이션
-      if (err?.name === 'TypeError' || err?.message?.includes('IAP')) {
-        const elapsed = Date.now() - startTime;
-        if (elapsed < MIN_LOADING_TIME) {
-          await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
-        }
-        onSuccess();
-        return;
-      }
+      // 디버그용: 에러 내용 표시
+      alert(`[결제 오류]\n코드: ${err?.code || 'N/A'}\n메시지: ${err?.message || err}`);
       
       // 기타 오류
       setError('결제에 실패했어요. 다시 시도해주세요.');
