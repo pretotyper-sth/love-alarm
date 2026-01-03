@@ -19,18 +19,38 @@ export const api = {
    * appLogin()에서 받은 authorizationCode와 referrer를 서버로 전송
    */
   tossLogin: async (authorizationCode, referrer) => {
-    const response = await fetch(`${API_BASE_URL}/auth/toss-login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ authorizationCode, referrer }),
-    });
+    console.log('🔐 [API] tossLogin 호출 시작');
+    console.log('🔐 [API] 서버 URL:', `${API_BASE_URL}/auth/toss-login`);
+    
+    let response;
+    try {
+      response = await fetch(`${API_BASE_URL}/auth/toss-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorizationCode, referrer }),
+      });
+    } catch (networkError) {
+      console.error('🔐 [API] 네트워크 오류:', networkError);
+      throw new Error(`서버 연결 실패: ${networkError.message}`);
+    }
+    
+    console.log('🔐 [API] 응답 상태:', response.status, response.statusText);
     
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '토스 로그인 실패');
+      let errorMessage = '토스 로그인 실패';
+      try {
+        const errorData = await response.json();
+        console.error('🔐 [API] 서버 에러 응답:', errorData);
+        errorMessage = errorData.error || errorData.message || `서버 오류 (${response.status})`;
+      } catch (parseError) {
+        console.error('🔐 [API] 에러 응답 파싱 실패:', parseError);
+        errorMessage = `서버 오류 (${response.status}: ${response.statusText})`;
+      }
+      throw new Error(errorMessage);
     }
     
     const data = await response.json();
+    console.log('🔐 [API] 로그인 성공:', data.isNewUser ? '새 사용자' : '기존 사용자');
     currentUser = data.user;
     
     // localStorage에 사용자 정보 저장 (앱 재시작 시 복원용)

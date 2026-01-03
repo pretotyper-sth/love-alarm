@@ -32,9 +32,28 @@ export function IntroPage() {
       navigate('/alarms');
     } catch (error) {
       console.error('🔐 [IntroPage] 로그인 실패:', error);
-      // 로그인 실패 시 에러 표시 (프로덕션에서는 로그인 필수)
-      alert('로그인에 실패했습니다: ' + (error.message || '알 수 없는 오류'));
-      // 실패해도 진행하지 않음 - 로그인 필수
+      
+      // 상세 에러 정보 출력
+      const errorDetails = {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.substring(0, 200),
+      };
+      console.error('🔐 [IntroPage] 에러 상세:', JSON.stringify(errorDetails));
+      
+      // 에러 원인에 따른 사용자 안내
+      let userMessage = '로그인에 실패했어요.\n\n';
+      if (error.message?.includes('mTLS') || error.message?.includes('인증서')) {
+        userMessage += '서버 인증서 오류입니다.\n개발팀에 문의해주세요.';
+      } else if (error.message?.includes('토큰') || error.message?.includes('token')) {
+        userMessage += '토스 인증 처리 중 오류가 발생했어요.\n잠시 후 다시 시도해주세요.';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        userMessage += '서버에 연결할 수 없어요.\n인터넷 연결을 확인해주세요.';
+      } else {
+        userMessage += `오류: ${error.message || '알 수 없는 오류'}`;
+      }
+      
+      alert(userMessage);
     } finally {
       setIsLoading(false);
     }
