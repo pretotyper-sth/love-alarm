@@ -5,6 +5,9 @@ import './PaymentModal.css';
 // 상품 ID (콘솔에서 등록한 값)
 const PRODUCT_ID = 'ait.0000015595.2522bade.4f8d898420.7421896636';
 
+// 최소 로딩 시간 (깜빡임 방지)
+const MIN_LOADING_TIME = 800;
+
 export function PaymentModal({ onClose, onSuccess }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
@@ -13,29 +16,41 @@ export function PaymentModal({ onClose, onSuccess }) {
     setIsProcessing(true);
     setError(null);
     
+    const startTime = Date.now();
+    
     try {
-      // @apps-in-toss/web-framework에서 IAP 동적 import
+      // 항상 SDK 호출 시도 (QR 테스트/샌드박스 환경에서도 동작해야 함)
       const { IAP } = await import('@apps-in-toss/web-framework');
-      
-      console.log('💳 결제 시작:', PRODUCT_ID);
       
       // 일회성 상품 구매 요청
       const result = await IAP.createOneTimePurchaseOrder({
         productId: PRODUCT_ID,
       });
       
-      console.log('💳 결제 결과:', result);
+      // 결제 성공 시 최소 로딩 시간 보장
+      const elapsed = Date.now() - startTime;
+      if (elapsed < MIN_LOADING_TIME) {
+        await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
+      }
       
       // 결제 성공 시 백엔드에서 슬롯 증가 처리
-      onSuccess();
+      if (result) {
+        onSuccess();
+      }
       
     } catch (err) {
-      console.error('💳 결제 실패:', err);
-      
-      // 사용자가 취소한 경우
+      // 사용자가 취소한 경우 - 조용히 처리
       if (err?.code === 'USER_CANCELLED' || err?.message?.includes('cancel')) {
-        console.log('💳 사용자가 결제를 취소했습니다');
-        // 취소는 에러 메시지 표시 안 함
+        return;
+      }
+      
+      // SDK 미지원 환경 (로컬 개발 등) - 시뮬레이션
+      if (err?.name === 'TypeError' || err?.message?.includes('IAP')) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < MIN_LOADING_TIME) {
+          await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
+        }
+        onSuccess();
         return;
       }
       
@@ -45,22 +60,6 @@ export function PaymentModal({ onClose, onSuccess }) {
       setIsProcessing(false);
     }
   };
-
-  // 개발 환경 테스트용 (토스 앱 외부에서 실행 시)
-  const handleDevPurchase = async () => {
-    setIsProcessing(true);
-    console.log('💳 [개발 환경] 결제 시뮬레이션');
-    
-    // 시뮬레이션 딜레이
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsProcessing(false);
-    onSuccess();
-  };
-
-  // 토스 앱 환경인지 확인
-  const isInTossApp = typeof window !== 'undefined' && 
-    (window.__GRANITE_ENV__ || window.appsInToss);
 
   return (
     <>
@@ -83,7 +82,7 @@ export function PaymentModal({ onClose, onSuccess }) {
           <Button
             size="large"
             display="block"
-            onClick={isInTossApp ? handlePurchase : handleDevPurchase}
+            onClick={handlePurchase}
             disabled={isProcessing}
             loading={isProcessing}
           >

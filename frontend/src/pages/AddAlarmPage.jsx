@@ -46,37 +46,61 @@ export function AddAlarmPage() {
     await addAlarm();
   };
 
-  // 리워드 광고 표시 함수
+  // 리워드 광고 표시 함수 (문서: https://developers-apps-in-toss.toss.im/ads/develop.html)
   const showRewardedAd = async () => {
     try {
-      // 토스 앱 환경인지 확인
-      const isInTossApp = typeof window !== 'undefined' && 
-        (window.__GRANITE_ENV__ || window.appsInToss);
+      const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
       
-      if (!isInTossApp) {
-        // 개발 환경에서는 광고 시뮬레이션
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return { rewarded: true };
+      // SDK 지원 여부 확인
+      if (GoogleAdMob.loadAppsInTossAdMob.isSupported() !== true) {
+        // SDK 미지원 환경 (로컬 개발 등)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { rewarded: true, skipped: true };
       }
       
-      // @apps-in-toss/web-framework에서 Ad 모듈 동적 import
-      const { Ad } = await import('@apps-in-toss/web-framework');
-      
-      // 광고 로드
-      await Ad.loadRewardedAd({
-        adGroupId: REWARDED_AD_GROUP_ID,
+      // 1. 광고 로드 (콜백 기반 → Promise 래핑)
+      await new Promise((resolve, reject) => {
+        const cleanup = GoogleAdMob.loadAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (event) => {
+            if (event.type === 'loaded') {
+              cleanup?.();
+              resolve();
+            }
+          },
+          onError: (error) => {
+            cleanup?.();
+            reject(error);
+          },
+        });
       });
       
-      // 광고 표시 및 결과 반환
-      const result = await Ad.showRewardedAd({
-        adGroupId: REWARDED_AD_GROUP_ID,
+      // 2. 광고 표시 및 보상 확인
+      const result = await new Promise((resolve, reject) => {
+        let rewarded = false;
+        
+        const cleanup = GoogleAdMob.showAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (event) => {
+            if (event.type === 'userEarnedReward') {
+              rewarded = true;
+            }
+            if (event.type === 'dismissed') {
+              cleanup?.();
+              resolve({ rewarded });
+            }
+          },
+          onError: (error) => {
+            cleanup?.();
+            reject(error);
+          },
+        });
       });
       
       return result;
       
     } catch (error) {
       // 광고 로드 실패 시에도 알람 추가는 진행
-      // (광고가 없거나 네트워크 오류 등)
       if (error?.code === 'AD_NOT_READY' || error?.code === 'AD_LOAD_FAILED') {
         return { rewarded: true, skipped: true };
       }
@@ -86,8 +110,8 @@ export function AddAlarmPage() {
         return { rewarded: false, cancelled: true };
       }
       
-      // 기타 오류는 알람 추가 진행
-      return { rewarded: true, error: true };
+      // SDK 미지원 환경 또는 기타 오류
+      return { rewarded: true, skipped: true };
     }
   };
 
