@@ -19,19 +19,22 @@ export function IntroPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleConfirm = async () => {
+    console.log('🔐 [IntroPage] 확인했어요 버튼 클릭');
     setIsLoading(true);
     try {
-      // 토스 로그인 수행
+      console.log('🔐 [IntroPage] 토스 로그인 시작...');
+      // 토스 로그인 수행 - 여기서 토스 동의 화면이 떠야 함
       await relogin();
+      console.log('🔐 [IntroPage] 토스 로그인 성공!');
       // 온보딩 완료 표시
       storage.set('has_visited_intro', true);
       // 알람 목록으로 이동
       navigate('/alarms');
     } catch (error) {
-      console.error('로그인 실패:', error);
-      // 로그인 실패해도 진행 (개발 환경 등)
-      storage.set('has_visited_intro', true);
-      navigate('/alarms');
+      console.error('🔐 [IntroPage] 로그인 실패:', error);
+      // 로그인 실패 시 에러 표시 (프로덕션에서는 로그인 필수)
+      alert('로그인에 실패했습니다: ' + (error.message || '알 수 없는 오류'));
+      // 실패해도 진행하지 않음 - 로그인 필수
     } finally {
       setIsLoading(false);
     }
