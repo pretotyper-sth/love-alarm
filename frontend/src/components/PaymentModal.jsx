@@ -50,18 +50,8 @@ export function PaymentModal({ onClose, onSuccess }) {
       
       // IAP SDK 지원 여부 확인
       if (!IAP || typeof IAP.createOneTimePurchaseOrder !== 'function') {
-        // SDK 미지원 환경 - 디버그용 알림 표시
         await ensureMinLoadTime();
-        alert('[테스트] IAP SDK를 사용할 수 없는 환경입니다.\n실제 토스 앱에서 테스트해주세요.');
-        setIsProcessing(false);
-        return;
-      }
-      
-      // isSupported 체크 (있는 경우)
-      if (typeof IAP.createOneTimePurchaseOrder.isSupported === 'function' 
-          && !IAP.createOneTimePurchaseOrder.isSupported()) {
-        await ensureMinLoadTime();
-        alert('[테스트] 이 환경에서는 인앱결제를 지원하지 않습니다.');
+        setError('이 환경에서는 결제를 지원하지 않아요.');
         setIsProcessing(false);
         return;
       }
@@ -84,14 +74,6 @@ export function PaymentModal({ onClose, onSuccess }) {
           err?.message?.includes('cancel') || 
           err?.message?.includes('취소')) {
         setIsProcessing(false);
-        return;
-      }
-      
-      // 출시 전 테스트 환경: 상품 조회 실패 시 시뮬레이션
-      // (출시 후에는 이 에러가 발생하지 않음)
-      if (err?.message?.includes('sku') || err?.message?.includes('undefined')) {
-        // 테스트 모드로 슬롯 추가 진행
-        onSuccess();
         return;
       }
       
