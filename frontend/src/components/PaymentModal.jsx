@@ -41,25 +41,43 @@ export function PaymentModal({ onClose, onSuccess }) {
     };
     
     try {
-      // IAP 모듈 가져오기 (사전 로드되었으면 캐시 사용)
+      // Step 1: IAP 모듈 가져오기
+      alert('[1] IAP 모듈 로드 시작...');
       let IAP = iapModuleRef.current;
       if (!IAP) {
         const module = await import('@apps-in-toss/web-framework');
         IAP = module.IAP;
+        alert(`[2] IAP 모듈 동적 로드 완료\nIAP 객체: ${typeof IAP}\n메서드들: ${IAP ? Object.keys(IAP).join(', ') : 'N/A'}`);
+      } else {
+        alert('[2] IAP 모듈 캐시 사용');
       }
       
-      // IAP SDK 지원 여부 확인
-      if (!IAP || typeof IAP.createOneTimePurchaseOrder !== 'function') {
+      // Step 2: SDK 지원 여부 확인
+      if (!IAP) {
+        alert('[ERROR] IAP 모듈이 undefined');
+        await ensureMinLoadTime();
+        setError('IAP 모듈을 불러올 수 없어요.');
+        setIsProcessing(false);
+        return;
+      }
+      
+      if (typeof IAP.createOneTimePurchaseOrder !== 'function') {
+        alert(`[ERROR] createOneTimePurchaseOrder가 함수가 아님\n타입: ${typeof IAP.createOneTimePurchaseOrder}`);
         await ensureMinLoadTime();
         setError('이 환경에서는 결제를 지원하지 않아요.');
         setIsProcessing(false);
         return;
       }
       
-      // 일회성 상품 구매 요청
+      alert(`[3] SDK 확인 완료\n상품 ID: ${PRODUCT_ID}`);
+      
+      // Step 3: 결제 요청
+      alert('[4] 결제 요청 시작...');
       const result = await IAP.createOneTimePurchaseOrder({
         productId: PRODUCT_ID,
       });
+      
+      alert(`[5] 결제 완료!\nresult: ${JSON.stringify(result, null, 2)}`);
       
       await ensureMinLoadTime();
       
@@ -67,6 +85,9 @@ export function PaymentModal({ onClose, onSuccess }) {
       onSuccess();
       
     } catch (err) {
+      // 상세 에러 로그
+      alert(`[ERROR] 결제 실패!\n\n코드: ${err?.code || 'N/A'}\n이름: ${err?.name || 'N/A'}\n메시지: ${err?.message || err}\n\n전체 에러:\n${JSON.stringify(err, Object.getOwnPropertyNames(err), 2)}`);
+      
       await ensureMinLoadTime();
       
       // 사용자가 취소한 경우 - 조용히 닫기
@@ -78,7 +99,7 @@ export function PaymentModal({ onClose, onSuccess }) {
       }
       
       // 기타 오류
-      setError('결제에 실패했어요. 다시 시도해주세요.');
+      setError(`결제 실패: ${err?.message || '알 수 없는 오류'}`);
     } finally {
       setIsProcessing(false);
     }
