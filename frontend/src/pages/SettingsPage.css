@@ -3,6 +3,19 @@
   flex-direction: column;
   min-height: 100vh;
   background: var(--adaptiveBackground, #ffffff);
+  contain: layout style;
+}
+
+/* List 컴포넌트 레이아웃 안정화 */
+.settings-page-container [class*="List"] {
+  contain: layout;
+  width: 100%;
+}
+
+/* ListRow 트랜지션 비활성화 (레이아웃 시프트 방지) */
+.settings-page-container [class*="ListRow"] {
+  transform: none !important;
+  transition: none !important;
 }
 
 /* Quick_Navigation 스타일 */
