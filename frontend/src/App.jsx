@@ -90,7 +90,7 @@ function App() {
         title="좋아하면 울리는을 종료할까요?"
         cancelButton={
           <ConfirmDialog.CancelButton size="xlarge" onClick={handleCancelExit}>
-            닫기
+            취소
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
