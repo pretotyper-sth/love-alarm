@@ -74,7 +74,10 @@ function App() {
               )
             }
           />
-          <Route path="/alarms" element={<AlarmListPage />} />
+          <Route 
+            path="/alarms" 
+            element={hasVisited ? <AlarmListPage /> : <Navigate to="/" replace />} 
+          />
           <Route path="/abuse-warning" element={<AbuseWarningPage />} />
           <Route path="/add-alarm" element={<AddAlarmPage />} />
           <Route path="/match-success" element={<MatchSuccessPage />} />
