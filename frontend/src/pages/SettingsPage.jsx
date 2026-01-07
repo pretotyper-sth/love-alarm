@@ -14,48 +14,39 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import './SettingsPage.css';
 
-// 공유 기능 헬퍼 함수
-const handleShare = async (message) => {
+// 공유 기능 헬퍼 함수 (토스 공유 링크 사용)
+const handleShareApp = async () => {
   try {
-    // 1. 토스 앱인토스 share 함수 시도 (동적 import)
-    try {
-      const { share } = await import('@apps-in-toss/web-framework');
-      await share({ message });
-      return;
-    } catch (shareError) {
-      // 사용자가 취소한 경우 조용히 종료
-      if (shareError?.name === 'AbortError' || shareError?.message?.includes('cancel')) {
-        return;
-      }
-      
-      // 2. Web Share API 폴백
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            text: message,
-          });
-          return;
-        } catch (webShareError) {
-          // 사용자가 취소한 경우 조용히 종료
-          if (webShareError?.name === 'AbortError' || webShareError?.message?.includes('cancel')) {
-            return;
-          }
-          throw webShareError;
-        }
-      }
-      
-      // 3. 클립보드 복사 폴백
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(message);
-        alert('링크가 클립보드에 복사되었습니다!');
-        return;
-      }
-      
-      throw shareError;
-    }
+    const { share, getTossShareLink } = await import('@apps-in-toss/web-framework');
+    
+    // intoss:// 스킴으로 공유 링크 생성 (검수 필수 요건)
+    const tossLink = await getTossShareLink('intoss://love-alarm');
+    
+    const message = '토스 앱 | 좋아하면 울리는\n' +
+      '#토스 #앱인토스 #설치없이시작가능\n\n' +
+      tossLink;
+    
+    await share({ message });
   } catch (error) {
+    // 사용자가 취소한 경우 조용히 종료
+    if (error?.name === 'AbortError' || error?.message?.includes('cancel')) {
+      return;
+    }
+    
+    // Web Share API 폴백
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '좋아하면 울리는',
+          text: '토스 앱 | 좋아하면 울리는\n#토스 #앱인토스 #설치없이시작가능',
+        });
+        return;
+      } catch (webShareError) {
+        if (webShareError?.name === 'AbortError') return;
+      }
+    }
+    
     console.error('공유 오류:', error);
-    alert('공유하기에 실패했습니다. 다시 시도해주세요.');
   }
 };
 
@@ -225,13 +216,7 @@ export function SettingsPage() {
           }
           verticalPadding="large"
           horizontalPadding="medium"
-          onClick={() => {
-            handleShare(
-              '토스 앱 | 좋아하면 울리는\n' +
-              '#토스 #앱인토스 #설치없이시작가능\n\n' +
-              window.location.origin
-            );
-          }}
+          onClick={handleShareApp}
         />
         <ListRow
           contents={

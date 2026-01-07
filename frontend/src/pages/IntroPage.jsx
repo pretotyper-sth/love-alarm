@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Asset,
@@ -17,6 +17,32 @@ export function IntroPage() {
   const navigate = useNavigate();
   const { relogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+
+  // 최초 화면에서 뒤로가기 시 앱 종료 처리 (검수 필수 요건)
+  // 더미 히스토리를 추가하고, popstate 감지 시 앱 종료
+  useEffect(() => {
+    // 이미 히스토리가 추가되었는지 확인
+    if (!window.history.state?.introGuard) {
+      window.history.replaceState({ introGuard: true }, '');
+      window.history.pushState({ introGuard: true }, '');
+    }
+
+    const handlePopState = async (e) => {
+      // 인트로 가드 히스토리로 돌아왔으면 앱 종료
+      if (e.state?.introGuard || window.history.length <= 2) {
+        try {
+          const { exitApp } = await import('@apps-in-toss/web-framework');
+          await exitApp();
+        } catch {
+          // SDK 미지원 환경에서는 히스토리 복구
+          window.history.pushState({ introGuard: true }, '');
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleConfirm = async () => {
     setIsLoading(true);
