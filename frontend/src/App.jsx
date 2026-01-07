@@ -84,17 +84,17 @@ function App() {
         </Routes>
       </BrowserRouter>
 
-      {/* 종료 확인 다이얼로그 (TDS ConfirmDialog) */}
+      {/* 종료 확인 다이얼로그 (TDS ConfirmDialog - 앱 빌더 스타일) */}
       <ConfirmDialog
         open={showExitDialog}
-        title={<ConfirmDialog.Title>좋아하면 울리는을 종료할까요?</ConfirmDialog.Title>}
+        title="좋아하면 울리는을 종료할까요?"
         cancelButton={
-          <ConfirmDialog.CancelButton onClick={handleCancelExit}>
-            취소
+          <ConfirmDialog.CancelButton size="xlarge" onClick={handleCancelExit}>
+            닫기
           </ConfirmDialog.CancelButton>
         }
         confirmButton={
-          <ConfirmDialog.ConfirmButton onClick={handleExitApp}>
+          <ConfirmDialog.ConfirmButton size="xlarge" onClick={handleExitApp}>
             종료하기
           </ConfirmDialog.ConfirmButton>
         }
