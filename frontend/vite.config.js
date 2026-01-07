@@ -11,6 +11,6 @@ export default defineConfig({
   // root는 현재 디렉토리(frontend)가 기본값이므로 명시하지 않음
   publicDir: 'public',
   build: {
-    outDir: '../dist',
+    outDir: '../dist/web',
   },
 })
