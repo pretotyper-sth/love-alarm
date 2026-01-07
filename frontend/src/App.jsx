@@ -31,8 +31,9 @@ function App() {
       // 가드 상태로 돌아왔으면 앱 종료
       if (e.state?.isExitGuard) {
         try {
-          const { exitApp } = await import('@apps-in-toss/web-framework');
-          await exitApp();
+          // closeView: 현재 화면 닫기 (WebView 지원)
+          const { closeView } = await import('@apps-in-toss/web-framework');
+          await closeView();
         } catch {
           // SDK 미지원 환경에서는 히스토리 복구
           window.history.pushState({}, '');
