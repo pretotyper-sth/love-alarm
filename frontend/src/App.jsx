@@ -28,14 +28,21 @@ function App() {
     window.history.pushState({}, '');
 
     const handlePopState = async (e) => {
-      // 가드 상태로 돌아왔으면 앱 종료
+      // 가드 상태로 돌아왔으면 종료 확인
       if (e.state?.isExitGuard) {
-        try {
-          // closeView: 현재 화면 닫기 (WebView 지원)
-          const { closeView } = await import('@apps-in-toss/web-framework');
-          await closeView();
-        } catch {
-          // SDK 미지원 환경에서는 히스토리 복구
+        // 종료 확인 팝업
+        const shouldExit = window.confirm('좋아하면 울리는을 종료할까요?');
+        
+        if (shouldExit) {
+          try {
+            // closeView: 현재 화면 닫기 (WebView 지원)
+            const { closeView } = await import('@apps-in-toss/web-framework');
+            await closeView();
+          } catch {
+            // SDK 미지원 환경
+          }
+        } else {
+          // 취소 시 히스토리 복구
           window.history.pushState({}, '');
         }
       }
