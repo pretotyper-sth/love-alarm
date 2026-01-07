@@ -156,3 +156,89 @@ body {
 .toast-undo-button:active {
   color: #1557d0;
 }
+
+/* ===== 종료 확인 다이얼로그 (TDS 스타일 복제) ===== */
+.exit-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999; /* 네비게이션 바 위로 */
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.exit-dialog-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 28px 20px 20px;
+  width: calc(100% - 64px);
+  max-width: 311px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.exit-dialog-title {
+  margin: 0 0 24px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #191f28;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.exit-dialog-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.exit-dialog-btn {
+  flex: 1;
+  height: 54px;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.exit-dialog-btn:active {
+  opacity: 0.7;
+}
+
+/* 취소 버튼 - dark/weak 스타일 */
+.exit-dialog-btn-cancel {
+  background: #f2f4f6;
+  color: #4e5968;
+}
+
+/* 종료하기 버튼 - primary/fill 스타일 */
+.exit-dialog-btn-confirm {
+  background: #3182f6;
+  color: #ffffff;
+}

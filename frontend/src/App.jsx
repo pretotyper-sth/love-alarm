@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ConfirmDialog } from '@toss/tds-mobile';
 import { AuthProvider } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
 import { AlarmListPage } from './pages/AlarmListPage';
@@ -87,23 +86,28 @@ function App() {
         </Routes>
       </BrowserRouter>
 
-      {/* 종료 확인 다이얼로그 (TDS ConfirmDialog - 앱 빌더 스타일) */}
-      <ConfirmDialog
-        open={showExitDialog}
-        title="좋아하면 울리는을 종료할까요?"
-        cancelButton={
-          <ConfirmDialog.CancelButton size="xlarge" onClick={handleCancelExit}>
-            취소
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton size="xlarge" onClick={handleExitApp}>
-            종료하기
-          </ConfirmDialog.ConfirmButton>
-        }
-        onClose={handleCancelExit}
-        closeOnDimmerClick={false}
-      />
+      {/* 종료 확인 다이얼로그 - 커스텀 HTML/CSS (백버튼 시 표시) */}
+      {showExitDialog && (
+        <div className="exit-dialog-overlay" onClick={handleCancelExit}>
+          <div className="exit-dialog-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="exit-dialog-title">좋아하면 울리는을 종료할까요?</h3>
+            <div className="exit-dialog-buttons">
+              <button 
+                className="exit-dialog-btn exit-dialog-btn-cancel"
+                onClick={handleCancelExit}
+              >
+                취소
+              </button>
+              <button 
+                className="exit-dialog-btn exit-dialog-btn-confirm"
+                onClick={handleExitApp}
+              >
+                종료하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthProvider>
   );
 }
