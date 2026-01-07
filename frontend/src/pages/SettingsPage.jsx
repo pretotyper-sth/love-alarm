@@ -14,13 +14,16 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import './SettingsPage.css';
 
+// OG 이미지 URL (공유 시 미리보기에 표시)
+const OG_IMAGE_URL = 'https://static.toss.im/appsintoss/9737/f6aa6697-d258-40c2-a59f-91f8e8bab8be.png';
+
 // 공유 기능 헬퍼 함수 (토스 공유 링크 사용)
 const handleShareApp = async () => {
   try {
     const { share, getTossShareLink } = await import('@apps-in-toss/web-framework');
     
-    // intoss:// 스킴으로 공유 링크 생성 (검수 필수 요건)
-    const tossLink = await getTossShareLink('intoss://love-alarm');
+    // intoss:// 스킴으로 공유 링크 생성 + OG 이미지 (검수 필수 요건)
+    const tossLink = await getTossShareLink('intoss://love-alarm', OG_IMAGE_URL);
     
     const message = '토스 앱 | 좋아하면 울리는\n' +
       '#토스 #앱인토스 #설치없이시작가능\n\n' +

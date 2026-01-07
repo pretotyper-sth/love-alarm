@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Asset,
   Top,
@@ -15,34 +15,37 @@ import './IntroPage.css';
 
 export function IntroPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { relogin } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // 최초 화면에서 뒤로가기 시 앱 종료 처리 (검수 필수 요건)
-  // 더미 히스토리를 추가하고, popstate 감지 시 앱 종료
+  const isInitialEntry = location.key === 'default' && !location.state;
+  
   useEffect(() => {
-    // 이미 히스토리가 추가되었는지 확인
-    if (!window.history.state?.introGuard) {
-      window.history.replaceState({ introGuard: true }, '');
-      window.history.pushState({ introGuard: true }, '');
-    }
+    if (!isInitialEntry) return;
+
+    // 히스토리 가드 추가
+    const guardState = { introExitGuard: true, timestamp: Date.now() };
+    window.history.replaceState(guardState, '');
+    window.history.pushState(guardState, '');
 
     const handlePopState = async (e) => {
-      // 인트로 가드 히스토리로 돌아왔으면 앱 종료
-      if (e.state?.introGuard || window.history.length <= 2) {
+      // 가드 상태로 돌아왔으면 앱 종료
+      if (e.state?.introExitGuard) {
         try {
           const { exitApp } = await import('@apps-in-toss/web-framework');
           await exitApp();
         } catch {
           // SDK 미지원 환경에서는 히스토리 복구
-          window.history.pushState({ introGuard: true }, '');
+          window.history.pushState(guardState, '');
         }
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [isInitialEntry]);
 
   const handleConfirm = async () => {
     setIsLoading(true);

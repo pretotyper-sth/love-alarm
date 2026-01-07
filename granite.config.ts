@@ -9,7 +9,7 @@ export default defineConfig({
     bridgeColorMode: 'basic',
   },
   web: {
-    host: '192.168.45.30',
+    host: '192.168.45.111',
     port: 5173,
     commands: {
       dev: 'npm run vite:dev',

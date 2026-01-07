@@ -104,35 +104,35 @@ export function AlarmListPage() {
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
   const notificationSheetShownRef = useRef(false);
-  const exitGuardAddedRef = useRef(false);
-
   // 최초 화면에서 뒤로가기 시 앱 종료 처리 (검수 필수 요건)
-  // 재방문자는 인트로 건너뛰고 바로 이 페이지로 옴
+  // location.key가 'default'이고 state가 없으면 최초 진입
+  const isInitialEntry = location.key === 'default' && !location.state;
+  
   useEffect(() => {
-    // 다른 페이지에서 돌아온 경우가 아닌, 최초 진입일 때만
-    if (exitGuardAddedRef.current) return;
-    if (window.history.length > 2) return; // 이미 히스토리가 있으면 스킵
+    // 다른 페이지에서 navigate로 돌아온 경우는 스킵
+    if (!isInitialEntry) return;
 
-    exitGuardAddedRef.current = true;
-    if (!window.history.state?.alarmListGuard) {
-      window.history.replaceState({ alarmListGuard: true }, '');
-      window.history.pushState({ alarmListGuard: true }, '');
-    }
+    // 히스토리 가드 추가
+    const guardState = { alarmListExitGuard: true, timestamp: Date.now() };
+    window.history.replaceState(guardState, '');
+    window.history.pushState(guardState, '');
 
     const handlePopState = async (e) => {
-      if (e.state?.alarmListGuard || window.history.length <= 2) {
+      // 가드 상태로 돌아왔으면 앱 종료
+      if (e.state?.alarmListExitGuard) {
         try {
           const { exitApp } = await import('@apps-in-toss/web-framework');
           await exitApp();
         } catch {
-          window.history.pushState({ alarmListGuard: true }, '');
+          // SDK 미지원 환경에서는 히스토리 복구
+          window.history.pushState(guardState, '');
         }
       }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [isInitialEntry]);
 
   // 토스트 추가 함수
   const addToast = (toast) => {
