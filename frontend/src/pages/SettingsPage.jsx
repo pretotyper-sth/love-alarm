@@ -14,45 +14,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import './SettingsPage.css';
 
-// OG 이미지 URL (공유 시 미리보기에 표시)
-const OG_IMAGE_URL = 'https://love-alarm.vercel.app/og-image.jpg';
-
-// 공유 문구
-const SHARE_TEXT = `토스 앱 | 좋아하면 울리는
-#토스 #앱인토스 #설치없이시작가능`;
-
-// 공유 기능 헬퍼 함수 (토스 공유 링크 사용 - 문서 예제 동일)
+// 공유 기능 (문서 예제와 동일)
 const handleShareApp = async () => {
-  try {
-    const { share, getTossShareLink } = await import('@apps-in-toss/web-framework');
-    
-    // intoss:// 딥링크 + OG 이미지로 토스 공유 링크 생성
-    const tossLink = await getTossShareLink('intoss://love-alarm', OG_IMAGE_URL);
-    
-    // 문구 + 링크를 함께 공유
-    const shareMessage = `${SHARE_TEXT}\n\n${tossLink}`;
-    await share({ message: shareMessage });
-  } catch (error) {
-    // 사용자가 취소한 경우 조용히 종료
-    if (error?.name === 'AbortError' || error?.message?.includes('cancel')) {
-      return;
-    }
-    
-    // Web Share API 폴백
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: '좋아하면 울리는',
-          text: '토스 앱에서 좋아하면 울리는을 만나보세요!',
-        });
-        return;
-      } catch (webShareError) {
-        if (webShareError?.name === 'AbortError') return;
-      }
-    }
-    
-    console.error('공유 오류:', error);
-  }
+  const { share, getTossShareLink } = await import('@apps-in-toss/web-framework');
+  
+  const tossLink = await getTossShareLink(
+    'intoss://love-alarm',
+    'https://love-alarm.vercel.app/og-image.jpg',
+  );
+
+  // 생성한 링크를 메시지로 공유해요.
+  await share({ message: tossLink });
 };
 
 export function SettingsPage() {

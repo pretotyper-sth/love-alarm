@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
@@ -15,26 +15,15 @@ import './App.css';
 function App() {
   // 첫 방문 여부 확인
   const hasVisited = storage.get('has_visited_intro');
-  
-  // 종료 확인 다이얼로그 상태
-  const [showExitDialog, setShowExitDialog] = useState(false);
 
-  // 앱 종료 처리
+  // 앱 종료 처리 (백버튼 시 바로 종료)
   const handleExitApp = async () => {
-    setShowExitDialog(false);
     try {
       const { closeView } = await import('@apps-in-toss/web-framework');
       await closeView();
     } catch {
       // SDK 미지원 환경
     }
-  };
-
-  // 종료 취소 처리
-  const handleCancelExit = () => {
-    setShowExitDialog(false);
-    // 히스토리 복구
-    window.history.pushState({}, '');
   };
 
   // 앱 최초 진입 시 백버튼으로 앱 종료 처리 (검수 필수 요건)
@@ -49,9 +38,9 @@ function App() {
     window.history.pushState({}, '');
 
     const handlePopState = (e) => {
-      // 가드 상태로 돌아왔으면 종료 확인 다이얼로그 표시
+      // 가드 상태로 돌아왔으면 바로 앱 종료
       if (e.state?.isExitGuard) {
-        setShowExitDialog(true);
+        handleExitApp();
       }
     };
 
@@ -86,28 +75,6 @@ function App() {
         </Routes>
       </BrowserRouter>
 
-      {/* 종료 확인 다이얼로그 - 커스텀 HTML/CSS (백버튼 시 표시) */}
-      {showExitDialog && (
-        <div className="exit-dialog-overlay" onClick={handleCancelExit}>
-          <div className="exit-dialog-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="exit-dialog-title">좋아하면 울리는을 종료할까요?</h3>
-            <div className="exit-dialog-buttons">
-              <button 
-                className="exit-dialog-btn exit-dialog-btn-cancel"
-                onClick={handleCancelExit}
-              >
-                취소
-              </button>
-              <button 
-                className="exit-dialog-btn exit-dialog-btn-confirm"
-                onClick={handleExitApp}
-              >
-                종료하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AuthProvider>
   );
 }
