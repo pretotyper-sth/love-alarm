@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfirmDialog } from '@toss/tds-mobile';
 import { AuthProvider } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
 import { AlarmListPage } from './pages/AlarmListPage';
@@ -15,6 +16,27 @@ import './App.css';
 function App() {
   // 첫 방문 여부 확인
   const hasVisited = storage.get('has_visited_intro');
+  
+  // 종료 확인 다이얼로그 상태
+  const [showExitDialog, setShowExitDialog] = useState(false);
+
+  // 앱 종료 처리
+  const handleExitApp = async () => {
+    setShowExitDialog(false);
+    try {
+      const { closeView } = await import('@apps-in-toss/web-framework');
+      await closeView();
+    } catch {
+      // SDK 미지원 환경
+    }
+  };
+
+  // 종료 취소 처리
+  const handleCancelExit = () => {
+    setShowExitDialog(false);
+    // 히스토리 복구
+    window.history.pushState({}, '');
+  };
 
   // 앱 최초 진입 시 백버튼으로 앱 종료 처리 (검수 필수 요건)
   useEffect(() => {
@@ -27,24 +49,10 @@ function App() {
     window.history.replaceState(guardState, '');
     window.history.pushState({}, '');
 
-    const handlePopState = async (e) => {
-      // 가드 상태로 돌아왔으면 종료 확인
+    const handlePopState = (e) => {
+      // 가드 상태로 돌아왔으면 종료 확인 다이얼로그 표시
       if (e.state?.isExitGuard) {
-        // 종료 확인 팝업
-        const shouldExit = window.confirm('좋아하면 울리는을 종료할까요?');
-        
-        if (shouldExit) {
-          try {
-            // closeView: 현재 화면 닫기 (WebView 지원)
-            const { closeView } = await import('@apps-in-toss/web-framework');
-            await closeView();
-          } catch {
-            // SDK 미지원 환경
-          }
-        } else {
-          // 취소 시 히스토리 복구
-          window.history.pushState({}, '');
-        }
+        setShowExitDialog(true);
       }
     };
 
@@ -75,6 +83,24 @@ function App() {
           <Route path="/error" element={<ErrorPage />} />
         </Routes>
       </BrowserRouter>
+
+      {/* 종료 확인 다이얼로그 (TDS ConfirmDialog) */}
+      <ConfirmDialog
+        open={showExitDialog}
+        title={<ConfirmDialog.Title>좋아하면 울리는을 종료할까요?</ConfirmDialog.Title>}
+        cancelButton={
+          <ConfirmDialog.CancelButton onClick={handleCancelExit}>
+            취소
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton onClick={handleExitApp}>
+            종료하기
+          </ConfirmDialog.ConfirmButton>
+        }
+        onClose={handleCancelExit}
+        closeOnDimmerClick={false}
+      />
     </AuthProvider>
   );
 }
