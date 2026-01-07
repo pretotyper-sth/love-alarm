@@ -1,10 +1,10 @@
 {
   "installCommand": "npm install",
   "buildCommand": "npm run frontend:build",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/web",
   "framework": "vite",
   "rewrites": [
-    { "source": "/((?!terms\\.html|privacy\\.html).*)", "destination": "/index.html" }
+    { "source": "/((?!terms\\.html|privacy\\.html|og-image\\.jpg|vite\\.svg|assets/.*).*)", "destination": "/index.html" }
   ]
 }
 
