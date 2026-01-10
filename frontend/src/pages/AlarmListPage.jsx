@@ -85,12 +85,34 @@ function AlarmItem({ alarm, onRemove, onMatchedClick, listRowRef }) {
   );
 }
 
+// localStorage에서 캐시된 알람 목록 불러오기
+const getCachedAlarms = () => {
+  try {
+    const cached = localStorage.getItem('love_alarm_cached_list');
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+// localStorage에서 캐시된 maxSlots 불러오기
+const getCachedMaxSlots = () => {
+  try {
+    const cached = localStorage.getItem('love_alarm_cached_maxSlots');
+    return cached ? parseInt(cached, 10) : 2;
+  } catch {
+    return 2;
+  }
+};
+
 export function AlarmListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser } = useAuth();
-  const [alarms, setAlarms] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 캐시된 알람 목록으로 초기화 (깜빡임 방지)
+  const [alarms, setAlarms] = useState(getCachedAlarms);
+  // 캐시가 있으면 로딩 표시 안 함
+  const [isLoading, setIsLoading] = useState(() => getCachedAlarms().length === 0);
   const [isRestoring, setIsRestoring] = useState(false); // 되돌리기 중 상태
   const [lastAlarmCount, setLastAlarmCount] = useState(() => {
     // 이전에 저장된 알람 개수 불러오기 (초기 로딩 스켈레톤용)
@@ -100,7 +122,8 @@ export function AlarmListPage() {
   const [toasts, setToasts] = useState([]); // 토스트 스택
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
-  const [maxSlots, setMaxSlots] = useState(user?.maxSlots || 2); // 기본 슬롯 2개
+  // 캐시된 maxSlots 또는 user.maxSlots로 초기화
+  const [maxSlots, setMaxSlots] = useState(() => user?.maxSlots || getCachedMaxSlots());
   const alarmRefsRef = useRef([]);
   const toastIdRef = useRef(0);
   const notificationSheetShownRef = useRef(false);
@@ -252,12 +275,18 @@ export function AlarmListPage() {
     setShowNotificationSheet(false);
   };
 
-  const loadAlarms = async () => {
+  const loadAlarms = async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      // 이미 데이터가 있으면 로딩 표시 안 함 (백그라운드 갱신)
+      if (showLoading && alarms.length === 0) {
+        setIsLoading(true);
+      }
+      
       const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
-      // 알람 개수 저장 (다음 로딩 시 스켈레톤 개수용)
+      
+      // 캐시 저장 (다음 방문 시 즉시 표시용)
+      localStorage.setItem('love_alarm_cached_list', JSON.stringify(fetchedAlarms));
       localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
       setLastAlarmCount(fetchedAlarms.length);
       
@@ -266,6 +295,8 @@ export function AlarmListPage() {
         const latestUser = await api.getUser();
         if (latestUser?.maxSlots) {
           setMaxSlots(latestUser.maxSlots);
+          // maxSlots도 캐시
+          localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
         }
       } catch (userError) {
         console.error('사용자 정보 조회 실패:', userError);

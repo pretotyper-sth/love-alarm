@@ -6,7 +6,6 @@ import {
   ListRow,
   Switch,
   Spacing,
-  Border,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';

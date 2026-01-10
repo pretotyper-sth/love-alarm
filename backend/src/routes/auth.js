@@ -197,48 +197,98 @@ router.post('/login', async (req, res) => {
 });
 
 /**
+ * 토스 로그인 연결 끊기 콜백 공통 처리
+ * userKey로 사용자 찾아서 삭제
+ */
+async function handleDisconnect(req, userKey, referrer) {
+  if (!userKey) {
+    return { status: 400, error: 'userKey가 필요합니다.' };
+  }
+
+  // userKey를 문자열로 변환 (DB에서는 tossUserId로 저장)
+  const tossUserId = String(userKey);
+
+  // 사용자 삭제 (Cascade로 알람, 매칭도 함께 삭제됨)
+  const user = await req.prisma.user.findUnique({
+    where: { tossUserId },
+  });
+
+  if (user) {
+    await req.prisma.user.delete({
+      where: { tossUserId },
+    });
+    console.log(`User disconnected: ${tossUserId}, referrer: ${referrer}`);
+  }
+
+  return { status: 200, success: true, userKey };
+}
+
+/**
+ * Basic Auth 검증 함수
+ */
+function verifyBasicAuth(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    return false;
+  }
+
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+  const [username, password] = credentials.split(':');
+
+  return username === DISCONNECT_AUTH.username && password === DISCONNECT_AUTH.password;
+}
+
+/**
+ * GET /api/auth/disconnect
+ * 토스 앱에서 서비스 연결 끊기 콜백 (GET 방식)
+ * Query: ?userKey=123&referrer=UNLINK
+ */
+router.get('/disconnect', async (req, res) => {
+  try {
+    // Basic Auth 검증
+    if (!verifyBasicAuth(req.headers.authorization)) {
+      return res.status(401).json({ error: '인증이 필요합니다.' });
+    }
+
+    const { userKey, referrer } = req.query;
+    const result = await handleDisconnect(req, userKey, referrer);
+    
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+    
+    res.json({ success: true, userKey: result.userKey });
+  } catch (error) {
+    console.error('Disconnect error:', error);
+    res.status(500).json({ error: '연결 끊기 처리 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * POST /api/auth/disconnect
- * 토스 앱에서 서비스 연결 끊기 콜백
- * (토스 콘솔에서 콜백 URL로 등록)
+ * 토스 앱에서 서비스 연결 끊기 콜백 (POST 방식)
+ * Body: { userKey: number, referrer: string }
  * 
- * Header: Authorization: Basic {base64(username:password)}
- * Body: { tossUserId: string }
+ * referrer 값:
+ * - UNLINK: 토스앱 → 설정 → 인증 및 보안 → 토스로 로그인한 서비스 → '연결 끊기'
+ * - WITHDRAWAL_TERMS: 로그인 서비스 약관 동의 철회
+ * - WITHDRAWAL_TOSS: 토스 회원 탈퇴
  */
 router.post('/disconnect', async (req, res) => {
   try {
     // Basic Auth 검증
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Basic ')) {
+    if (!verifyBasicAuth(req.headers.authorization)) {
       return res.status(401).json({ error: '인증이 필요합니다.' });
     }
 
-    const base64Credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-    const [username, password] = credentials.split(':');
-
-    if (username !== DISCONNECT_AUTH.username || password !== DISCONNECT_AUTH.password) {
-      return res.status(401).json({ error: '인증에 실패했습니다.' });
+    const { userKey, referrer } = req.body;
+    const result = await handleDisconnect(req, userKey, referrer);
+    
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
     }
-
-    // 인증 성공 - 사용자 삭제 진행
-    const { tossUserId } = req.body;
-
-    if (!tossUserId) {
-      return res.status(400).json({ error: 'tossUserId가 필요합니다.' });
-    }
-
-    // 사용자 삭제 (Cascade로 알람, 매칭도 함께 삭제됨)
-    const user = await req.prisma.user.findUnique({
-      where: { tossUserId },
-    });
-
-    if (user) {
-      await req.prisma.user.delete({
-        where: { tossUserId },
-      });
-    }
-
-    res.json({ success: true });
+    
+    res.json({ success: true, userKey: result.userKey });
   } catch (error) {
     console.error('Disconnect error:', error);
     res.status(500).json({ error: '연결 끊기 처리 중 오류가 발생했습니다.' });
