@@ -61,8 +61,8 @@ export function FeedbackPage() {
       // API로 피드백 제출
       await api.submitFeedback(category, content.trim());
       
-      // 성공 시 설정 페이지로 이동
-      navigate('/settings', { state: { showFeedbackSuccess: true } });
+      // 성공 시 설정 페이지로 이동 (replace: true로 히스토리 중복 방지)
+      navigate('/settings', { replace: true, state: { showFeedbackSuccess: true } });
     } catch (error) {
       console.error('❌ 피드백 제출 실패:', error);
       showErrorToast(error.message || '피드백 제출에 실패했어요');

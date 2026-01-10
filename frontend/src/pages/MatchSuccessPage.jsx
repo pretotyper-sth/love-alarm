@@ -43,7 +43,7 @@ export function MatchSuccessPage() {
   }, [location.state]);
 
   const handleConfirm = () => {
-    navigate('/alarms');
+    navigate('/alarms', { replace: true });
   };
 
   return (

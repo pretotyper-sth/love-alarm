@@ -193,11 +193,15 @@ export function AddAlarmPage() {
         localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
       }
       
-      // 5. 완료 후 페이지 이동
+      // 5. 완료 후 페이지 이동 (replace: true로 히스토리 중복 방지)
       if (result.matched) {
-        navigate('/match-success', { state: { alarmId: result.alarm.id, targetInstagramId: targetIdTrimmed } });
+        navigate('/match-success', { 
+          replace: true,
+          state: { alarmId: result.alarm.id, targetInstagramId: targetIdTrimmed } 
+        });
       } else {
         navigate('/alarms', { 
+          replace: true,
           state: { 
             showAddedToast: true,
             showNotificationSheet: shouldShowNotificationSheet 

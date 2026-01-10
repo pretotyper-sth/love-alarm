@@ -17,8 +17,8 @@ export function AbuseWarningPage() {
   const handleConfirm = () => {
     // 확인 여부 저장
     localStorage.setItem(ABUSE_WARNING_CONFIRMED_KEY, 'true');
-    // 알람 추가 페이지로 이동
-    navigate('/add-alarm');
+    // 알람 추가 페이지로 이동 (replace: true로 경고 페이지 히스토리 제거)
+    navigate('/add-alarm', { replace: true });
   };
 
   return (

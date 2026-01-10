@@ -125,6 +125,7 @@ export function AlarmListPage() {
   // 캐시된 maxSlots 또는 user.maxSlots로 초기화
   const [maxSlots, setMaxSlots] = useState(() => user?.maxSlots || getCachedMaxSlots());
   const alarmRefsRef = useRef([]);
+  const addButtonRef = useRef(null); // 추가하기 버튼 ref
   const toastIdRef = useRef(0);
   const notificationSheetShownRef = useRef(false);
   // 토스트 추가 함수
@@ -226,6 +227,31 @@ export function AlarmListPage() {
       };
     }
   }, [alarms]);
+
+  // 알람이 0개일 때 "추가하기" 버튼에 shine 효과 적용
+  useEffect(() => {
+    if (alarms.length === 0 && !isLoading) {
+      const applyAddButtonShine = () => {
+        if (addButtonRef.current && addButtonRef.current.shine) {
+          addButtonRef.current.shine(Infinity);
+        }
+      };
+      
+      // 초기 딜레이 후 shine 적용
+      const timer = setTimeout(applyAddButtonShine, 300);
+      
+      // 페이지 클릭 시 shine 다시 적용
+      const handlePageClick = () => {
+        setTimeout(applyAddButtonShine, 100);
+      };
+      document.addEventListener('click', handlePageClick);
+      
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('click', handlePageClick);
+      };
+    }
+  }, [alarms.length, isLoading]);
 
   // 알람 추가 후 Toast 표시
   const toastShownRef = useRef(false);
@@ -431,6 +457,7 @@ export function AlarmListPage() {
       <div className="alarm-list-content">
         {/* 추가하기 ListRow */}
         <ListRow
+          ref={addButtonRef}
           left={
             <ListRow.AssetIcon
               name="icon-plus-grey-fill"
