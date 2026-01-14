@@ -13,17 +13,24 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import './SettingsPage.css';
 
-// 공유 기능 (문서 예제와 동일)
+// 공유 기능 (getTossShareLink + OG 이미지)
 const handleShareApp = async () => {
-  const { share, getTossShareLink } = await import('@apps-in-toss/web-framework');
-  
-  const tossLink = await getTossShareLink(
-    'intoss://love-alarm',
-    'https://love-alarm.vercel.app/og-image.jpg',
-  );
+  try {
+    const { getTossShareLink, share } = await import('@apps-in-toss/web-framework');
+    
+    // getTossShareLink로 공유 링크 생성 (OG 이미지 포함)
+    const tossLink = await getTossShareLink(
+      'intoss://love-alarm',
+      'https://love-alarm.vercel.app/og-image.jpg'
+    );
+    
+    const shareMessage = `짝사랑 확인하기 | 좋아하면 울리는
+${tossLink}`;
 
-  // 생성한 링크를 메시지로 공유해요.
-  await share({ message: tossLink });
+    await share({ message: shareMessage });
+  } catch (error) {
+    console.error('[공유] 에러:', error);
+  }
 };
 
 export function SettingsPage() {

@@ -60,27 +60,28 @@ function ExitConfirmModal({ onClose, onConfirm }) {
   );
 }
 
-// 네비게이션 깊이 추적 컴포넌트
+// 히스토리 가드 설정 (앱 시작 시 한 번만)
+function setupHistoryGuard() {
+  if (sessionStorage.getItem('history_guard_set')) return;
+  sessionStorage.setItem('history_guard_set', 'true');
+  
+  // 현재 상태를 가드로 설정하고, 새 상태 추가
+  // [가드] → [현재페이지]
+  window.history.replaceState({ isExitGuard: true, index: 0 }, '');
+  window.history.pushState({ index: 1 }, '');
+}
+
+// 네비게이션 추적 컴포넌트 (히스토리 가드 설정)
 function NavigationTracker() {
   const location = useLocation();
-  const prevLocationRef = useRef(location);
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    // 첫 렌더링 시 깊이 초기화
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      sessionStorage.setItem('nav_depth', '0');
-      return;
+      setupHistoryGuard();
     }
-
-    // location.key가 바뀌면 새 페이지로 이동한 것
-    if (prevLocationRef.current.key !== location.key) {
-      const currentDepth = parseInt(sessionStorage.getItem('nav_depth') || '0');
-      sessionStorage.setItem('nav_depth', String(currentDepth + 1));
-    }
-    prevLocationRef.current = location;
-  }, [location]);
+  }, []);
 
   return null;
 }
@@ -89,8 +90,8 @@ function NavigationTracker() {
 function AppRoutes() {
   const { loading } = useAuth();
   
-  // 첫 방문 여부 - loading 완료 전까지는 null (판단 보류)
-  const [hasVisited, setHasVisited] = useState(null);
+  // 첫 방문 여부 - 초기값은 스토리지에서 바로 읽음 (빈 화면 방지)
+  const [hasVisited, setHasVisited] = useState(() => storage.get('has_visited_intro'));
   
   // 종료 확인 다이얼로그 상태
   const [showExitModal, setShowExitModal] = useState(false);
@@ -101,10 +102,10 @@ function AppRoutes() {
     setHasVisited(true);
   }, []);
 
-  // 🔑 핵심: loading이 완료된 후에 스토리지를 체크
-  // AuthContext에서 연결 해제 시 storage.remove가 호출된 후 체크됨
+  // 🔑 loading 완료 후 스토리지 다시 체크 (연결 해제 시 storage.remove 반영)
   useEffect(() => {
     if (!loading) {
+      // loading 완료 후 스토리지 값 다시 확인 (AuthContext에서 변경되었을 수 있음)
       setHasVisited(storage.get('has_visited_intro'));
     }
   }, [loading]);
@@ -128,9 +129,22 @@ function AppRoutes() {
     };
   }, []);
 
-  // 백버튼 이벤트: 첫 페이지면 종료 확인 다이얼로그, 아니면 뒤로가기
+  // 백버튼 이벤트: 토스 앱에서는 backEvent, 브라우저에서는 popstate
   useEffect(() => {
     let cleanup = () => {};
+    
+    // popstate 이벤트 핸들러 (가드 상태 감지)
+    const handlePopState = (e) => {
+      // 가드 상태에 도달 → 종료 모달 표시
+      if (e.state?.isExitGuard) {
+        setShowExitModal(true);
+        // 가드에서 앞으로 다시 이동 (다이얼로그 닫으면 현재 페이지 유지)
+        window.history.forward();
+      }
+      // 그 외의 경우는 정상 네비게이션 (종료 모달 X)
+    };
+    
+    window.addEventListener('popstate', handlePopState);
     
     const setupBackEvent = async () => {
       try {
@@ -138,14 +152,12 @@ function AppRoutes() {
         
         cleanup = graniteEvent.addEventListener('backEvent', {
           onEvent: () => {
-            const currentDepth = parseInt(sessionStorage.getItem('nav_depth') || '0');
-            
-            if (currentDepth <= 0) {
-              // 첫 페이지에서 백버튼 → 종료 확인 다이얼로그 표시
+            // /alarms 또는 / 에서 백버튼 → 바로 종료 모달
+            const currentPath = window.location.pathname;
+            if (currentPath === '/alarms' || currentPath === '/') {
               setShowExitModal(true);
             } else {
-              // 다른 페이지에서는 뒤로가기
-              sessionStorage.setItem('nav_depth', String(currentDepth - 1));
+              // 다른 페이지에서는 뒤로가기 실행
               window.history.back();
             }
           },
@@ -154,17 +166,20 @@ function AppRoutes() {
           },
         });
       } catch {
-        // SDK 미지원 환경 (브라우저) - 무시
+        // SDK 미지원 환경 (브라우저) - popstate로만 처리
       }
     };
     
     setupBackEvent();
     
-    return () => cleanup();
+    return () => {
+      cleanup();
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, []);
 
-  // 로딩 중이거나 hasVisited 판단 전에는 빈 화면
-  if (loading || hasVisited === null) {
+  // 로딩 중에는 빈 화면 (로그인 과정에서 알람 목록이 잠깐 보이는 문제 방지)
+  if (loading) {
     return null;
   }
 

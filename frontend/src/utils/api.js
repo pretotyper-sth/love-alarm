@@ -103,6 +103,10 @@ export const api = {
   logout: () => {
     currentUser = null;
     localStorage.removeItem('love_alarm_user');
+    // 알람 관련 캐시도 함께 삭제 (연결 해제 후 재로그인 시 이전 데이터가 잠깐 보이는 문제 방지)
+    localStorage.removeItem('love_alarm_alarms');
+    localStorage.removeItem('love_alarm_max_slots');
+    localStorage.removeItem('love_alarm_my_instagram_id');
     // 소켓 연결 해제
     if (socket) {
       socket.disconnect();
