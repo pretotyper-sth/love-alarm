@@ -383,4 +383,55 @@
   gap: 6px;
 }
 
+/* 빈 상태 UI */
+.empty-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  text-align: center;
+  /* 화면 중앙 배치 */
+  min-height: calc(100vh - 200px);
+  margin-top: -60px;
+}
+
+.empty-state-icon-wrapper {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.empty-state-icon-box {
+  width: 56px;
+  height: 56px;
+  background: #f2f4f6;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-main-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.empty-state-plus-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+}
+
+.empty-state-text {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 400;
+  color: #6b7684; /* grey700 - 다른 페이지 보조 설명과 동일 */
+  line-height: 1.5;
+  text-align: center;
+}
+
 

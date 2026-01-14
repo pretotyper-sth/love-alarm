@@ -85,13 +85,13 @@ function AlarmItem({ alarm, onRemove, onMatchedClick, listRowRef }) {
   );
 }
 
-// localStorage에서 캐시된 알람 목록 불러오기
+// localStorage에서 캐시된 알람 목록 불러오기 (null = 캐시 없음)
 const getCachedAlarms = () => {
   try {
     const cached = localStorage.getItem('love_alarm_cached_list');
-    return cached ? JSON.parse(cached) : [];
+    return cached ? JSON.parse(cached) : null;
   } catch {
-    return [];
+    return null;
   }
 };
 
@@ -110,9 +110,9 @@ export function AlarmListPage() {
   const location = useLocation();
   const { user, setUser } = useAuth();
   // 캐시된 알람 목록으로 초기화 (깜빡임 방지)
-  const [alarms, setAlarms] = useState(getCachedAlarms);
-  // 캐시가 있으면 로딩 표시 안 함
-  const [isLoading, setIsLoading] = useState(() => getCachedAlarms().length === 0);
+  const [alarms, setAlarms] = useState(() => getCachedAlarms() || []);
+  // 캐시가 존재하면(빈 배열이어도) 로딩 표시 안 함, 캐시 없으면 로딩
+  const [isLoading, setIsLoading] = useState(() => getCachedAlarms() === null);
   const [isRestoring, setIsRestoring] = useState(false); // 되돌리기 중 상태
   const [lastAlarmCount, setLastAlarmCount] = useState(() => {
     // 이전에 저장된 알람 개수 불러오기 (초기 로딩 스켈레톤용)
@@ -303,8 +303,9 @@ export function AlarmListPage() {
 
   const loadAlarms = async (showLoading = true) => {
     try {
-      // 이미 데이터가 있으면 로딩 표시 안 함 (백그라운드 갱신)
-      if (showLoading && alarms.length === 0) {
+      // 캐시가 없을 때만 로딩 표시 (최초 방문)
+      const hasCache = localStorage.getItem('love_alarm_cached_list') !== null;
+      if (showLoading && !hasCache) {
         setIsLoading(true);
       }
       
@@ -501,6 +502,34 @@ export function AlarmListPage() {
             custom={['listWithIcon']} 
             repeatLastItemCount={1} 
           />
+        )}
+
+        {/* 알람이 0개일 때 빈 상태 UI (되돌리기 중에는 숨김) */}
+        {!isLoading && !isRestoring && alarms.length === 0 && (
+          <div className="empty-state-container">
+            <div className="empty-state-icon-wrapper">
+              <div className="empty-state-icon-box">
+                <img 
+                  src="https://static.toss.im/icons/png/4x/icon-clock-heart-blue.png" 
+                  alt="" 
+                  className="empty-state-main-icon"
+                />
+              </div>
+              <img 
+                src="https://static.toss.im/icons/png/4x/icon-plus-circle-blue.png" 
+                alt="" 
+                className="empty-state-plus-icon"
+              />
+            </div>
+            <Spacing size={20} />
+            <p className="empty-state-text">
+              아직 알람이 없어요.<br />기다리지 말고 추가해 보세요!
+            </p>
+            <Spacing size={20} />
+            <Button size="medium" onClick={handleAddAlarm}>
+              추가하기
+            </Button>
+          </div>
         )}
       </div>
 
