@@ -504,33 +504,6 @@ export function AlarmListPage() {
           />
         )}
 
-        {/* 알람이 0개일 때 빈 상태 UI (되돌리기 중에는 숨김) */}
-        {!isLoading && !isRestoring && alarms.length === 0 && (
-          <div className="empty-state-container">
-            <div className="empty-state-icon-wrapper">
-              <div className="empty-state-icon-box">
-                <img 
-                  src="https://static.toss.im/icons/png/4x/icon-clock-heart-blue.png" 
-                  alt="" 
-                  className="empty-state-main-icon"
-                />
-              </div>
-              <img 
-                src="https://static.toss.im/icons/png/4x/icon-plus-circle-blue.png" 
-                alt="" 
-                className="empty-state-plus-icon"
-              />
-            </div>
-            <Spacing size={20} />
-            <p className="empty-state-text">
-              아직 알람이 없어요.<br />기다리지 말고 추가해 보세요!
-            </p>
-            <Spacing size={20} />
-            <Button size="medium" onClick={handleAddAlarm}>
-              추가하기
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* 토스트 스택 */}
