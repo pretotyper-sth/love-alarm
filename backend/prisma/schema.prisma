@@ -28,6 +28,7 @@ model User {
   matchesAsUser1 Match[]  @relation("MatchUser1")
   matchesAsUser2 Match[]  @relation("MatchUser2")
   feedbacks    Feedback[]                              // 내가 보낸 피드백들
+  verificationSessions VerificationSession[]
 }
 
 // 알람 (좋아요) 테이블
@@ -73,5 +74,23 @@ model Feedback {
 
   // Relations
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// Instagram DM 인증 세션
+model VerificationSession {
+  id                String   @id @default(cuid())
+  userId            String
+  instagramUsername String
+  igUserId          String?
+  code              String?
+  status            String   @default("pending") // pending | code_sent | verified | expired
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([instagramUsername, status])
+  @@index([userId, status])
 }
 
