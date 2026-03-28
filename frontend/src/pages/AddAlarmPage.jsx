@@ -235,7 +235,11 @@ export function AddAlarmPage() {
       if (result.matched) {
         navigate('/match-success', { 
           replace: true,
-          state: { alarmId: result.alarm.id, targetInstagramId: targetIdTrimmed } 
+          state: { 
+            alarmId: result.alarm.id, 
+            fromInstagramId: myIdTrimmed,
+            targetInstagramId: targetIdTrimmed,
+          } 
         });
       } else {
         navigate('/alarms', { 

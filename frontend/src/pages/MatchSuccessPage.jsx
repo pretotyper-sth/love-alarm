@@ -13,10 +13,11 @@ export function MatchSuccessPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiFading, setConfettiFading] = useState(false);
 
+  const fromInstagramId = location.state?.fromInstagramId;
+  const targetInstagramId = location.state?.targetInstagramId;
+
   useEffect(() => {
     // targetInstagramId로 컨페티 표시 여부 저장 (되돌리기해도 같은 대상이면 컨페티 안 뜸)
-    const targetInstagramId = location.state?.targetInstagramId;
-    
     if (targetInstagramId) {
       // 이미 컨페티를 본 대상인지 확인
       const shownConfettiTargets = storage.get(STORAGE_KEYS.CONFETTI_SHOWN) || [];
@@ -117,6 +118,31 @@ export function MatchSuccessPage() {
           이 화면을 핑계로 연락해 보세요.<br />
           망설일 필요 없어요!
         </p>
+
+        {/* ID chip */}
+        {(fromInstagramId || targetInstagramId) && (
+          <div className="match-id-chips">
+            {fromInstagramId && (
+              <div className="match-id-chip">
+                <span className="match-id-chip-label">본인</span>
+                <span className="match-id-chip-id">@{fromInstagramId}</span>
+              </div>
+            )}
+            {fromInstagramId && targetInstagramId && (
+              <img
+                src="https://static.toss.im/3d-emojis/u2764-apng.png"
+                className="match-heart-icon"
+                alt="❤️"
+              />
+            )}
+            {targetInstagramId && (
+              <div className="match-id-chip">
+                <span className="match-id-chip-label">상대</span>
+                <span className="match-id-chip-id">@{targetInstagramId}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 하단 고정 버튼 */}

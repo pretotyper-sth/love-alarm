@@ -190,7 +190,47 @@
   box-shadow: none;
 }
 
-/* 컨페티 애니메이션 - 위에서 아래로 (GPU 최적화) */
+/* ID 칩 */
+.match-id-chips {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.match-id-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #f2f4f6;
+  border-radius: 12px;
+  padding: 10px 16px;
+  min-width: 0;
+}
+
+.match-id-chip-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b95a1;
+  line-height: 1.3;
+}
+
+.match-id-chip-id {
+  font-size: 15px;
+  font-weight: 700;
+  color: #191f28;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.match-heart-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+
 .confetti-container {
   position: absolute;
   top: 0;

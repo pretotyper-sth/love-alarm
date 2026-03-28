@@ -372,7 +372,13 @@ export function AlarmListPage() {
   };
 
   const handleMatchedClick = (alarm) => {
-    navigate('/match-success', { state: { alarmId: alarm.id, targetInstagramId: alarm.targetInstagramId } });
+    navigate('/match-success', { 
+      state: { 
+        alarmId: alarm.id, 
+        fromInstagramId: alarm.fromInstagramId,
+        targetInstagramId: alarm.targetInstagramId,
+      } 
+    });
   };
 
   const handleRemoveAlarm = async (id) => {
@@ -446,11 +452,6 @@ export function AlarmListPage() {
             </Top.TitleParagraph>
           }
         />
-        <div className="settings-button-wrapper">
-          <Button color="dark" variant="fill" size="small" onClick={() => navigate('/settings')}>
-            설정
-          </Button>
-        </div>
       </div>
 
       <Spacing size={16} />
