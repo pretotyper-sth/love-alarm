@@ -348,7 +348,6 @@ export function AddAlarmPage() {
             value={myId}
             onChange={(e) => setMyId(e.target.value)}
           placeholder="예: abcd1234"
-          autoFocus={true}
           right={
             myId ? (
               <button
