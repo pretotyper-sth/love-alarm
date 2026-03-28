@@ -38,6 +38,7 @@ model Alarm {
   fromInstagramId    String                          // 본인 인스타그램 ID (알람별로 다를 수 있음)
   targetInstagramId  String                          // 대상의 인스타그램 ID
   status             String    @default("waiting")   // waiting | matched
+  message            String?                         // 알람 등록 시 남기는 메세지 (선택)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?                       // Soft Delete용 (null = 활성, 값 있으면 = 삭제됨)

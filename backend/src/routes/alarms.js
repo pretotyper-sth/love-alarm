@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { userId, fromInstagramId, targetInstagramId } = req.body;
+    const { userId, fromInstagramId, targetInstagramId, message } = req.body;
 
     if (!userId || !fromInstagramId || !targetInstagramId) {
       return res.status(400).json({ error: 'userId, fromInstagramId, targetInstagramId가 필요합니다.' });
@@ -74,6 +74,7 @@ router.post('/', async (req, res) => {
             deletedAt: null, 
             fromInstagramId,
             status: 'waiting',
+            message: message ?? null,
             updatedAt: new Date(),
           },
         });
@@ -82,7 +83,7 @@ router.post('/', async (req, res) => {
       }
     } else {
       alarm = await req.prisma.alarm.create({
-        data: { userId, fromInstagramId, targetInstagramId },
+        data: { userId, fromInstagramId, targetInstagramId, message: message ?? null },
       });
     }
 

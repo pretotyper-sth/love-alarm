@@ -4,6 +4,7 @@ import {
   Text,
   Top,
   TextField,
+  TextArea,
   Spacing,
   Button,
 } from '@toss/tds-mobile';
@@ -16,6 +17,30 @@ import './AddAlarmPage.css';
 // 최초 알람 등록 여부 키
 const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
 
+// 하루 추가 제한 키
+const DAILY_ADD_COUNT_KEY = 'love_alarm_daily_add_count';
+const DAILY_ADD_DATE_KEY  = 'love_alarm_daily_add_date';
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getDailyAddCount() {
+  const savedDate = localStorage.getItem(DAILY_ADD_DATE_KEY);
+  const today = getTodayStr();
+  if (savedDate !== today) {
+    localStorage.setItem(DAILY_ADD_DATE_KEY, today);
+    localStorage.setItem(DAILY_ADD_COUNT_KEY, '0');
+    return 0;
+  }
+  return parseInt(localStorage.getItem(DAILY_ADD_COUNT_KEY) || '0', 10);
+}
+
+function incrementDailyAddCount() {
+  const count = getDailyAddCount();
+  localStorage.setItem(DAILY_ADD_COUNT_KEY, String(count + 1));
+}
+
 // 리워드 광고 그룹 ID (콘솔에서 발급)
 const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
 
@@ -24,6 +49,7 @@ export function AddAlarmPage() {
   const { user, setUser } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
+  const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
   const [isAdLoaded, setIsAdLoaded] = useState(false);
@@ -159,9 +185,17 @@ export function AddAlarmPage() {
   };
 
   const addAlarm = async () => {
+    // ① 하루 추가 제한 체크 (광고 노출 전)
+    const dailyLimit = (user?.maxSlots ?? 2) * 2;
+    const dailyCount = getDailyAddCount();
+    if (dailyCount >= dailyLimit) {
+      showErrorToast(`하루 최대 ${dailyLimit}번까지 추가할 수 있어요.`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // 1. 리워드 광고 표시
+      // 2. 리워드 광고 표시
       const adResult = await showRewardedAd();
       
       // 광고를 끝까지 보지 않으면 알람 추가 안 함
@@ -175,14 +209,18 @@ export function AddAlarmPage() {
       
       const myIdTrimmed = myId.trim().toLowerCase();
       const targetIdTrimmed = targetId.trim().toLowerCase();
+      const messageTrimmed = message.trim() || undefined;
 
-      // 2. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
+      // 3. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
       localStorage.setItem('love_alarm_my_instagram_id', myIdTrimmed);
 
-      // 3. API로 알람 생성 (fromInstagramId 포함)
-      const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed);
+      // 4. API로 알람 생성 (fromInstagramId + message 포함)
+      const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed, messageTrimmed);
+
+      // 5. 성공 시 하루 카운트 증가
+      incrementDailyAddCount();
       
-      // 4. 최초 알람 등록인지 확인 (알림 팝업 표시 여부)
+      // 6. 최초 알람 등록인지 확인 (알림 팝업 표시 여부)
       const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
       const pushEnabled = user?.pushEnabled ?? false;
       const tossAppEnabled = user?.tossAppEnabled ?? false;
@@ -193,7 +231,7 @@ export function AddAlarmPage() {
         localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
       }
       
-      // 5. 완료 후 페이지 이동 (replace: true로 히스토리 중복 방지)
+      // 7. 완료 후 페이지 이동 (replace: true로 히스토리 중복 방지)
       if (result.matched) {
         navigate('/match-success', { 
           replace: true,
@@ -371,6 +409,17 @@ export function AddAlarmPage() {
             ) : null
           }
         />
+        <Spacing size={16} />
+
+          <TextArea
+          label="메세지 (선택)"
+          labelOption="sustain"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="전하고 싶은 말이 있다면 남겨보세요"
+          maxLength={100}
+          minHeight={80}
+        />
       </div>
 
       <div className="add-alarm-button-section">
@@ -381,7 +430,7 @@ export function AddAlarmPage() {
           disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
           loading={isSubmitting}
         >
-          광고보고 추가하기
+          알람 추가하기
         </Button>
       </div>
 

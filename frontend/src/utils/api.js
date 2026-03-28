@@ -302,7 +302,7 @@ export const api = {
   /**
    * 알람 생성
    */
-  createAlarm: async (fromInstagramId, targetInstagramId) => {
+  createAlarm: async (fromInstagramId, targetInstagramId, message) => {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
@@ -313,6 +313,7 @@ export const api = {
         userId: user.id,
         fromInstagramId,
         targetInstagramId,
+        message: message || undefined,
       }),
     });
 
