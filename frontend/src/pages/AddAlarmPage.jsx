@@ -416,30 +416,21 @@ export function AddAlarmPage() {
         <Spacing size={16} />
 
         <div className="add-alarm-message-wrapper">
+          <div className="add-alarm-message-header">
+            <span className="add-alarm-message-label-text">메세지 (선택)</span>
+            <span className="add-alarm-message-count">{message.length}/100</span>
+          </div>
           <TextArea
             variant="box"
             minHeight={80}
-            label="메세지 (선택)"
-            labelOption="sustain"
             placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요. 서로 연결되면 상대에게 공개돼요."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             maxLength={100}
           />
-          <div style={{ marginTop: '-16px', textAlign: 'right', paddingRight: '20px' }}>
-            <Text
-              typography="t8"
-              style={{ fontSize: '12px', color: '#8b95a1' }}
-            >
-              {message.length}/100
-            </Text>
-          </div>
-          <Text
-            typography="t8"
-            style={{ fontSize: '12px', color: '#8b95a1', lineHeight: '1.6', padding: '0 20px' }}
-          >
+          <p className="add-alarm-message-hint">
             보낸 메세지를 상대가 확인하려면 인스타그램 인증이 필요하니 걱정하지 않아도 돼요. 보낸 메세지는 메세지함에서 확인할 수 있어요.
-          </Text>
+          </p>
         </div>
       </div>
 
