@@ -4,7 +4,6 @@ import {
   Text,
   Top,
   TextField,
-  TextArea,
   Spacing,
   Button,
 } from '@toss/tds-mobile';
@@ -415,15 +414,18 @@ export function AddAlarmPage() {
         />
         <Spacing size={16} />
 
-          <TextArea
-          label="메세지 (선택)"
-          labelOption="sustain"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="전하고 싶은 말이 있다면 남겨보세요"
-          maxLength={100}
-          minHeight={80}
-        />
+          <div className="add-alarm-message-field">
+          <label className="add-alarm-message-label">메세지 (선택)</label>
+          <textarea
+            className="add-alarm-message-textarea"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="전하고 싶은 말이 있다면 남겨보세요"
+            maxLength={100}
+            rows={3}
+          />
+          <span className="add-alarm-message-count">{message.length}/100</span>
+        </div>
       </div>
 
       <div className="add-alarm-button-section">
