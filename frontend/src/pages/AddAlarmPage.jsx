@@ -422,7 +422,7 @@ export function AddAlarmPage() {
           minHeight={80}
           label="메세지 (선택)"
           labelOption="sustain"
-          placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요. 서로 연결되면 상대에게 공개돼요."
+          placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           maxLength={100}
