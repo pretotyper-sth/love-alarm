@@ -10,3 +10,4 @@ yarn-error.log*
 *.local
 .vercel
 .env*.local
+AU 내역(2026-01-01~2026-03-31).csv
