@@ -471,8 +471,8 @@ export function AlarmListPage() {
           onClick={handleAddAlarm}
         />
 
-        {/* 초기 사용 안내 힌트 — 한 번도 알람을 만든 적 없을 때만 노출 */}
-        {!hasEverRegistered && !isLoading && (
+        {/* 초기 사용 안내 힌트 — 한 번도 알람을 만든 적 없고 현재 알람 0개일 때만 노출 */}
+        {!hasEverRegistered && !isLoading && alarms.length === 0 && (
           <p className="alarm-list-first-hint">
             좋아하는 사람의 인스타그램 ID를 입력해 보세요.<br />
             서로가 좋아한다면 알람이 울릴 거예요.
