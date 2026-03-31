@@ -1,0 +1,57 @@
+.rewards-page-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #ffffff;
+  padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+}
+
+.rewards-top-section {
+  padding: 0;
+}
+
+.rewards-top-section > div {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ─── 체크인 항목 텍스트 영역 ─── */
+.checkin-contents {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checkin-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #191f28;
+  line-height: 1.4;
+}
+
+.checkin-repeat {
+  font-weight: 400;
+  color: #8b95a1;
+  font-size: 13px;
+}
+
+.checkin-sub {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: #4e5968;
+  line-height: 1.4;
+}
+
+.checkin-badge {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 3px 8px;
+  background: #f2f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7684;
+}

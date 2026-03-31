@@ -72,7 +72,8 @@ export function FeedbackPage() {
   };
 
   return (
-    <div className="add-alarm-page-container">
+    <div className="feedback-page-container">
+      <div className="feedback-form-content">
       <Spacing size={14} />
 
       <div className="add-alarm-top-section">
@@ -166,21 +167,12 @@ export function FeedbackPage() {
               >
                 {content.length}/500 (최소 10자)
               </Text>
-            </div>
           </div>
+        </div>
+      </div>
       </div>
 
-      <div 
-        className="add-alarm-button-section"
-        onClick={() => {
-          // 비활성화 상태에서 클릭 시 안내 토스트
-          if (!category) {
-            showErrorToast('카테고리를 선택해 주세요');
-          } else if (content.trim().length < 10) {
-            showErrorToast('최소 10자 이상 입력해 주세요');
-          }
-        }}
-      >
+      <div className="feedback-submit-section">
         <Button
           size="xlarge"
           display="block"
@@ -209,7 +201,7 @@ export function FeedbackPage() {
             <h3 className="bottom-sheet-title">카테고리 선택</h3>
           </div>
           <div style={{ padding: '16px 0 24px 0', width: '100%' }}>
-            {CATEGORY_OPTIONS.map((option, index) => (
+            {CATEGORY_OPTIONS.map((option) => (
               <div
                 key={option.value}
                 onClick={() => {
@@ -256,4 +248,5 @@ export function FeedbackPage() {
     </div>
   );
 }
+
 

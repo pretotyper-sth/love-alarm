@@ -7,16 +7,14 @@ import {
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import './AbuseWarningPage.css';
-
-// 경고 페이지 확인 여부 키
-const ABUSE_WARNING_CONFIRMED_KEY = 'love_alarm_abuse_warning_confirmed';
+import { markAbuseWarningConfirmed } from '../utils/abuseWarning';
 
 export function AbuseWarningPage() {
   const navigate = useNavigate();
 
   const handleConfirm = () => {
     // 확인 여부 저장
-    localStorage.setItem(ABUSE_WARNING_CONFIRMED_KEY, 'true');
+    markAbuseWarningConfirmed();
     // 알람 추가 페이지로 이동 (replace: true로 경고 페이지 히스토리 제거)
     navigate('/add-alarm', { replace: true });
   };
@@ -25,8 +23,6 @@ export function AbuseWarningPage() {
     <div className="abuse-warning-page-container">
       {/* 콘텐츠 영역 */}
       <div className="abuse-warning-content">
-        <Spacing size={132} />
-        
         {/* 이모지 이미지 */}
         <div className="abuse-warning-image">
           <Asset.Image
@@ -53,18 +49,6 @@ export function AbuseWarningPage() {
         >
           다른 사람을 사칭하는 등 적절하지 않게 사용 시 알람이 삭제되거나 접속이 제한돼요
         </Text>
-
-        <Spacing size={20} />
-
-        {/* 서브 텍스트 */}
-        <Text
-          color={adaptive.grey600}
-          typography="t5"
-          fontWeight="medium"
-          textAlign="center"
-        >
-          건전한 서비스를 위해 모두의 도움이 필요해요.
-        </Text>
       </div>
 
       {/* 하단 버튼 */}
@@ -79,11 +63,6 @@ export function AbuseWarningPage() {
       </div>
     </div>
   );
-}
-
-// 경고 페이지 확인 여부 체크 함수 (외부에서 사용)
-export function hasConfirmedAbuseWarning() {
-  return localStorage.getItem(ABUSE_WARNING_CONFIRMED_KEY) === 'true';
 }
 
 

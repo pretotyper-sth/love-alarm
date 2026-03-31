@@ -82,8 +82,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   flex: 1;
-  padding: 0 20px;
+  padding: 0 20px 116px;
 }
 
 /* 이모지 이미지 */

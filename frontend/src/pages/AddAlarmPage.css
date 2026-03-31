@@ -1,9 +1,12 @@
 .add-alarm-page-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--adaptiveBackground, #ffffff);
-  padding-bottom: 100px; /* 하단 고정 버튼 공간 확보 */
+}
+
+.add-alarm-form-content {
+  flex: 1;
 }
 
 /* Quick_Navigation 스타일 - IntroPage와 동일 */
@@ -220,18 +223,9 @@
   padding-right: 0 !important;
 }
 
-/* 버튼 섹션 - 하단 고정 */
-.add-alarm-button-section {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: 376px;
-  width: 100%;
-  padding: 20px;
-  background: var(--adaptiveBackground, #ffffff);
-  z-index: 1000;
-  box-shadow: none;
+/* CTA 섹션 - 콘텐츠 맨 아래, 스크롤과 함께 흐름 */
+.add-alarm-cta-section {
+  padding: 24px 20px 32px;
 }
 
 .add-alarm-save-button {
@@ -356,7 +350,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .add-alarm-message-count {
@@ -377,8 +371,19 @@
   word-break: keep-all;
 }
 
-/* TextArea 내부 placeholder 스타일 — justify 방지 */
+/* TextArea 내부 스타일 — FeedbackPage 동일하게 적용 */
+.add-alarm-message-wrapper textarea::placeholder {
+  color: #b0b8c1 !important;
+  font-size: 15px !important;
+}
+
+.add-alarm-message-wrapper > div > div > div {
+  background-color: #f2f4f6 !important;
+  border-radius: 16px !important;
+}
+
 .add-alarm-message-wrapper textarea {
+  color: #4e5968 !important;
   text-align: left !important;
   letter-spacing: normal !important;
   word-spacing: normal !important;

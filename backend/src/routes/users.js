@@ -127,6 +127,30 @@ router.post('/:id/test-push', async (req, res) => {
 });
 
 /**
+ * POST /api/users/:id/claim-adfree
+ * 30일 체크인 보상 - 광고 영구 제거
+ */
+router.post('/:id/claim-adfree', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await req.prisma.user.findUnique({ where: { id } });
+    if (!user) return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    if (user.adFree) return res.json({ user, alreadyClaimed: true });
+
+    const updatedUser = await req.prisma.user.update({
+      where: { id },
+      data: { adFree: true },
+    });
+
+    res.json({ user: updatedUser });
+  } catch (error) {
+    console.error('Claim adFree error:', error);
+    res.status(500).json({ error: '광고 제거 처리 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * POST /api/users/:id/purchase-slot
  * 알람 슬롯 구매 (결제 성공 후 호출)
  * 

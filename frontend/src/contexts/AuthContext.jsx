@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { appLogin } from '@apps-in-toss/web-framework';
 import { api } from '../utils/api';
 import { storage } from '../utils/storage';
@@ -20,34 +20,25 @@ export function AuthProvider({ children }) {
   };
 
   // 토스 로그인 수행 (내부 함수)
-  const performTossLoginInternal = async () => {
-    try {
-      // 브라우저 환경에서는 Mock 로그인 (개발용)
-      if (isBrowserEnv()) {
-        // Mock 사용자 ID로 서버 로그인
-        const mockTossUserId = 'dev_browser_user_' + Date.now();
-        const result = await api.login(mockTossUserId);
-        return result.user;
-      }
-
-      // 1. 토스 SDK에서 인가 코드 받기
-      let loginResult;
-      try {
-        loginResult = await appLogin();
-      } catch (appLoginError) {
-        throw new Error(`토스 인증 실패: ${appLoginError.message}`);
-      }
-      
-      const { authorizationCode, referrer } = loginResult;
-
-      // 2. 서버로 전송하여 로그인 처리
-      const result = await api.tossLogin(authorizationCode, referrer);
-
+  const performTossLoginInternal = useCallback(async () => {
+    // 브라우저 환경에서는 Mock 로그인 (개발용)
+    if (isBrowserEnv()) {
+      const mockTossUserId = 'dev_browser_user_' + Date.now();
+      const result = await api.login(mockTossUserId);
       return result.user;
-    } catch (error) {
-      throw error;
     }
-  };
+
+    let loginResult;
+    try {
+      loginResult = await appLogin();
+    } catch (appLoginError) {
+      throw new Error(`토스 인증 실패: ${appLoginError.message}`);
+    }
+
+    const { authorizationCode, referrer } = loginResult;
+    const result = await api.tossLogin(authorizationCode, referrer);
+    return result.user;
+  }, []);
 
   useEffect(() => {
     // 앱 시작 시 인증 초기화
@@ -63,7 +54,7 @@ export function AuthProvider({ children }) {
             const validUser = await api.getUser();
             setUser(validUser);
             api.connectSocket();
-          } catch (userError) {
+          } catch {
             // 서버에서 사용자를 찾을 수 없음 (연결 해제됨)
             // → 로컬 데이터 정리하고 IntroPage에서 다시 로그인하도록 함
             api.logout();
@@ -78,12 +69,12 @@ export function AuthProvider({ children }) {
             const newUser = await performTossLoginInternal();
             setUser(newUser);
             api.connectSocket();
-          } catch (loginError) {
+          } catch {
             // 실패 시 IntroPage에서 다시 시도하도록 has_visited_intro 제거
             storage.remove('has_visited_intro');
           }
         }
-      } catch (error) {
+      } catch {
         // Auth init error - 무시
       } finally {
         setLoading(false);
@@ -91,18 +82,14 @@ export function AuthProvider({ children }) {
     };
 
     initAuth();
-  }, []);
+  }, [performTossLoginInternal]);
 
 
   // 인스타그램 ID 업데이트
   const updateInstagramId = async (instagramId) => {
-    try {
-      const result = await api.updateInstagramId(instagramId);
-      setUser(result.user);
-      return result.user;
-    } catch (error) {
-      throw error;
-    }
+    const result = await api.updateInstagramId(instagramId);
+    setUser(result.user);
+    return result.user;
   };
 
   // 로그아웃
@@ -119,8 +106,6 @@ export function AuthProvider({ children }) {
       setUser(newUser);
       api.connectSocket();
       return newUser;
-    } catch (error) {
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -133,6 +118,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

@@ -3,6 +3,16 @@
   flex-direction: column;
   min-height: 100vh;
   background: var(--adaptiveBackground, #ffffff);
+  padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+}
+
+.alarm-list-first-hint {
+  padding: 12px 20px 0;
+  font-size: 16px;
+  font-weight: 400;
+  color: #b0b8c1;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* Quick_Navigation 스타일 - IntroPage와 동일 */

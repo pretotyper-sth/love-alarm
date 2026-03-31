@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Top,
   ListRow,
@@ -10,7 +10,7 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
-import { hasConfirmedAbuseWarning } from './AbuseWarningPage';
+import { hasConfirmedAbuseWarning } from '../utils/abuseWarning';
 import { PaymentModal } from '../components/PaymentModal';
 import './AlarmListPage.css';
 
@@ -109,6 +109,7 @@ export function AlarmListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser } = useAuth();
+  const hasEverRegistered = localStorage.getItem('love_alarm_first_registered') === 'true';
   // 캐시된 알람 목록으로 초기화 (깜빡임 방지)
   const [alarms, setAlarms] = useState(() => getCachedAlarms() || []);
   // 캐시가 존재하면(빈 배열이어도) 로딩 표시 안 함, 캐시 없으면 로딩
@@ -128,22 +129,9 @@ export function AlarmListPage() {
   const addButtonRef = useRef(null); // 추가하기 버튼 ref
   const toastIdRef = useRef(0);
   const notificationSheetShownRef = useRef(false);
-  // 토스트 추가 함수
-  const addToast = (toast) => {
-    const id = ++toastIdRef.current;
-    const newToast = { ...toast, id, show: true };
-    setToasts(prev => [...prev, newToast]);
-    
-    // 자동 삭제 타이머
-    setTimeout(() => {
-      removeToast(id);
-    }, toast.duration || 3000);
-    
-    return id;
-  };
 
   // 토스트 제거 함수
-  const removeToast = (id) => {
+  const removeToast = useCallback((id) => {
     setToasts(prev => prev.map(t => 
       t.id === id ? { ...t, show: false } : t
     ));
@@ -151,19 +139,61 @@ export function AlarmListPage() {
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 300);
-  };
+  }, []);
+
+  // 토스트 추가 함수
+  const addToast = useCallback((toast) => {
+    const id = ++toastIdRef.current;
+    const newToast = { ...toast, id, show: true };
+    setToasts(prev => [...prev, newToast]);
+    
+    setTimeout(() => {
+      removeToast(id);
+    }, toast.duration || 3000);
+    
+    return id;
+  }, [removeToast]);
 
   // user가 있을 때 알람 목록 + maxSlots 동시 로드
+  const loadAlarms = useCallback(async (showLoading = true) => {
+    try {
+      const hasCache = localStorage.getItem('love_alarm_cached_list') !== null;
+      if (showLoading && !hasCache) {
+        setIsLoading(true);
+      }
+
+      const fetchedAlarms = await api.getAlarms();
+      setAlarms(fetchedAlarms);
+      localStorage.setItem('love_alarm_cached_list', JSON.stringify(fetchedAlarms));
+      localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
+      setLastAlarmCount(fetchedAlarms.length);
+
+      try {
+        const latestUser = await api.getUser();
+        if (latestUser?.maxSlots) {
+          setMaxSlots(latestUser.maxSlots);
+          localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
+        }
+      } catch (userError) {
+        console.error('사용자 정보 조회 실패:', userError);
+      }
+
+      alarmRefsRef.current = [];
+    } catch (error) {
+      console.error('알람 목록 조회 실패:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
-      // maxSlots 즉시 설정
       if (user.maxSlots) {
         setMaxSlots(user.maxSlots);
       }
-      // 알람 목록 로드
       loadAlarms();
     }
-  }, [user]);
+  }, [loadAlarms, user]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
   useEffect(() => {
@@ -186,7 +216,7 @@ export function AlarmListPage() {
       api.offMatched();
       api.offMatchCanceled();
     };
-  }, []);
+  }, [addToast, loadAlarms]);
 
   // 모든 알람에 동시에 shine 효과 적용 (retry 로직 포함)
   useEffect(() => {
@@ -279,7 +309,7 @@ export function AlarmListPage() {
     if (location.state) {
       window.history.replaceState({}, document.title);
     }
-  }, []);
+  }, [addToast, location.state]);
 
   // 알림 동의하기 클릭
   const handleNotificationAgree = async () => {
@@ -299,43 +329,6 @@ export function AlarmListPage() {
   // 알림 닫기 클릭 (동의 안 함)
   const handleNotificationClose = () => {
     setShowNotificationSheet(false);
-  };
-
-  const loadAlarms = async (showLoading = true) => {
-    try {
-      // 캐시가 없을 때만 로딩 표시 (최초 방문)
-      const hasCache = localStorage.getItem('love_alarm_cached_list') !== null;
-      if (showLoading && !hasCache) {
-        setIsLoading(true);
-      }
-      
-      const fetchedAlarms = await api.getAlarms();
-      setAlarms(fetchedAlarms);
-      
-      // 캐시 저장 (다음 방문 시 즉시 표시용)
-      localStorage.setItem('love_alarm_cached_list', JSON.stringify(fetchedAlarms));
-      localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
-      setLastAlarmCount(fetchedAlarms.length);
-      
-      // 서버에서 최신 user 정보 가져와서 maxSlots 업데이트
-      try {
-        const latestUser = await api.getUser();
-        if (latestUser?.maxSlots) {
-          setMaxSlots(latestUser.maxSlots);
-          // maxSlots도 캐시
-          localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
-        }
-      } catch (userError) {
-        console.error('사용자 정보 조회 실패:', userError);
-      }
-      
-      // ref 배열 초기화
-      alarmRefsRef.current = [];
-    } catch (error) {
-      console.error('알람 목록 조회 실패:', error);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const handleAddAlarm = () => {
@@ -469,7 +462,7 @@ export function AlarmListPage() {
           contents={
             <ListRow.Texts
               type="1RowTypeA"
-              top={`추가하기 (${alarms.length}/${maxSlots})`}
+              top={`알람 추가하기 (${alarms.length}/${maxSlots})`}
               topProps={{ color: '#4e5968' }}
             />
           }
@@ -477,6 +470,14 @@ export function AlarmListPage() {
           horizontalPadding="medium"
           onClick={handleAddAlarm}
         />
+
+        {/* 초기 사용 안내 힌트 — 한 번도 알람을 만든 적 없을 때만 노출 */}
+        {!hasEverRegistered && !isLoading && (
+          <p className="alarm-list-first-hint">
+            좋아하는 사람의 인스타그램 ID를 입력해 보세요.<br />
+            서로가 좋아한다면 알람이 울릴 거예요.
+          </p>
+        )}
 
         {/* 초기 로딩 중 스켈레톤 - 이전 알람 개수만큼 표시 */}
         {isLoading && lastAlarmCount > 0 && (

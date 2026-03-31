@@ -225,7 +225,29 @@ export const api = {
     // 로컬 사용자 정보 업데이트
     currentUser = data.user;
     localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
-    
+    return data;
+  },
+
+  /**
+   * 30일 체크인 보상 - 광고 영구 제거
+   */
+  claimAdFree: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/users/${user.id}/claim-adfree`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '광고 제거 처리 실패');
+    }
+
+    const data = await response.json();
+    currentUser = data.user;
+    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
     return data;
   },
 

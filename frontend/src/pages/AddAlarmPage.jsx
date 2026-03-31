@@ -4,7 +4,6 @@ import {
   Text,
   Top,
   TextField,
-  TextArea,
   Spacing,
   Button,
 } from '@toss/tds-mobile';
@@ -43,10 +42,22 @@ function incrementDailyAddCount() {
 
 // 리워드 광고 그룹 ID (콘솔에서 발급)
 const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
+const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
+
+function isAdFree() {
+  // localStorage 플래그 (즉시 반영) 또는 서버에서 받은 user 데이터의 adFree 필드
+  if (localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true') return true;
+  try {
+    const user = JSON.parse(localStorage.getItem('love_alarm_user') || '{}');
+    return user.adFree === true;
+  } catch {
+    return false;
+  }
+}
 
 export function AddAlarmPage() {
   const navigate = useNavigate();
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
   const [message, setMessage] = useState('');
@@ -112,6 +123,11 @@ export function AddAlarmPage() {
 
   // 리워드 광고 표시 함수 (문서: https://developers-apps-in-toss.toss.im/ads/develop.html)
   const showRewardedAd = async () => {
+    // 30일 체크인 보상 수령 시 광고 면제
+    if (isAdFree()) {
+      return { rewarded: true, skipped: true };
+    }
+
     try {
       const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
       
@@ -304,6 +320,7 @@ export function AddAlarmPage() {
 
   return (
     <div className="add-alarm-page-container">
+      <div className="add-alarm-form-content">
       <Spacing size={14} />
 
       <div className="add-alarm-top-section">
@@ -414,26 +431,10 @@ export function AddAlarmPage() {
         />
       </div>
 
-      <Spacing size={16} />
-
-      <div className="add-alarm-message-wrapper">
-        <TextArea
-          variant="box"
-          minHeight={80}
-          label="메세지 (선택)"
-          labelOption="sustain"
-            placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          maxLength={100}
-        />
-        <span className="add-alarm-message-count">{message.length}/100</span>
-        <p className="add-alarm-message-hint">
-          보낸 메세지를 상대가 확인하려면 인스타그램 인증이 필요하니 걱정하지 않아도 돼요. 보낸 메세지는 메세지함에서 확인할 수 있어요.
-        </p>
+      {/* 메세지 필드는 메세지 기능 검수 시 복원 */}
       </div>
 
-      <div className="add-alarm-button-section">
+      <div className="add-alarm-cta-section">
         <Button
           size="xlarge"
           display="block"
@@ -441,7 +442,7 @@ export function AddAlarmPage() {
           disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
           loading={isSubmitting}
         >
-          광고보고 추가하기
+          {isAdFree() ? '알람 추가하기' : '광고보고 추가하기'}
         </Button>
       </div>
 

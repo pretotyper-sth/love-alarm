@@ -8,8 +8,10 @@ import { AddAlarmPage } from './pages/AddAlarmPage';
 import { AbuseWarningPage } from './pages/AbuseWarningPage';
 import { MatchSuccessPage } from './pages/MatchSuccessPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { RewardsPage } from './pages/RewardsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { ErrorPage } from './pages/ErrorPage';
+import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import './App.css';
 
@@ -71,9 +73,10 @@ function setupHistoryGuard() {
   window.history.pushState({ index: 1 }, '');
 }
 
+const TAB_PATHS = ['/alarms', '/rewards', '/more'];
+
 // 네비게이션 추적 컴포넌트 (히스토리 가드 설정)
 function NavigationTracker() {
-  const location = useLocation();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -84,6 +87,18 @@ function NavigationTracker() {
   }, []);
 
   return null;
+}
+
+// 탭 레이아웃: 하단 네비 조건부 표시
+function TabLayout({ children }) {
+  const location = useLocation();
+  const showNav = TAB_PATHS.includes(location.pathname);
+  return (
+    <>
+      {children}
+      {showNav && <BottomNav />}
+    </>
+  );
 }
 
 // 라우팅 컴포넌트 (AuthProvider 안에서 useAuth 사용 가능)
@@ -187,44 +202,54 @@ function AppRoutes() {
     <>
       <BrowserRouter>
         <NavigationTracker />
-        <Routes>
-          <Route
-            path="/"
-            element={
-              hasVisited ? (
-                <Navigate to="/alarms" replace />
-              ) : (
-                <IntroPage onComplete={markAsVisited} />
-              )
-            }
-          />
-          {/* 인트로 미완료 시 모든 페이지에서 인트로로 리다이렉트 */}
-          <Route 
-            path="/alarms" 
-            element={hasVisited ? <AlarmListPage /> : <Navigate to="/" replace />} 
-          />
-          <Route 
-            path="/abuse-warning" 
-            element={hasVisited ? <AbuseWarningPage /> : <Navigate to="/" replace />} 
-          />
-          <Route 
-            path="/add-alarm" 
-            element={hasVisited ? <AddAlarmPage /> : <Navigate to="/" replace />} 
-          />
-          <Route 
-            path="/match-success" 
-            element={hasVisited ? <MatchSuccessPage /> : <Navigate to="/" replace />} 
-          />
-          <Route 
-            path="/settings" 
-            element={hasVisited ? <SettingsPage /> : <Navigate to="/" replace />} 
-          />
-          <Route 
-            path="/feedback" 
-            element={hasVisited ? <FeedbackPage /> : <Navigate to="/" replace />} 
-          />
-          <Route path="/error" element={<ErrorPage />} />
-        </Routes>
+        <TabLayout>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                hasVisited ? (
+                  <Navigate to="/alarms" replace />
+                ) : (
+                  <IntroPage onComplete={markAsVisited} />
+                )
+              }
+            />
+            {/* 인트로 미완료 시 모든 페이지에서 인트로로 리다이렉트 */}
+            <Route 
+              path="/alarms" 
+              element={hasVisited ? <AlarmListPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/rewards" 
+              element={hasVisited ? <RewardsPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/more" 
+              element={hasVisited ? <SettingsPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/settings" 
+              element={<Navigate to="/more" replace />} 
+            />
+            <Route 
+              path="/abuse-warning" 
+              element={hasVisited ? <AbuseWarningPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/add-alarm" 
+              element={hasVisited ? <AddAlarmPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/match-success" 
+              element={hasVisited ? <MatchSuccessPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/feedback" 
+              element={hasVisited ? <FeedbackPage /> : <Navigate to="/" replace />} 
+            />
+            <Route path="/error" element={<ErrorPage />} />
+          </Routes>
+        </TabLayout>
       </BrowserRouter>
       
       {/* 종료 확인 다이얼로그 */}

@@ -72,13 +72,8 @@ export function SettingsPage() {
     const syncSettings = async () => {
       try {
         const userData = await api.getUser();
-        // 서버 값과 다르면 조용히 업데이트
-        if (userData.pushEnabled !== pushEnabled) {
-          setPushEnabled(userData.pushEnabled ?? false);
-        }
-        if (userData.tossAppEnabled !== tossAppEnabled) {
-          setTossAppEnabled(userData.tossAppEnabled ?? false);
-        }
+        setPushEnabled(userData.pushEnabled ?? false);
+        setTossAppEnabled(userData.tossAppEnabled ?? false);
       } catch (error) {
         console.error('Failed to sync settings:', error);
       }
@@ -126,7 +121,7 @@ export function SettingsPage() {
               color={adaptive.grey900}
               style={{ fontSize: '22px' }}
             >
-              서비스 설정
+              더보기
             </Top.TitleParagraph>
           }
         />

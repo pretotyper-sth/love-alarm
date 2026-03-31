@@ -16,7 +16,7 @@ export function PaymentModal({ onClose, onSuccess }) {
       try {
         const { IAP } = await import('@apps-in-toss/web-framework');
         iapModuleRef.current = IAP;
-      } catch (e) {
+      } catch {
         // 로드 실패 시 무시
       }
     };
@@ -47,7 +47,7 @@ export function PaymentModal({ onClose, onSuccess }) {
       const cleanup = IAP.createOneTimePurchaseOrder({
         options: {
           sku: PRODUCT_SKU,
-          processProductGrant: ({ orderId }) => {
+          processProductGrant: () => {
             // 상품 지급 로직 - 서버에서 슬롯 증가 처리
             // 여기서는 true를 반환하고, onSuccess에서 실제 처리
             return true;
