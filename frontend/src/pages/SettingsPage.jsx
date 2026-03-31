@@ -11,7 +11,10 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
+import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './SettingsPage.css';
+
+const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 
 // 공유 기능 (getTossShareLink + OG 이미지)
 const handleShareApp = async () => {
@@ -42,6 +45,10 @@ export function SettingsPage() {
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
   const [tossAppEnabled, setTossAppEnabled] = useState(user?.tossAppEnabled ?? false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAuthSheet, setShowAuthSheet] = useState(false);
+  const [verifiedUsername, setVerifiedUsername] = useState(
+    () => localStorage.getItem(IG_VERIFIED_KEY) || ''
+  );
   
   // 성공 토스트 상태
   const [successToast, setSuccessToast] = useState({ show: false, message: '' });
@@ -128,6 +135,40 @@ export function SettingsPage() {
       </div>
 
       <Spacing size={24} />
+
+      {/* 인스타그램 인증 섹션 */}
+      <List>
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              인스타그램 인증
+            </Text>
+          }
+          right={
+            verifiedUsername ? (
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#3182f6' }}>
+                @{verifiedUsername} ✓
+              </span>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '14px', color: '#8b95a1' }}>인증하기</span>
+                <img
+                  src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
+                  alt=""
+                  style={{ width: '20px', height: '20px', opacity: 0.6 }}
+                />
+              </div>
+            )
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+          onClick={() => setShowAuthSheet(true)}
+        />
+      </List>
+
+      <Spacing size={12} />
+      <div style={{ width: '100%', height: '8px', backgroundColor: '#f9fafb' }} />
+      <Spacing size={12} />
 
       {/* 알림 설정 섹션 - 즉시 표시 */}
       <List>
@@ -228,6 +269,22 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* 인스타그램 인증 바텀시트 */}
+      <InstagramAuthSheet
+        open={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        alreadyVerified={!!verifiedUsername}
+        onSuccess={(username) => {
+          setVerifiedUsername(username);
+          setShowAuthSheet(false);
+          setSuccessToast({ show: true, message: '인증이 완료됐어요' });
+          setTimeout(() => {
+            setSuccessToast(prev => ({ ...prev, show: false }));
+            setTimeout(() => setSuccessToast({ show: false, message: '' }), 300);
+          }, 3000);
+        }}
+      />
 
     </div>
   );

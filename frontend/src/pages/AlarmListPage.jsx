@@ -162,6 +162,15 @@ export function AlarmListPage() {
         setIsLoading(true);
       }
 
+      // ─── 목업 모드 (로컬 테스트용) ───────────────────────────
+      if (localStorage.getItem('__mock_alarms__') === 'true') {
+        const mock = JSON.parse(localStorage.getItem('love_alarm_cached_list') || '[]');
+        setAlarms(mock);
+        setIsLoading(false);
+        return;
+      }
+      // ────────────────────────────────────────────────────────
+
       const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
       localStorage.setItem('love_alarm_cached_list', JSON.stringify(fetchedAlarms));

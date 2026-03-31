@@ -389,3 +389,10 @@
   word-spacing: normal !important;
 }
 
+/* 인증된 본인 ID — help 텍스트 색상 회색 오버라이드 */
+.add-alarm-verified-field [class*="help"],
+.add-alarm-verified-field [class*="Help"],
+.add-alarm-verified-field [class*="description"],
+.add-alarm-verified-field [class*="Description"] {
+  color: #8b95a1 !important;
+}

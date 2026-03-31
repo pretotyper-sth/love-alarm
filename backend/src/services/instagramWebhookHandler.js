@@ -95,7 +95,8 @@ export async function handleInstagramWebhookPayload(prisma, body) {
 
     const dmText =
       `[좋아하면 울리는] 인증번호: ${code}\n` +
-      `앱에 10분 이내로 입력해 주세요.`;
+      `앱에 10분 이내로 입력해 주세요.\n\n` +
+      `팔로워 노출이 신경쓰인다면 인증 완료 후엔 다시 해제하셔도 괜찮아요!`;
 
     const sendResult = await sendInstagramDm(senderId, dmText);
     if (!sendResult.ok) {
