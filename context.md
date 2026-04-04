@@ -210,11 +210,14 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 ### 검수 4 — 메세지 페이지
 > Unit 8 단독. 서버 메세지 API + 인증 시스템 의존. 백엔드 준비 완료 후 진행.
 
-- [ ] **Unit 8**: 메세지 페이지
+- [x] **Unit 8**: 메세지 페이지
   - 탭 구조 (내가 보낸 메세지 / 받은 메세지)
   - 받은 메세지 탭: 미인증 시 인증 CTA
   - 메세지 상세 바텀시트 (전체 내용 + 이모지 반응: ❤️ 😊 🤔 😳 🥹)
   - 배지 카운트: 메세지 페이지 최초 진입 시 cleared
+  - 알람 목록 상단 💬 버튼 + 빨간 배지
+  - Prisma: MessageReaction 모델 추가
+  - 백엔드 API: GET /api/messages/sent, GET /api/messages/received, POST /api/messages/:id/reaction
 
 ---
 

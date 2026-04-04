@@ -422,6 +422,58 @@ export const api = {
     return await response.json(); // { count }
   },
 
+  // ==================== 메세지 ====================
+
+  /**
+   * 내가 보낸 메세지 목록 (userId 기반)
+   */
+  getSentMessages: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/messages/sent?userId=${user.id}`);
+
+    if (!response.ok) {
+      throw new Error('보낸 메세지 조회 실패');
+    }
+
+    const data = await response.json();
+    return data.messages;
+  },
+
+  /**
+   * 받은 메세지 목록 (인증된 instagramId 기반)
+   */
+  getReceivedMessages: async (instagramId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/messages/received?instagram_id=${encodeURIComponent(instagramId.trim().toLowerCase())}`
+    );
+
+    if (!response.ok) {
+      throw new Error('받은 메세지 조회 실패');
+    }
+
+    const data = await response.json();
+    return data.messages;
+  },
+
+  /**
+   * 받은 메세지에 이모지 반응 (upsert)
+   */
+  reactToMessage: async (alarmId, emoji) => {
+    const response = await fetch(`${API_BASE_URL}/messages/${alarmId}/reaction`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji }),
+    });
+
+    if (!response.ok) {
+      throw new Error('반응 저장 실패');
+    }
+
+    return await response.json();
+  },
+
   // ==================== 헬스체크 ====================
 
   /**

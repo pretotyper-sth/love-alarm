@@ -11,6 +11,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { RewardsPage } from './pages/RewardsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { ErrorPage } from './pages/ErrorPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import './App.css';
@@ -246,6 +247,10 @@ function AppRoutes() {
             <Route 
               path="/feedback" 
               element={hasVisited ? <FeedbackPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/messages" 
+              element={hasVisited ? <MessagesPage /> : <Navigate to="/" replace />} 
             />
             <Route path="/error" element={<ErrorPage />} />
           </Routes>

@@ -12,6 +12,7 @@ import alarmRoutes from './routes/alarms.js';
 import feedbackRoutes from './routes/feedback.js';
 import webhooksInstagramRoutes from './routes/webhooksInstagram.js';
 import verifyInstagramRoutes from './routes/verifyInstagram.js';
+import messagesRoutes from './routes/messages.js';
 
 dotenv.config();
 
@@ -80,6 +81,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/messages', messagesRoutes);
 app.use('/api/verify/instagram', verifyInstagramRoutes);
 app.use('/webhook', webhooksInstagramRoutes);
 

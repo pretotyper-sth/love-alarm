@@ -381,6 +381,31 @@ export function SettingsPage() {
               캐시 초기화
             </button>
           </div>
+
+          {/* 메세지 배지 */}
+          <div style={{ borderTop: '1px solid #ffe066', paddingTop: '10px', marginTop: '10px' }}>
+            <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
+              메세지 배지
+            </div>
+            <button
+              onClick={() => {
+                localStorage.removeItem('love_alarm_msg_badge_cleared_at');
+                alert('메세지 배지 초기화 완료 (홈으로 이동하면 배지 표시)');
+              }}
+              style={{
+                fontSize: '12px',
+                padding: '4px 10px',
+                background: '#718096',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              배지 초기화
+            </button>
+          </div>
         </div>
       )}
 

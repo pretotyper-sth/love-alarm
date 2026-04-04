@@ -19,6 +19,8 @@ const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
 const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
 const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
+const MSG_BADGE_CLEARED_AT_KEY = 'love_alarm_msg_badge_cleared_at';
+const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 
 function getLikeCountCache() {
   const target = localStorage.getItem(LIKE_COUNT_TARGET_KEY);
@@ -150,6 +152,8 @@ export function AlarmListPage() {
   // 좋아하는 사람 수 확인 상태
   const [showLikeCountSheet, setShowLikeCountSheet] = useState(false);
   const [likeCountCache, setLikeCountCache] = useState(() => getLikeCountCache());
+  // 메세지 배지 카운트
+  const [msgBadgeCount, setMsgBadgeCount] = useState(0);
   const alarmRefsRef = useRef([]);
   const addButtonRef = useRef(null); // 추가하기 버튼 ref
   const toastIdRef = useRef(0);
@@ -245,6 +249,23 @@ export function AlarmListPage() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
+  // 메세지 배지 카운트 로드 (인증된 경우)
+  useEffect(() => {
+    const loadMsgBadge = async () => {
+      const verifiedId = localStorage.getItem(IG_VERIFIED_KEY);
+      if (!verifiedId) return;
+      try {
+        const clearedAt = localStorage.getItem(MSG_BADGE_CLEARED_AT_KEY);
+        const messages = await api.getReceivedMessages(verifiedId);
+        const unread = clearedAt
+          ? messages.filter(m => new Date(m.createdAt) > new Date(clearedAt)).length
+          : messages.length;
+        setMsgBadgeCount(unread);
+      } catch { /* 조용히 실패 */ }
+    };
+    if (user) loadMsgBadge();
+  }, [user]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
   useEffect(() => {
@@ -493,6 +514,26 @@ export function AlarmListPage() {
             >
               알람 목록
             </Top.TitleParagraph>
+          }
+          right={
+            <button
+              className="alarm-list-msg-btn"
+              onClick={() => navigate('/messages')}
+              aria-label="메세지 확인"
+            >
+              <img
+                src="https://static.toss.im/icons/png/4x/icon-chat-circle-mono.png"
+                alt=""
+                style={{ width: 24, height: 24 }}
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }}
+              />
+              <span style={{ display: 'none', fontSize: 22 }}>💬</span>
+              {msgBadgeCount > 0 && (
+                <span className="alarm-list-msg-badge">
+                  {msgBadgeCount > 9 ? '9+' : msgBadgeCount}
+                </span>
+              )}
+            </button>
           }
         />
       </div>
