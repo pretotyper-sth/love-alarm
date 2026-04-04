@@ -15,6 +15,7 @@ import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './SettingsPage.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
+const IS_DEV = import.meta.env.DEV;
 
 // 공유 기능 (getTossShareLink + OG 이미지)
 const handleShareApp = async () => {
@@ -89,6 +90,18 @@ export function SettingsPage() {
     // 컴포넌트 마운트 시 백그라운드 동기화
     syncSettings();
   }, []);
+
+  // Dev bypass: 인스타그램 인증 상태 강제 토글
+  const handleDevAuthToggle = () => {
+    if (verifiedUsername) {
+      localStorage.removeItem(IG_VERIFIED_KEY);
+      setVerifiedUsername('');
+    } else {
+      const mockId = 'dev_bypass';
+      localStorage.setItem(IG_VERIFIED_KEY, mockId);
+      setVerifiedUsername(mockId);
+    }
+  };
 
   // 설정 변경 핸들러
   const handleSettingChange = async (field, value) => {
@@ -285,6 +298,41 @@ export function SettingsPage() {
           }, 3000);
         }}
       />
+
+      {/* DEV ONLY: 인스타그램 인증 bypass */}
+      {IS_DEV && (
+        <div style={{
+          margin: '24px 20px 16px',
+          padding: '12px 14px',
+          background: '#fffbe6',
+          border: '1px solid #ffe066',
+          borderRadius: '10px',
+        }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#7c5c00', marginBottom: '8px', letterSpacing: '0.03em' }}>
+            🛠 DEV BYPASS
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={handleDevAuthToggle}
+              style={{
+                fontSize: '13px',
+                padding: '6px 14px',
+                background: verifiedUsername ? '#e53e3e' : '#2f855a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              {verifiedUsername ? '인증 해제' : '인증하기'}
+            </button>
+            <span style={{ fontSize: '12px', color: '#7c5c00' }}>
+              {verifiedUsername ? `현재: @${verifiedUsername}` : '현재: 미인증'}
+            </span>
+          </div>
+        </div>
+      )}
 
     </div>
   );
