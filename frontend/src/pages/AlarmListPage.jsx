@@ -253,18 +253,28 @@ export function AlarmListPage() {
   // 메세지 배지 카운트 로드 (인증된 경우)
   useEffect(() => {
     const loadMsgBadge = async () => {
-      const verifiedId = localStorage.getItem(IG_VERIFIED_KEY);
-      if (!verifiedId) return;
+      const vid = localStorage.getItem(IG_VERIFIED_KEY);
+      if (!vid) return;
       try {
         const clearedAt = localStorage.getItem(MSG_BADGE_CLEARED_AT_KEY);
-        const messages = await api.getReceivedMessages(verifiedId);
+        let messages;
+        if (import.meta.env.DEV) {
+          // DEV 모드: mock 데이터 2건을 최근 시각으로 사용
+          messages = [
+            { createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+            { createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString() },
+          ];
+        } else {
+          messages = await api.getReceivedMessages(vid);
+        }
         const unread = clearedAt
           ? messages.filter(m => new Date(m.createdAt) > new Date(clearedAt)).length
           : messages.length;
         setMsgBadgeCount(unread);
       } catch { /* 조용히 실패 */ }
     };
-    if (user) loadMsgBadge();
+    // DEV 모드는 user 없어도 로드 (mock bypass)
+    if (user || import.meta.env.DEV) loadMsgBadge();
   }, [user]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)

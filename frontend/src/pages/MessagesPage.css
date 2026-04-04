@@ -105,16 +105,21 @@
   background: #f8f9fa;
 }
 
-.message-row-icon {
-  font-size: 22px;
-  width: 40px;
-  height: 40px;
+/* TDS 스타일 squircle 아이콘 박스 */
+.message-row-icon-box {
+  width: 44px;
+  height: 44px;
+  background: #f2f4f6;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  background: #f2f4f6;
-  border-radius: 12px;
+}
+
+.message-row-icon-img {
+  width: 24px;
+  height: 24px;
 }
 
 .message-row-body {
@@ -286,4 +291,23 @@
 
 .msg-sheet-emoji-btn:active {
   transform: scale(0.93);
+}
+
+/* ── 보낸 메세지 시트 전용 ── */
+.msg-sheet-to {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4e5968;
+  margin-bottom: 10px;
+}
+
+.msg-sent-reaction {
+  font-size: 32px;
+  padding: 4px 0;
+}
+
+.msg-no-reaction {
+  font-size: 13px;
+  color: #b0b8c1;
+  padding: 4px 0;
 }

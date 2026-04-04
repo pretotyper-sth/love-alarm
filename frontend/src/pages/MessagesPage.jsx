@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
+import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './MessagesPage.css';
 
 const IS_DEV = import.meta.env.DEV;
@@ -30,7 +31,7 @@ const DEV_MOCK_SENT = [
   {
     id: 'mock-sent-1',
     targetInstagramId: 'jungsoo.dev',
-    message: '안녕하세요, 우연히 같은 카페에서 자주 마주쳤는데 용기 내어 메세지 남겨요.',
+    message: '안녕하세요, 우연히 같은 카페에서 자주 마주쳤는데 용기 내어 메세지 남겨요. 잘 지내고 계신가요? 언젠가 한번 이야기 나눠볼 수 있으면 좋겠습니다.',
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     reactions: [{ emoji: '😊' }],
   },
@@ -61,6 +62,50 @@ const DEV_MOCK_RECEIVED = [
     reactions: [{ emoji: '❤️' }],
   },
 ];
+
+// ──────────────────────────────────────────────────────────────────────
+// 메세지 아이콘 컴포넌트 — TDS 스타일 squircle 박스
+// ──────────────────────────────────────────────────────────────────────
+function MessageIcon({ type = 'received' }) {
+  const iconUrl =
+    type === 'sent'
+      ? 'https://static.toss.im/icons/png/4x/icon-letter-heart.png'
+      : 'https://static.toss.im/icons/png/4x/icon-chat-circle-mono.png';
+
+  return (
+    <div className="message-row-icon-box">
+      <img src={iconUrl} alt="" className="message-row-icon-img" />
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// SentMessageDetailSheet — 보낸 메세지 상세 (반응 수신 확인용)
+// ──────────────────────────────────────────────────────────────────────
+function SentMessageDetailSheet({ message, onClose }) {
+  if (!message) return null;
+  const reaction = message.reactions?.[0]?.emoji ?? null;
+
+  return (
+    <>
+      <div className="msg-sheet-overlay" onClick={onClose} />
+      <div className="msg-sheet">
+        <div className="msg-sheet-to">To: @{message.targetInstagramId}</div>
+        <div className="msg-sheet-text">{message.message}</div>
+        <div className="msg-sheet-time">{formatDate(message.createdAt)}</div>
+
+        <div className="msg-sheet-divider" />
+
+        <div className="msg-sheet-react-label">상대방의 반응</div>
+        {reaction ? (
+          <div className="msg-sent-reaction">{reaction}</div>
+        ) : (
+          <div className="msg-no-reaction">아직 반응이 없어요</div>
+        )}
+      </div>
+    </>
+  );
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // MessageDetailSheet — 받은 메세지 상세 바텀시트
@@ -125,10 +170,14 @@ export function MessagesPage() {
   const [sentMessages, setSentMessages] = useState([]);
   const [receivedMessages, setReceivedMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMessage, setSelectedMessage] = useState(null);
+  // 받은 메세지 상세 시트
+  const [selectedReceivedMsg, setSelectedReceivedMsg] = useState(null);
+  // 보낸 메세지 상세 시트
+  const [selectedSentMsg, setSelectedSentMsg] = useState(null);
+  // 인증 시트
   const [showAuthSheet, setShowAuthSheet] = useState(false);
-
-  const verifiedId = localStorage.getItem(IG_VERIFIED_KEY);
+  // 인증 상태 (시트에서 인증 후 즉시 반영)
+  const [verifiedId, setVerifiedId] = useState(() => localStorage.getItem(IG_VERIFIED_KEY));
   const isVerified = !!verifiedId;
 
   // 배지 클리어: 페이지 진입 시 cleared_at 갱신
@@ -136,17 +185,18 @@ export function MessagesPage() {
     localStorage.setItem(MSG_BADGE_CLEARED_AT_KEY, new Date().toISOString());
   }, []);
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (currentVerifiedId) => {
+    const vid = currentVerifiedId ?? verifiedId;
     setIsLoading(true);
     try {
       if (IS_DEV) {
         setSentMessages(DEV_MOCK_SENT);
-        if (isVerified) setReceivedMessages(DEV_MOCK_RECEIVED);
+        if (vid) setReceivedMessages(DEV_MOCK_RECEIVED);
       } else {
         const sent = await api.getSentMessages();
         setSentMessages(sent);
-        if (isVerified) {
-          const received = await api.getReceivedMessages(verifiedId);
+        if (vid) {
+          const received = await api.getReceivedMessages(vid);
           setReceivedMessages(received);
         }
       }
@@ -155,7 +205,7 @@ export function MessagesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isVerified, verifiedId]);
+  }, [verifiedId]);
 
   useEffect(() => {
     loadMessages();
@@ -165,13 +215,10 @@ export function MessagesPage() {
     // optimistic update
     setReceivedMessages(prev =>
       prev.map(m =>
-        m.id === alarmId
-          ? { ...m, reactions: [{ emoji }] }
-          : m
+        m.id === alarmId ? { ...m, reactions: [{ emoji }] } : m
       )
     );
-    // selectedMessage도 갱신
-    setSelectedMessage(prev =>
+    setSelectedReceivedMsg(prev =>
       prev?.id === alarmId ? { ...prev, reactions: [{ emoji }] } : prev
     );
 
@@ -184,12 +231,12 @@ export function MessagesPage() {
     }
   };
 
-  const handleRowClick = (msg) => {
-    setSelectedMessage(msg);
-  };
-
-  const handleSheetClose = () => {
-    setSelectedMessage(null);
+  const handleAuthSuccess = (username) => {
+    const newVerifiedId = username;
+    localStorage.setItem(IG_VERIFIED_KEY, newVerifiedId);
+    setVerifiedId(newVerifiedId);
+    setShowAuthSheet(false);
+    loadMessages(newVerifiedId);
   };
 
   return (
@@ -232,8 +279,12 @@ export function MessagesPage() {
             <div className="messages-empty">보낸 메세지가 없어요</div>
           ) : (
             sentMessages.map((msg) => (
-              <div key={msg.id} className="message-row">
-                <div className="message-row-icon">💌</div>
+              <div
+                key={msg.id}
+                className="message-row message-row-tappable"
+                onClick={() => setSelectedSentMsg(msg)}
+              >
+                <MessageIcon type="sent" />
                 <div className="message-row-body">
                   <div className="message-row-top">To: @{msg.targetInstagramId}</div>
                   <div className="message-row-preview">{truncateText(msg.message)}</div>
@@ -265,9 +316,9 @@ export function MessagesPage() {
               <div
                 key={msg.id}
                 className="message-row message-row-tappable"
-                onClick={() => handleRowClick(msg)}
+                onClick={() => setSelectedReceivedMsg(msg)}
               >
-                <div className="message-row-icon">💌</div>
+                <MessageIcon type="received" />
                 <div className="message-row-body">
                   <div className="message-row-top">알 수 없는 누군가</div>
                   <div className="message-row-preview">{truncateText(msg.message)}</div>
@@ -275,7 +326,7 @@ export function MessagesPage() {
                     {msg.reactions?.[0]?.emoji
                       ? `${msg.reactions[0].emoji} 반응함`
                       : ''}
-                    <span className="message-row-dot">·</span>
+                    {msg.reactions?.[0]?.emoji && <span className="message-row-dot">·</span>}
                     {formatDate(msg.createdAt)}
                   </div>
                 </div>
@@ -286,49 +337,29 @@ export function MessagesPage() {
       )}
 
       {/* 받은 메세지 상세 시트 */}
-      {selectedMessage && (
+      {selectedReceivedMsg && (
         <MessageDetailSheet
-          message={selectedMessage}
-          onClose={handleSheetClose}
+          message={selectedReceivedMsg}
+          onClose={() => setSelectedReceivedMsg(null)}
           onReact={handleReact}
         />
       )}
 
-      {/* 인스타그램 인증 시트 (받은 메세지 탭 CTA에서 진입) */}
-      {showAuthSheet && (
-        <div>
-          {/* InstagramAuthSheet는 동적으로 import */}
-          <AuthSheetWrapper
-            onClose={() => setShowAuthSheet(false)}
-            onSuccess={() => {
-              setShowAuthSheet(false);
-              loadMessages();
-            }}
-          />
-        </div>
+      {/* 보낸 메세지 상세 시트 */}
+      {selectedSentMsg && (
+        <SentMessageDetailSheet
+          message={selectedSentMsg}
+          onClose={() => setSelectedSentMsg(null)}
+        />
       )}
+
+      {/* 인스타그램 인증 시트 (받은 메세지 탭 CTA에서 진입) */}
+      <InstagramAuthSheet
+        open={showAuthSheet}
+        onClose={() => setShowAuthSheet(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
-  );
-}
-
-// InstagramAuthSheet를 동적으로 로드하는 래퍼
-function AuthSheetWrapper({ onClose, onSuccess }) {
-  const [AuthSheet, setAuthSheet] = useState(null);
-
-  useEffect(() => {
-    import('../components/InstagramAuthSheet').then((mod) => {
-      setAuthSheet(() => mod.InstagramAuthSheet);
-    });
-  }, []);
-
-  if (!AuthSheet) return null;
-
-  return (
-    <AuthSheet
-      isOpen={true}
-      onClose={onClose}
-      onSuccess={onSuccess}
-    />
   );
 }
 
