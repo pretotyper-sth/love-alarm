@@ -90,18 +90,46 @@ function SentMessageDetailSheet({ message, onClose }) {
     <>
       <div className="msg-sheet-overlay" onClick={onClose} />
       <div className="msg-sheet">
-        <div className="msg-sheet-to">To: @{message.targetInstagramId}</div>
-        <div className="msg-sheet-text">{message.message}</div>
-        <div className="msg-sheet-time">{formatDate(message.createdAt)}</div>
+        {/* 드래그 핸들 */}
+        <div className="msg-sheet-handle" />
 
-        <div className="msg-sheet-divider" />
+        {/* 수신자 배지 */}
+        <div className="msg-sheet-badge-row">
+          <span className="msg-sheet-badge msg-sheet-badge--sent">
+            <img
+              src="https://static.toss.im/icons/png/4x/icon-letter-heart.png"
+              alt=""
+              style={{ width: 12, height: 12, marginRight: 4, verticalAlign: 'middle' }}
+            />
+            To: @{message.targetInstagramId}
+          </span>
+          <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
+        </div>
 
-        <div className="msg-sheet-react-label">상대방의 반응</div>
-        {reaction ? (
-          <div className="msg-sent-reaction">{reaction}</div>
-        ) : (
-          <div className="msg-no-reaction">아직 반응이 없어요</div>
-        )}
+        {/* 메세지 카드 */}
+        <div className="msg-sheet-card">
+          <p className="msg-sheet-text">{message.message}</p>
+        </div>
+
+        {/* 반응 섹션 */}
+        <div className="msg-sheet-react-section">
+          <span className="msg-sheet-react-label">상대방의 반응</span>
+          {reaction ? (
+            <div className="msg-sent-reaction-chip">
+              <span>{reaction}</span>
+              <span className="msg-sent-reaction-text">반응했어요</span>
+            </div>
+          ) : (
+            <div className="msg-no-reaction">
+              <img
+                src="https://static.toss.im/icons/png/4x/icon-clock-mono.png"
+                alt=""
+                style={{ width: 14, height: 14, marginRight: 4, opacity: 0.4, verticalAlign: 'middle' }}
+              />
+              아직 반응이 없어요
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
@@ -120,24 +148,45 @@ function MessageDetailSheet({ message, onClose, onReact }) {
     <>
       <div className="msg-sheet-overlay" onClick={onClose} />
       <div className="msg-sheet">
-        <div className="msg-sheet-from">알 수 없는 누군가로부터</div>
-        <div className="msg-sheet-text">{message.message}</div>
-        <div className="msg-sheet-time">{formatDate(message.createdAt)}</div>
+        {/* 드래그 핸들 */}
+        <div className="msg-sheet-handle" />
 
-        <div className="msg-sheet-divider" />
+        {/* 발신자 배지 */}
+        <div className="msg-sheet-badge-row">
+          <span className="msg-sheet-badge msg-sheet-badge--received">
+            <img
+              src="https://static.toss.im/icons/png/4x/icon-person-circle-mono.png"
+              alt=""
+              style={{ width: 12, height: 12, marginRight: 4, verticalAlign: 'middle', opacity: 0.6 }}
+            />
+            알 수 없는 누군가로부터
+          </span>
+          <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
+        </div>
 
-        <div className="msg-sheet-react-label">반응하기</div>
-        <div className="msg-sheet-emoji-row">
-          {EMOJIS.map((emoji) => (
-            <button
-              key={emoji}
-              className={`msg-sheet-emoji-btn${currentEmoji === emoji ? ' active' : ''}`}
-              onClick={() => onReact(message.id, emoji)}
-              aria-label={emoji}
-            >
-              {emoji}
-            </button>
-          ))}
+        {/* 메세지 카드 */}
+        <div className="msg-sheet-card">
+          <p className="msg-sheet-text">{message.message}</p>
+        </div>
+
+        {/* 반응하기 섹션 */}
+        <div className="msg-sheet-react-section">
+          <span className="msg-sheet-react-label">반응하기</span>
+          <div className="msg-sheet-emoji-row">
+            {EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                className={`msg-sheet-emoji-btn${currentEmoji === emoji ? ' active' : ''}`}
+                onClick={() => onReact(message.id, emoji)}
+                aria-label={emoji}
+              >
+                <span className="msg-sheet-emoji-glyph">{emoji}</span>
+                {currentEmoji === emoji && (
+                  <span className="msg-sheet-emoji-check">✓</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </>

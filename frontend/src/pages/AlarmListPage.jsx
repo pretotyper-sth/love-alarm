@@ -532,12 +532,10 @@ export function AlarmListPage() {
               aria-label="메세지 확인"
             >
               <img
-                src="https://static.toss.im/icons/png/4x/icon-chat-circle-mono.png"
+                src="https://static.toss.im/icons/png/4x/icon-letter-heart.png"
                 alt=""
                 style={{ width: 24, height: 24 }}
-                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline'; }}
               />
-              <span style={{ display: 'none', fontSize: 22 }}>💬</span>
               {msgBadgeCount > 0 && (
                 <span className="alarm-list-msg-badge">
                   {msgBadgeCount > 9 ? '9+' : msgBadgeCount}

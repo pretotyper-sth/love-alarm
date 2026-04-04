@@ -203,7 +203,7 @@
 .msg-sheet-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 1000;
   animation: fadeIn 0.2s ease;
 }
@@ -214,100 +214,176 @@
   right: 0;
   bottom: 0;
   background: #fff;
-  border-radius: 20px 20px 0 0;
-  padding: 24px 20px 40px;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 20px 48px;
   z-index: 1001;
-  animation: slideUp 0.25s ease;
-  max-height: 80vh;
+  animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 82vh;
   overflow-y: auto;
 }
 
 @keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from { transform: translateY(100%); opacity: 0.6; }
+  to   { transform: translateY(0);    opacity: 1;   }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; }
-  to { opacity: 1; }
+  to   { opacity: 1; }
 }
 
-.msg-sheet-from {
-  font-size: 12px;
-  color: #8b95a1;
-  margin-bottom: 8px;
+/* 드래그 핸들 */
+.msg-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #e0e4ea;
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+/* 발신자/수신자 배지 행 */
+.msg-sheet-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.msg-sheet-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.msg-sheet-badge--sent {
+  background: #fff0f6;
+  color: #e05ca3;
+}
+
+.msg-sheet-badge--received {
+  background: #f2f4f6;
+  color: #6b7684;
+}
+
+.msg-sheet-date {
+  font-size: 11px;
+  color: #b0b8c1;
+  flex-shrink: 0;
+}
+
+/* 메세지 카드 */
+.msg-sheet-card {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
 }
 
 .msg-sheet-text {
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: #191f28;
   word-break: keep-all;
   white-space: pre-wrap;
-  margin-bottom: 8px;
+  margin: 0;
 }
 
-.msg-sheet-time {
-  font-size: 12px;
-  color: #8b95a1;
-  margin-bottom: 20px;
-}
-
-.msg-sheet-divider {
-  height: 1px;
-  background: #f2f4f6;
-  margin-bottom: 16px;
+/* 반응 섹션 공통 */
+.msg-sheet-react-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .msg-sheet-react-label {
   font-size: 12px;
-  color: #6b7684;
-  margin-bottom: 12px;
+  font-weight: 600;
+  color: #8b95a1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
+/* 이모지 버튼 행 */
 .msg-sheet-emoji-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .msg-sheet-emoji-btn {
-  font-size: 26px;
-  width: 50px;
-  height: 50px;
+  flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  padding: 10px 0;
   background: #f2f4f6;
   border: 2px solid transparent;
-  border-radius: 14px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  position: relative;
 }
 
 .msg-sheet-emoji-btn.active {
   border-color: #3182f6;
-  background: #e8f0fe;
+  background: #eef4ff;
 }
 
 .msg-sheet-emoji-btn:active {
-  transform: scale(0.93);
+  transform: scale(0.92);
 }
 
-/* ── 보낸 메세지 시트 전용 ── */
-.msg-sheet-to {
+.msg-sheet-emoji-glyph {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.msg-sheet-emoji-check {
+  font-size: 9px;
+  font-weight: 700;
+  color: #3182f6;
+  line-height: 1;
+}
+
+/* 보낸 메세지 — 반응 chip */
+.msg-sent-reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff0f6;
+  border: 1.5px solid #f9c9e4;
+  border-radius: 20px;
+  padding: 8px 16px;
+  align-self: flex-start;
+}
+
+.msg-sent-reaction-chip > span:first-child {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.msg-sent-reaction-text {
   font-size: 13px;
   font-weight: 600;
-  color: #4e5968;
-  margin-bottom: 10px;
-}
-
-.msg-sent-reaction {
-  font-size: 32px;
-  padding: 4px 0;
+  color: #e05ca3;
 }
 
 .msg-no-reaction {
   font-size: 13px;
   color: #b0b8c1;
-  padding: 4px 0;
+  display: flex;
+  align-items: center;
 }
+
+/* ── 구버전 호환 (사용 안 함) ── */
+.msg-sheet-from { display: none; }
+.msg-sheet-to { display: none; }
+.msg-sheet-time { display: none; }
+.msg-sheet-divider { display: none; }
+.msg-sent-reaction { display: none; }
