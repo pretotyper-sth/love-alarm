@@ -224,7 +224,7 @@ export function AddAlarmPage() {
       // 광고를 끝까지 보지 않으면 알람 추가 안 함
       if (!adResult.rewarded) {
         if (adResult.cancelled) {
-          showErrorToast('시청을 완료해 주세요');
+          showErrorToast('광고를 끝까지 봐 주세요');
         }
         setIsSubmitting(false);
         return;

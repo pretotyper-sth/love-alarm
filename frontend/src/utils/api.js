@@ -407,6 +407,21 @@ export const api = {
     return await response.json();
   },
 
+  /**
+   * 특정 인스타그램 ID를 좋아하는 사람 수 조회 (인증 불필요)
+   */
+  getLikeCount: async (instagramId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/alarms/count?instagram_id=${encodeURIComponent(instagramId.trim().toLowerCase())}`
+    );
+
+    if (!response.ok) {
+      throw new Error('조회 실패');
+    }
+
+    return await response.json(); // { count }
+  },
+
   // ==================== 헬스체크 ====================
 
   /**

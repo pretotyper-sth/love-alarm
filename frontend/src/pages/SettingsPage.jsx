@@ -16,6 +16,9 @@ import './SettingsPage.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const IS_DEV = import.meta.env.DEV;
+const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
+const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
+const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
 
 // 공유 기능 (getTossShareLink + OG 이미지)
 const handleShareApp = async () => {
@@ -102,6 +105,21 @@ export function SettingsPage() {
       setVerifiedUsername(mockId);
     }
   };
+
+  // Dev bypass: 좋아하는 사람 수 캐시 초기화
+  const handleDevClearLikeCount = () => {
+    localStorage.removeItem(LIKE_COUNT_TARGET_KEY);
+    localStorage.removeItem(LIKE_COUNT_RESULT_KEY);
+    localStorage.removeItem(LIKE_COUNT_CHECKED_AT_KEY);
+  };
+
+  // Dev bypass: 현재 캐시 정보 표시
+  const likeCountTarget = localStorage.getItem(LIKE_COUNT_TARGET_KEY) || null;
+  const likeCountResult = localStorage.getItem(LIKE_COUNT_RESULT_KEY);
+  const likeCountCheckedAt = localStorage.getItem(LIKE_COUNT_CHECKED_AT_KEY);
+  const likeCountCacheStatus = likeCountTarget
+    ? `@${likeCountTarget} = ${likeCountResult ?? '?'}명 (${likeCountCheckedAt ? new Date(likeCountCheckedAt).toLocaleTimeString('ko-KR') : '-'})`
+    : '없음';
 
   // 설정 변경 핸들러
   const handleSettingChange = async (field, value) => {
@@ -308,16 +326,51 @@ export function SettingsPage() {
           border: '1px solid #ffe066',
           borderRadius: '10px',
         }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#7c5c00', marginBottom: '8px', letterSpacing: '0.03em' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: '#7c5c00', marginBottom: '10px', letterSpacing: '0.03em' }}>
             🛠 DEV BYPASS
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+          {/* 인스타그램 인증 */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
+              인스타그램 인증
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                onClick={handleDevAuthToggle}
+                style={{
+                  fontSize: '13px',
+                  padding: '5px 12px',
+                  background: verifiedUsername ? '#e53e3e' : '#2f855a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                {verifiedUsername ? '인증 해제' : '인증하기'}
+              </button>
+              <span style={{ fontSize: '12px', color: '#7c5c00' }}>
+                {verifiedUsername ? `@${verifiedUsername}` : '미인증'}
+              </span>
+            </div>
+          </div>
+
+          {/* 좋아하는 사람 수 캐시 */}
+          <div style={{ borderTop: '1px solid #ffe066', paddingTop: '10px' }}>
+            <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
+              좋아하는 사람 캐시
+            </div>
+            <div style={{ fontSize: '11px', color: '#7c5c00', marginBottom: '6px' }}>
+              {likeCountCacheStatus}
+            </div>
             <button
-              onClick={handleDevAuthToggle}
+              onClick={handleDevClearLikeCount}
               style={{
-                fontSize: '13px',
-                padding: '6px 14px',
-                background: verifiedUsername ? '#e53e3e' : '#2f855a',
+                fontSize: '12px',
+                padding: '4px 10px',
+                background: '#718096',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
@@ -325,11 +378,8 @@ export function SettingsPage() {
                 fontWeight: 600,
               }}
             >
-              {verifiedUsername ? '인증 해제' : '인증하기'}
+              캐시 초기화
             </button>
-            <span style={{ fontSize: '12px', color: '#7c5c00' }}>
-              {verifiedUsername ? `현재: @${verifiedUsername}` : '현재: 미인증'}
-            </span>
           </div>
         </div>
       )}

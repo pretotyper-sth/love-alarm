@@ -185,4 +185,30 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/alarms/count?instagram_id=xxx
+ * 특정 인스타그램 ID를 타겟으로 등록한 살아있는 알람 수 조회 (인증 불필요)
+ */
+router.get('/count', async (req, res) => {
+  try {
+    const { instagram_id } = req.query;
+
+    if (!instagram_id) {
+      return res.status(400).json({ error: 'instagram_id가 필요합니다.' });
+    }
+
+    const count = await req.prisma.alarm.count({
+      where: {
+        targetInstagramId: instagram_id.trim().toLowerCase(),
+        deletedAt: null,
+      },
+    });
+
+    res.json({ count });
+  } catch (error) {
+    console.error('Like count error:', error);
+    res.status(500).json({ error: '조회 중 오류가 발생했습니다.' });
+  }
+});
+
 export default router;

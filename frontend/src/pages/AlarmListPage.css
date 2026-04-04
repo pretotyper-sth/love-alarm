@@ -3,7 +3,47 @@
   flex-direction: column;
   min-height: 100vh;
   background: var(--adaptiveBackground, #ffffff);
-  padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(86px + 60px + env(safe-area-inset-bottom, 0px));
+}
+
+/* 좋아하는 사람 수 확인 고정 바 */
+.like-count-bar {
+  position: fixed;
+  bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 376px;
+  height: 52px;
+  background: #ffffff;
+  border-top: 1px solid #f2f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  cursor: pointer;
+  z-index: 100;
+  box-sizing: border-box;
+}
+
+.like-count-bar-text {
+  font-size: 14px;
+  color: #4e5968;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.like-count-bar-highlight {
+  font-weight: 700;
+  color: #3d85f5;
+}
+
+.like-count-bar-cta {
+  flex-shrink: 0;
+  margin-left: 12px;
+  display: flex;
+  align-items: center;
 }
 
 .alarm-list-first-hint {

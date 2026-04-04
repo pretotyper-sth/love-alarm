@@ -100,7 +100,7 @@ export function MatchSuccessPage() {
       document.execCommand('copy');
       document.body.removeChild(el);
     }
-    setCopyToast({ show: true, message: `ID ${targetInstagramId} 가 복사됐어요` });
+    setCopyToast({ show: true, message: '상대 ID가 복사됐어요' });
     setTimeout(() => {
       setCopyToast(prev => ({ ...prev, show: false }));
       setTimeout(() => setCopyToast({ show: false, message: '' }), 350);
