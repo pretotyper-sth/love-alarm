@@ -533,7 +533,7 @@ export function AlarmListPage() {
             >
               {/* 핑크 squircle 박스 */}
               <span className="alarm-list-msg-icon-box">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path
                     fillRule="evenodd"
                     clipRule="evenodd"

@@ -68,19 +68,20 @@ const DEV_MOCK_RECEIVED = [
 // ──────────────────────────────────────────────────────────────────────
 function MessageIcon({ type = 'received' }) {
   if (type === 'sent') {
-    // 보낸 메세지: 핑크 squircle + 편지-하트 이미지 (잘 작동하는 URL)
+    // 보낸 메세지: 핑크 squircle + 편지봉투 SVG (letter-heart는 매칭 아이콘과 동일하므로 구분)
     return (
       <div className="message-row-icon-box message-row-icon-box--sent">
-        <img
-          src="https://static.toss.im/icons/png/4x/icon-letter-heart.png"
-          alt=""
-          className="message-row-icon-img"
-        />
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          {/* 봉투 몸체 */}
+          <rect x="2" y="5" width="18" height="13" rx="2.5" fill="#e05ca3" />
+          {/* 봉투 뚜껑 (V자) */}
+          <path d="M2 7.5L11 13.5L20 7.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
       </div>
     );
   }
 
-  // 받은 메세지: 회색 squircle + 말풍선 SVG (URL 깨짐 방지)
+  // 받은 메세지: 회색 squircle + 말풍선 SVG
   return (
     <div className="message-row-icon-box message-row-icon-box--received">
       <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">

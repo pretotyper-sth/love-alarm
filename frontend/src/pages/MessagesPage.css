@@ -11,13 +11,396 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid #f2f4f6;
   background: #fff;
   position: sticky;
   top: 0;
   z-index: 10;
 }
+
+.messages-back-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #191f28;
+  border-radius: 50%;
+}
+
+.messages-back-btn:active {
+  background: #f2f4f6;
+}
+
+.messages-top-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+/* 탭 */
+.messages-tabs {
+  display: flex;
+  border-bottom: 1px solid #f2f4f6;
+}
+
+.messages-tab {
+  flex: 1;
+  padding: 14px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #8b95a1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.messages-tab.active {
+  color: #3182f6;
+  font-weight: 700;
+  border-bottom-color: #3182f6;
+}
+
+/* 콘텐츠 영역 */
+.messages-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.messages-empty {
+  padding: 48px 16px;
+  text-align: center;
+  font-size: 15px;
+  color: #8b95a1;
+}
+
+.messages-loading {
+  padding: 48px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #b0b8c1;
+}
+
+/* 메세지 행 */
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  /* 알람 목록과 동일한 수평 여백 */
+  padding: 14px 20px;
+  border-bottom: 1px solid #f2f4f6;
+}
+
+.message-row-tappable {
+  cursor: pointer;
+}
+
+.message-row-tappable:active {
+  background: #f8f9fa;
+}
+
+/* TDS 스타일 squircle 아이콘 박스 */
+.message-row-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f2f4f6;
+}
+
+.message-row-icon-box--sent {
+  background: #fff0f6;
+}
+
+.message-row-icon-box--received {
+  background: #f2f4f6;
+}
+
+/* 아이콘 이미지 크기 고정 */
+.message-row-icon-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.message-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-row-top {
+  font-size: 14px;
+  font-weight: 600;
+  color: #191f28;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-row-preview {
+  font-size: 13px;
+  color: #4e5968;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-row-bottom {
+  font-size: 12px;
+  color: #8b95a1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-row-dot {
+  margin: 0 4px;
+}
+
+/* 미인증 CTA */
+.msg-auth-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  min-height: 300px;
+  gap: 0;
+}
+
+.msg-auth-cta-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #191f28;
+  margin-bottom: 8px;
+}
+
+.msg-auth-cta-desc {
+  font-size: 13px;
+  color: #8b95a1;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.msg-auth-cta-btn {
+  padding: 14px 28px;
+  background: #3182f6;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.msg-auth-cta-btn:active {
+  opacity: 0.85;
+}
+
+/* ========================= MessageDetailSheet ========================= */
+.msg-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.msg-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  width: 100%;
+  max-width: 376px;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 12px 20px 48px;
+  z-index: 1001;
+  /* translateX(-50%)를 키프레임에 포함시켜 오른쪽 튐 방지 */
+  animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  max-height: 82vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateX(-50%) translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* 드래그 핸들 */
+.msg-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #e0e4ea;
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+/* 발신자/수신자 배지 행 */
+.msg-sheet-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.msg-sheet-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.msg-sheet-badge--sent {
+  background: #fff0f6;
+  color: #e05ca3;
+}
+
+.msg-sheet-badge--received {
+  background: #f2f4f6;
+  color: #6b7684;
+}
+
+.msg-sheet-date {
+  font-size: 11px;
+  color: #b0b8c1;
+  flex-shrink: 0;
+}
+
+/* 메세지 카드 */
+.msg-sheet-card {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.msg-sheet-text {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #191f28;
+  word-break: keep-all;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+/* 반응 섹션 공통 */
+.msg-sheet-react-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.msg-sheet-react-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b95a1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* 이모지 버튼 행 */
+.msg-sheet-emoji-row {
+  display: flex;
+  gap: 8px;
+}
+
+.msg-sheet-emoji-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 0;
+  background: #f2f4f6;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  position: relative;
+}
+
+.msg-sheet-emoji-btn.active {
+  border-color: #3182f6;
+  background: #eef4ff;
+}
+
+.msg-sheet-emoji-btn:active {
+  transform: scale(0.92);
+}
+
+.msg-sheet-emoji-glyph {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.msg-sheet-emoji-check {
+  font-size: 9px;
+  font-weight: 700;
+  color: #3182f6;
+  line-height: 1;
+}
+
+/* 보낸 메세지 — 반응 chip */
+.msg-sent-reaction-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff0f6;
+  border: 1.5px solid #f9c9e4;
+  border-radius: 20px;
+  padding: 8px 16px;
+  align-self: flex-start;
+}
+
+.msg-sent-reaction-chip > span:first-child {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.msg-sent-reaction-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e05ca3;
+}
+
+.msg-no-reaction {
+  font-size: 13px;
+  color: #b0b8c1;
+  display: flex;
+  align-items: center;
+}
+
 
 .messages-back-btn {
   width: 40px;
