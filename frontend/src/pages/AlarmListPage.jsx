@@ -531,11 +531,20 @@ export function AlarmListPage() {
               onClick={() => navigate('/messages')}
               aria-label="메세지 확인"
             >
-              <img
-                src="https://static.toss.im/icons/png/4x/icon-letter-heart.png"
-                alt=""
-                style={{ width: 24, height: 24 }}
-              />
+              {/* 핑크 squircle 박스 */}
+              <span className="alarm-list-msg-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M2 4.5A2.5 2.5 0 014.5 2h11A2.5 2.5 0 0118 4.5v8a2.5 2.5 0 01-2.5 2.5H7.2L4 17.5V15A2.5 2.5 0 012 12.5v-8z"
+                    fill="#e05ca3"
+                  />
+                  <circle cx="7" cy="8.5" r="1" fill="white" />
+                  <circle cx="10" cy="8.5" r="1" fill="white" />
+                  <circle cx="13" cy="8.5" r="1" fill="white" />
+                </svg>
+              </span>
               {msgBadgeCount > 0 && (
                 <span className="alarm-list-msg-badge">
                   {msgBadgeCount > 9 ? '9+' : msgBadgeCount}

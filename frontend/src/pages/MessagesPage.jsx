@@ -64,17 +64,36 @@ const DEV_MOCK_RECEIVED = [
 ];
 
 // ──────────────────────────────────────────────────────────────────────
-// 메세지 아이콘 컴포넌트 — TDS 스타일 squircle 박스
+// 메세지 아이콘 컴포넌트 — TDS 스타일 squircle 박스 + 인라인 SVG
 // ──────────────────────────────────────────────────────────────────────
 function MessageIcon({ type = 'received' }) {
-  const iconUrl =
-    type === 'sent'
-      ? 'https://static.toss.im/icons/png/4x/icon-letter-heart.png'
-      : 'https://static.toss.im/icons/png/4x/icon-chat-circle-mono.png';
+  if (type === 'sent') {
+    // 보낸 메세지: 핑크 squircle + 편지-하트 이미지 (잘 작동하는 URL)
+    return (
+      <div className="message-row-icon-box message-row-icon-box--sent">
+        <img
+          src="https://static.toss.im/icons/png/4x/icon-letter-heart.png"
+          alt=""
+          className="message-row-icon-img"
+        />
+      </div>
+    );
+  }
 
+  // 받은 메세지: 회색 squircle + 말풍선 SVG (URL 깨짐 방지)
   return (
-    <div className="message-row-icon-box">
-      <img src={iconUrl} alt="" className="message-row-icon-img" />
+    <div className="message-row-icon-box message-row-icon-box--received">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M2 5a3 3 0 013-3h12a3 3 0 013 3v8a3 3 0 01-3 3H8.5L5 19v-3A3 3 0 012 13V5z"
+          fill="#8b95a1"
+        />
+        <circle cx="8.5" cy="9" r="1.1" fill="white" />
+        <circle cx="11" cy="9" r="1.1" fill="white" />
+        <circle cx="13.5" cy="9" r="1.1" fill="white" />
+      </svg>
     </div>
   );
 }

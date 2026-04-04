@@ -165,10 +165,9 @@
   position: relative;
 }
 
-/* Top 컴포넌트 기본 패딩 제거 */
+/* Top 컴포넌트 기본 패딩 제거 (좌측만) */
 .alarm-list-top-section > div {
   padding-left: 0 !important;
-  padding-right: 0 !important;
 }
 
 /* 설정 버튼 wrapper - 절대 위치 */
@@ -503,8 +502,22 @@
   flex-shrink: 0;
 }
 
-.alarm-list-msg-btn:active {
-  background: #f2f4f6;
+.alarm-list-msg-btn:active .alarm-list-msg-icon-box {
+  opacity: 0.8;
+  transform: scale(0.93);
+}
+
+/* 핑크 squircle 아이콘 박스 */
+.alarm-list-msg-icon-box {
+  width: 38px;
+  height: 38px;
+  background: #fff0f6;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.1s, transform 0.1s;
 }
 
 .alarm-list-msg-badge {

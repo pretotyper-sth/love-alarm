@@ -109,17 +109,20 @@
 .message-row-icon-box {
   width: 44px;
   height: 44px;
-  background: #f2f4f6;
   border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background: #f2f4f6;
 }
 
-.message-row-icon-img {
-  width: 24px;
-  height: 24px;
+.message-row-icon-box--sent {
+  background: #fff0f6;
+}
+
+.message-row-icon-box--received {
+  background: #f2f4f6;
 }
 
 .message-row-body {
