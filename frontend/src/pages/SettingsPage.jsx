@@ -55,6 +55,9 @@ export function SettingsPage() {
   const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
   const [isSaving, setIsSaving] = useState(false);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
+  const [showAuthManageSheet, setShowAuthManageSheet] = useState(false);
+  const [authManageStep, setAuthManageStep] = useState('menu');
+  const [isDisconnectingAuth, setIsDisconnectingAuth] = useState(false);
   const [verifiedUsername, setVerifiedUsername] = useState(
     () => localStorage.getItem(IG_VERIFIED_KEY) || ''
   );
@@ -99,15 +102,55 @@ export function SettingsPage() {
     syncSettings();
   }, []);
 
-  // Dev bypass: 인스타그램 인증 상태 강제 토글
-  const handleDevAuthToggle = () => {
+  const showSuccessToastMessage = (message) => {
+    setSuccessToast({ show: true, message });
+    setTimeout(() => {
+      setSuccessToast(prev => ({ ...prev, show: false }));
+      setTimeout(() => setSuccessToast({ show: false, message: '' }), 300);
+    }, 3000);
+  };
+
+  const applyDisconnectedAuthState = () => {
+    localStorage.removeItem(IG_VERIFIED_KEY);
+    if (localStorage.getItem('love_alarm_my_instagram_id') === verifiedUsername) {
+      localStorage.removeItem('love_alarm_my_instagram_id');
+    }
+    localStorage.removeItem('love_alarm_alarms');
+    localStorage.removeItem('love_alarm_count');
+    setVerifiedUsername('');
+    setShowAuthManageSheet(false);
+    setAuthManageStep('menu');
+    showSuccessToastMessage('인증을 해제했어요');
+  };
+
+  const closeAuthManageSheet = () => {
+    if (isDisconnectingAuth) return;
+    setShowAuthManageSheet(false);
+    setAuthManageStep('menu');
+  };
+
+  const handleInstagramAuthRowClick = () => {
     if (verifiedUsername) {
-      localStorage.removeItem(IG_VERIFIED_KEY);
-      setVerifiedUsername('');
-    } else {
-      const mockId = 'dev_bypass';
-      localStorage.setItem(IG_VERIFIED_KEY, mockId);
-      setVerifiedUsername(mockId);
+      setAuthManageStep('menu');
+      setShowAuthManageSheet(true);
+      return;
+    }
+    setShowAuthSheet(true);
+  };
+
+  const handleDisconnectInstagramAuth = async () => {
+    if (!verifiedUsername || isDisconnectingAuth) return;
+
+    setIsDisconnectingAuth(true);
+    try {
+      const result = await api.disconnectInstagramAuth();
+      setUser(result.user);
+      applyDisconnectedAuthState();
+    } catch (error) {
+      console.error('Failed to disconnect instagram auth:', error);
+      window.alert(error.message || '인증 해제에 실패했어요. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setIsDisconnectingAuth(false);
     }
   };
 
@@ -188,9 +231,16 @@ export function SettingsPage() {
           }
           right={
             verifiedUsername ? (
-              <span style={{ fontSize: '14px', fontWeight: 600, color: '#3182f6' }}>
-                @{verifiedUsername} ✓
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#3182f6' }}>
+                  @{verifiedUsername} ✓
+                </span>
+                <img
+                  src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
+                  alt=""
+                  style={{ width: '20px', height: '20px', opacity: 0.45 }}
+                />
+              </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{ fontSize: '14px', color: '#8b95a1' }}>인증하기</span>
@@ -204,7 +254,7 @@ export function SettingsPage() {
           }
           verticalPadding="large"
           horizontalPadding="medium"
-          onClick={() => setShowAuthSheet(true)}
+          onClick={handleInstagramAuthRowClick}
         />
       </List>
 
@@ -333,18 +383,100 @@ export function SettingsPage() {
         open={showAuthSheet}
         onClose={() => setShowAuthSheet(false)}
         alreadyVerified={!!verifiedUsername}
+        currentVerifiedUsername={verifiedUsername}
         onSuccess={(username) => {
+          const isReauth = !!verifiedUsername;
           setVerifiedUsername(username);
           setShowAuthSheet(false);
-          setSuccessToast({ show: true, message: '인증이 완료됐어요' });
-          setTimeout(() => {
-            setSuccessToast(prev => ({ ...prev, show: false }));
-            setTimeout(() => setSuccessToast({ show: false, message: '' }), 300);
-          }, 3000);
+          showSuccessToastMessage(isReauth ? '재인증을 완료했어요' : '인증을 완료했어요');
         }}
       />
 
-      {/* DEV ONLY: 인스타그램 인증 bypass */}
+      <div
+        className={`settings-auth-sheet-overlay ${showAuthManageSheet ? 'show' : ''}`}
+        onClick={closeAuthManageSheet}
+      >
+        <div
+          className={`settings-auth-sheet ${showAuthManageSheet ? 'show' : ''}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="settings-auth-sheet-handle" />
+          <div className="settings-auth-sheet-header">
+            {authManageStep === 'menu' ? (
+              <>
+                <h3 className="settings-auth-sheet-title">인스타그램 인증 관리</h3>
+                <p className="settings-auth-sheet-desc">
+                  현재 @{verifiedUsername} 계정이 인증돼 있어요.
+                  <br />
+                  재인증하거나 인증을 해제할 수 있어요.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="settings-auth-sheet-title">인증을 해제할까요?</h3>
+                <p className="settings-auth-sheet-desc">
+                  해제 시 현재 ID로 등록한 알람도 함께 정리돼요.
+                </p>
+              </>
+            )}
+          </div>
+          <div className="settings-auth-sheet-actions">
+            {authManageStep === 'menu' ? (
+              <>
+                <button
+                  type="button"
+                  className="settings-auth-sheet-btn settings-auth-sheet-btn--primary"
+                  onClick={() => {
+                    setShowAuthManageSheet(false);
+                    setAuthManageStep('menu');
+                    setShowAuthSheet(true);
+                  }}
+                  disabled={isDisconnectingAuth}
+                >
+                  재인증하기
+                </button>
+                <button
+                  type="button"
+                  className="settings-auth-sheet-btn settings-auth-sheet-btn--danger"
+                  onClick={() => setAuthManageStep('confirm-disconnect')}
+                  disabled={isDisconnectingAuth}
+                >
+                  인증 해제하기
+                </button>
+                <button
+                  type="button"
+                  className="settings-auth-sheet-btn settings-auth-sheet-btn--ghost"
+                  onClick={closeAuthManageSheet}
+                  disabled={isDisconnectingAuth}
+                >
+                  취소
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="settings-auth-sheet-btn settings-auth-sheet-btn--danger"
+                  onClick={handleDisconnectInstagramAuth}
+                  disabled={isDisconnectingAuth}
+                >
+                  {isDisconnectingAuth ? '인증 해제 중…' : '예, 해제할게요'}
+                </button>
+                <button
+                  type="button"
+                  className="settings-auth-sheet-btn settings-auth-sheet-btn--ghost"
+                  onClick={() => setAuthManageStep('menu')}
+                  disabled={isDisconnectingAuth}
+                >
+                  아니오
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* DEV ONLY: 좋아하는 사람 수 캐시 */}
       {IS_DEV && (
         <div style={{
           margin: '24px 20px 16px',
@@ -357,35 +489,8 @@ export function SettingsPage() {
             🛠 DEV BYPASS
           </div>
 
-          {/* 인스타그램 인증 */}
-          <div style={{ marginBottom: '10px' }}>
-            <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
-              인스타그램 인증
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button
-                onClick={handleDevAuthToggle}
-                style={{
-                  fontSize: '13px',
-                  padding: '5px 12px',
-                  background: verifiedUsername ? '#e53e3e' : '#2f855a',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                }}
-              >
-                {verifiedUsername ? '인증 해제' : '인증하기'}
-              </button>
-              <span style={{ fontSize: '12px', color: '#7c5c00' }}>
-                {verifiedUsername ? `@${verifiedUsername}` : '미인증'}
-              </span>
-            </div>
-          </div>
-
           {/* 좋아하는 사람 수 캐시 */}
-          <div style={{ borderTop: '1px solid #ffe066', paddingTop: '10px' }}>
+          <div>
             <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
               좋아하는 사람 캐시
             </div>

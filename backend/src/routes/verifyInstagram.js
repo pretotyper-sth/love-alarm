@@ -128,7 +128,7 @@ router.post('/confirm', async (req, res) => {
       }),
       req.prisma.user.update({
         where: { id: user.id },
-        data: { instagramId: session.igUserId },
+        data: { instagramId: session.instagramUsername },
       }),
     ]);
 
