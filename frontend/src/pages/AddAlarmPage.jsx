@@ -275,7 +275,7 @@ export function AddAlarmPage() {
       }
     } catch (error) {
       console.error('❌ 알람 추가 실패:', error);
-      showErrorToast(error.message || '알람 추가에 실패했어요');
+      showErrorToast(error.message || '알람을 추가하지 못했어요');
     } finally {
       setIsSubmitting(false);
     }

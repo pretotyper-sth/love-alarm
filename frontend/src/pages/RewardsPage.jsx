@@ -70,9 +70,9 @@ export function RewardsPage() {
     setClaimed30(true);
     try {
       await api.claimAdFree();
-      showToast('광고가 영구 제거됐어요');
+      showToast('광고를 영구 제거했어요');
     } catch {
-      showToast('광고가 영구 제거됐어요');
+      showToast('광고를 영구 제거했어요');
     }
   };
 
@@ -83,9 +83,9 @@ export function RewardsPage() {
     setClaimed10Cycles(next);
     try {
       await api.purchaseSlot();
-      showToast('알람 슬롯이 1개 추가됐어요');
+      showToast('알람 슬롯 1개를 추가했어요');
     } catch {
-      showToast('알람 슬롯이 1개 추가됐어요');
+      showToast('알람 슬롯 1개를 추가했어요');
     }
   };
 
