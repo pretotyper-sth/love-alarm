@@ -65,7 +65,7 @@ export function FeedbackPage() {
       navigate('/settings', { replace: true, state: { showFeedbackSuccess: true } });
     } catch (error) {
       console.error('❌ 피드백 제출 실패:', error);
-      showErrorToast(error.message || '피드백 제출에 실패했어요');
+      showErrorToast(error.message || '의견을 제출하지 못했어요');
     } finally {
       setIsSubmitting(false);
     }
