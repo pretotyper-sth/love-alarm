@@ -693,7 +693,7 @@ export function AlarmListPage() {
           setLikeCountCache({ target: targetId, count });
           addToast({
             type: 'success',
-            message: '확인을 완료했어요 (12시간 노출 유지)',
+            message: '결과를 불러왔어요 (12시간 노출 유지)',
             duration: 4000,
             bottomOffset: 64,
           });
