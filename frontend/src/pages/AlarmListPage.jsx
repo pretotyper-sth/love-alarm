@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { hasConfirmedAbuseWarning } from '../utils/abuseWarning';
+import { countUnreadReceivedMessages } from '../utils/messages';
 import { PaymentModal } from '../components/PaymentModal';
 import { LikeCountSheet } from '../components/LikeCountSheet';
 import './AlarmListPage.css';
@@ -19,7 +20,6 @@ const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
 const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
 const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
-const MSG_BADGE_CLEARED_AT_KEY = 'love_alarm_msg_badge_cleared_at';
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 
 function getLikeCountCache() {
@@ -254,23 +254,20 @@ export function AlarmListPage() {
   useEffect(() => {
     const loadMsgBadge = async () => {
       const vid = localStorage.getItem(IG_VERIFIED_KEY);
-      if (!vid) return;
+      if (!vid && !import.meta.env.DEV) return;
       try {
-        const clearedAt = localStorage.getItem(MSG_BADGE_CLEARED_AT_KEY);
         let messages;
         if (import.meta.env.DEV) {
-          // DEV 모드: mock 데이터 2건을 최근 시각으로 사용
+          // DEV 모드: 받은 메세지 mock으로 unread red dot 확인
           messages = [
-            { createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
-            { createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString() },
+            { id: 'mock-recv-1', createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+            { id: 'mock-recv-2', createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString() },
           ];
         } else {
           messages = await api.getReceivedMessages(vid);
         }
-        const unread = clearedAt
-          ? messages.filter(m => new Date(m.createdAt) > new Date(clearedAt)).length
-          : messages.length;
-        setMsgBadgeCount(unread);
+
+        setMsgBadgeCount(countUnreadReceivedMessages(messages));
       } catch { /* 조용히 실패 */ }
     };
     // DEV 모드는 user 없어도 로드 (mock bypass)
@@ -475,7 +472,11 @@ export function AlarmListPage() {
         setIsRestoring(true); // 스켈레톤 표시
         try {
           // 새로 생성하고 결과로 받은 새 ID로 목록 갱신 (fromInstagramId 포함)
-          const result = await api.createAlarm(alarmToRemove.fromInstagramId, alarmToRemove.targetInstagramId);
+          const result = await api.createAlarm(
+            alarmToRemove.fromInstagramId,
+            alarmToRemove.targetInstagramId,
+            alarmToRemove.message
+          );
           // API 응답의 matched 여부를 알람 status에 반영
           const restoredAlarm = {
             ...result.alarm,
@@ -525,34 +526,28 @@ export function AlarmListPage() {
               알람 목록
             </Top.TitleParagraph>
           }
-          right={
-            <button
-              className="alarm-list-msg-btn"
-              onClick={() => navigate('/messages')}
-              aria-label="메세지 확인"
-            >
-              {/* 핑크 squircle 박스 */}
-              <span className="alarm-list-msg-icon-box">
-                <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path
-                    fillRule="evenodd"
-                    clipRule="evenodd"
-                    d="M2 4.5A2.5 2.5 0 014.5 2h11A2.5 2.5 0 0118 4.5v8a2.5 2.5 0 01-2.5 2.5H7.2L4 17.5V15A2.5 2.5 0 012 12.5v-8z"
-                    fill="#e05ca3"
-                  />
-                  <circle cx="7" cy="8.5" r="1" fill="white" />
-                  <circle cx="10" cy="8.5" r="1" fill="white" />
-                  <circle cx="13" cy="8.5" r="1" fill="white" />
-                </svg>
-              </span>
-              {msgBadgeCount > 0 && (
-                <span className="alarm-list-msg-badge">
-                  {msgBadgeCount > 9 ? '9+' : msgBadgeCount}
-                </span>
-              )}
-            </button>
-          }
         />
+        <div className="alarm-list-msg-wrapper">
+          <button
+            className="alarm-list-msg-btn"
+            onClick={() => navigate('/messages')}
+            aria-label="메세지 확인"
+          >
+            <span className="alarm-list-msg-icon-box">
+              <img
+                src="https://static.toss.im/2d-emojis/png/4x/u1F48C.png"
+                alt=""
+                className="alarm-list-msg-toss-icon"
+                width={24}
+                height={24}
+                draggable={false}
+              />
+            </span>
+            {msgBadgeCount > 0 && (
+              <span className="alarm-list-msg-badge alarm-list-msg-badge--dot" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       <Spacing size={16} />

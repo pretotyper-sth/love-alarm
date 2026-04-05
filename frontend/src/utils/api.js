@@ -474,6 +474,30 @@ export const api = {
     return await response.json();
   },
 
+  /**
+   * 받은 메세지 신고
+   */
+  reportMessage: async (alarmId, reason, instagramId) => {
+    const user = api.getCurrentUser();
+
+    const response = await fetch(`${API_BASE_URL}/messages/${alarmId}/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reason,
+        instagramId: instagramId || null,
+        userId: user?.id || null,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '신고 접수 실패');
+    }
+
+    return await response.json();
+  },
+
   // ==================== 헬스체크 ====================
 
   /**

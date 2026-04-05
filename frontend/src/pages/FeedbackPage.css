@@ -340,20 +340,29 @@
 
 .custom-bottom-sheet {
   position: fixed;
-  bottom: 20px;
+  bottom: 0;
   left: 50%;
-  transform: translateX(-50%) translateY(calc(100% + 20px));
-  width: calc(100% - 16px);
-  max-width: 360px;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%;
+  max-width: 376px;
   background: #ffffff;
-  border-radius: 24px;
+  border-radius: 24px 24px 0 0;
   z-index: 9999;
   transition: transform 0.3s ease-out;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
 
 .custom-bottom-sheet.show {
   transform: translateX(-50%) translateY(0);
+}
+
+.feedback-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: #e0e4ea;
+  border-radius: 2px;
+  margin: 12px auto 8px;
 }
 
 .bottom-sheet-header {
@@ -395,4 +404,44 @@
   display: flex;
   flex-direction: row;
   gap: 8px;
+}
+
+.feedback-sheet-options {
+  padding: 16px 0 24px;
+  width: 100%;
+}
+
+.feedback-sheet-option {
+  width: 100%;
+  padding: 16px 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: none;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.feedback-sheet-option:active {
+  background: #f8f9fa;
+}
+
+.feedback-sheet-option-label {
+  font-size: 17px;
+  font-weight: 400;
+  color: #191f28;
+  line-height: 26px;
+  text-align: left;
+  flex: 1;
+}
+
+.feedback-sheet-option-check {
+  color: #3182f6;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 26px;
+  flex-shrink: 0;
+  margin-left: 16px;
 }

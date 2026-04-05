@@ -94,4 +94,64 @@ router.post('/:alarmId/reaction', async (req, res) => {
   }
 });
 
+// ==================== POST /api/messages/:alarmId/report ====================
+// 받은 메세지 신고
+router.post('/:alarmId/report', async (req, res) => {
+  try {
+    const { alarmId } = req.params;
+    const { reason, userId, instagramId } = req.body;
+
+    const ALLOWED_REASONS = [
+      '불쾌하거나 과도하게 성적인 내용',
+      '욕설, 혐오, 위협이 느껴져요',
+      '스팸 또는 광고 같아요',
+      '원치 않는 연락이라 불편해요',
+    ];
+
+    if (!reason || !ALLOWED_REASONS.includes(reason)) {
+      return res.status(400).json({ error: '유효한 신고 사유를 선택해 주세요.' });
+    }
+
+    const alarm = await req.prisma.alarm.findUnique({
+      where: { id: alarmId },
+      include: { user: true },
+    });
+
+    if (!alarm || !alarm.message || alarm.deletedAt) {
+      return res.status(404).json({ error: '신고할 메세지를 찾을 수 없습니다.' });
+    }
+
+    if (instagramId) {
+      const normalizedInstagramId = instagramId.trim().toLowerCase();
+      if (normalizedInstagramId !== alarm.targetInstagramId) {
+        return res.status(403).json({ error: '이 메세지를 신고할 권한이 없습니다.' });
+      }
+    }
+
+    const feedback = await req.prisma.feedback.create({
+      data: {
+        category: '신고',
+        userId: userId || null,
+        content: [
+          '[받은 메세지 신고]',
+          `alarmId: ${alarm.id}`,
+          `reason: ${reason}`,
+          `reportedInstagramId: ${alarm.targetInstagramId}`,
+          `senderInstagramId: ${alarm.fromInstagramId}`,
+          `message: ${alarm.message}`,
+        ].join('\n'),
+      },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: '신고가 접수되었습니다.',
+      reportId: feedback.id,
+    });
+  } catch (error) {
+    console.error('메세지 신고 실패:', error);
+    return res.status(500).json({ error: '신고 접수에 실패했습니다.' });
+  }
+});
+
 export default router;

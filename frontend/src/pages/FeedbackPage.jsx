@@ -197,50 +197,27 @@ export function FeedbackPage() {
       {/* 카테고리 선택 BottomSheet */}
       <div className={`custom-bottom-sheet-overlay ${showCategorySheet ? 'show' : ''}`} onClick={() => setShowCategorySheet(false)}>
         <div className={`custom-bottom-sheet ${showCategorySheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <div className="feedback-sheet-handle" />
           <div className="bottom-sheet-header">
             <h3 className="bottom-sheet-title">카테고리 선택</h3>
           </div>
-          <div style={{ padding: '16px 0 24px 0', width: '100%' }}>
+          <div className="feedback-sheet-options">
             {CATEGORY_OPTIONS.map((option) => (
-              <div
+              <button
                 key={option.value}
+                type="button"
+                className="feedback-sheet-option"
                 onClick={() => {
                   setSelectedCategoryValue(option.value);
                   setCategory(option.name);
                   setShowCategorySheet(false);
                 }}
-                style={{
-                  padding: '16px 24px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  backgroundColor: '#ffffff',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                }}
               >
-                <span style={{ 
-                  fontSize: '17px', 
-                  fontWeight: '400',
-                  color: '#191f28',
-                  lineHeight: '26px',
-                  textAlign: 'left',
-                  flex: '1',
-                }}>
-                  {option.name}
-                </span>
+                <span className="feedback-sheet-option-label">{option.name}</span>
                 {selectedCategoryValue === option.value && (
-                  <span style={{ 
-                    color: '#3182f6', 
-                    fontSize: '24px',
-                    fontWeight: '600',
-                    lineHeight: '26px',
-                    flexShrink: '0',
-                    marginLeft: '16px',
-                  }}>✓</span>
+                  <span className="feedback-sheet-option-check">✓</span>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         </div>

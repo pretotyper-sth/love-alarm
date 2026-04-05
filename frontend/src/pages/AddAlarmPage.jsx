@@ -4,6 +4,7 @@ import {
   Text,
   Top,
   TextField,
+  TextArea,
   Spacing,
   Button,
 } from '@toss/tds-mobile';
@@ -44,6 +45,7 @@ function incrementDailyAddCount() {
 // 리워드 광고 그룹 ID (콘솔에서 발급)
 const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
 const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
+const MESSAGE_MAX_LENGTH = 100;
 
 function isAdFree() {
   // localStorage 플래그 (즉시 반영) 또는 서버에서 받은 user 데이터의 adFree 필드
@@ -414,46 +416,67 @@ export function AddAlarmPage() {
             />
           )}
 
-        <Spacing size={16} />
+        <Spacing size={12} />
 
           <TextField
-          variant="big"
-          hasError={targetIdHasError}
+            variant="big"
+            hasError={targetIdHasError}
             label="상대 인스타그램 ID"
-          labelOption="sustain"
-          help={getTargetIdErrorMessage()}
+            labelOption="sustain"
+            help={getTargetIdErrorMessage()}
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-          placeholder="예: abcd1234"
-          right={
-            targetId ? (
-              <button
-                onClick={handleClearTargetId}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-                aria-label="지우기"
-              >
-                <Asset.Icon
-                  frameShape={Asset.frameShape.CleanW20}
-                  backgroundColor="transparent"
-                  name="icon-x-mono"
-                  color={adaptive.greyOpacity600}
-                  aria-hidden={true}
-                  ratio="1/1"
+            placeholder="예: abcd1234"
+            right={
+              targetId ? (
+                <button
+                  onClick={handleClearTargetId}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                  aria-label="지우기"
+                >
+                  <Asset.Icon
+                    frameShape={Asset.frameShape.CleanW20}
+                    backgroundColor="transparent"
+                    name="icon-x-mono"
+                    color={adaptive.greyOpacity600}
+                    aria-hidden={true}
+                    ratio="1/1"
+                  />
+                </button>
+              ) : null
+            }
           />
-              </button>
-            ) : null
-          }
-        />
-      </div>
 
-      {/* 메세지 필드는 메세지 기능 검수 시 복원 */}
+        <Spacing size={12} />
+
+        <div className="add-alarm-message-wrapper">
+          <TextArea
+            variant="box"
+            minHeight={112}
+            label="메세지 (선택)"
+            labelOption="sustain"
+            placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            maxLength={MESSAGE_MAX_LENGTH}
+          />
+          <div className="add-alarm-message-footer">
+            <p className="add-alarm-message-hint">
+              상대가 메세지를 확인하려면 인스타그램 인증이 필요해요.
+              <br />
+              보낸 메세지는 메세지함에서 다시 볼 수 있어요.
+            </p>
+            <div className="add-alarm-message-count">{message.length}/{MESSAGE_MAX_LENGTH}</div>
+          </div>
+        </div>
+      </div>
       </div>
 
       <div className="add-alarm-cta-section">
