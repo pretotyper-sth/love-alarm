@@ -15,7 +15,6 @@ import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './SettingsPage.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
-const IS_DEV = import.meta.env.DEV;
 
 // 공유 기능 (getTossShareLink + OG 이미지)
 const handleShareApp = async () => {
@@ -112,7 +111,7 @@ export function SettingsPage() {
     setVerifiedUsername('');
     setShowAuthManageSheet(false);
     setAuthManageStep('menu');
-      showSuccessToastMessage('인증을 해제했어요');
+    showSuccessToastMessage('인증을 해제했어요');
   };
 
   const closeAuthManageSheet = () => {
@@ -135,15 +134,11 @@ export function SettingsPage() {
 
     setIsDisconnectingAuth(true);
     try {
-      const result = await api.disconnectInstagramAuth(verifiedUsername);
+      const result = await api.disconnectInstagramAuth();
       setUser(result.user);
       applyDisconnectedAuthState();
     } catch (error) {
       console.error('Failed to disconnect instagram auth:', error);
-      if (IS_DEV) {
-        applyDisconnectedAuthState();
-        return;
-      }
       window.alert(error.message || '인증 해제에 실패했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDisconnectingAuth(false);

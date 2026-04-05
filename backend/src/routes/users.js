@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { sendConnectionSuccessNotification } from '../services/pushNotification.js';
+import { normalizeInstagramUsername } from '../utils/instagramUsername.js';
 
 const router = Router();
 
@@ -75,9 +76,18 @@ router.delete('/:id/instagram-auth', async (req, res) => {
       return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
     }
 
+    const latestVerifiedSession = await req.prisma.verificationSession.findFirst({
+      where: {
+        userId: id,
+        status: 'verified',
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
     const normalizedVerifiedUsername =
-      user.instagramId?.trim().toLowerCase() ||
-      verifiedUsername?.trim().toLowerCase() ||
+      normalizeInstagramUsername(latestVerifiedSession?.instagramUsername) ||
+      normalizeInstagramUsername(verifiedUsername) ||
+      normalizeInstagramUsername(user.instagramId) ||
       null;
 
     if (normalizedVerifiedUsername) {
@@ -132,10 +142,19 @@ router.delete('/:id/instagram-auth', async (req, res) => {
       }
     }
 
-    const updatedUser = await req.prisma.user.update({
-      where: { id },
-      data: { instagramId: null },
-    });
+    const [updatedUser] = await req.prisma.$transaction([
+      req.prisma.user.update({
+        where: { id },
+        data: { instagramId: null },
+      }),
+      req.prisma.verificationSession.updateMany({
+        where: {
+          userId: id,
+          status: 'verified',
+        },
+        data: { status: 'expired' },
+      }),
+    ]);
 
     res.json({
       success: true,

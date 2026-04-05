@@ -305,14 +305,13 @@ export const api = {
   /**
    * 인스타그램 인증 해제
    */
-  disconnectInstagramAuth: async (verifiedUsername) => {
+  disconnectInstagramAuth: async () => {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
     const response = await fetch(`${API_BASE_URL}/users/${user.id}/instagram-auth`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ verifiedUsername }),
     });
 
     if (!response.ok) {
