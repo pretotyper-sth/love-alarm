@@ -302,6 +302,29 @@ export const api = {
     return data;
   },
 
+  /**
+   * 인스타그램 인증 해제
+   */
+  disconnectInstagramAuth: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/users/${user.id}/instagram-auth`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '인증 해제 실패');
+    }
+
+    const data = await response.json();
+    currentUser = data.user;
+    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+
+    return data;
+  },
   // ==================== 인스타그램 인증 ====================
 
   /**
