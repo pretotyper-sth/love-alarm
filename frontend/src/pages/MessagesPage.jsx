@@ -263,7 +263,7 @@ function InstagramAuthCta({ onVerify }) {
     <div className="msg-auth-cta">
       <div className="msg-auth-cta-title">받은 메세지를 확인하려면 인증이 필요해요</div>
       <div className="msg-auth-cta-desc">
-        본인 확인이 끝나면<br />바로 볼 수 있어요
+        본인 확인이 끝나면 바로 볼 수 있어요
       </div>
       <button className="msg-auth-cta-btn" onClick={onVerify}>
         인스타그램 인증하기
