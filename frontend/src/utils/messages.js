@@ -2,6 +2,7 @@ import { storage } from './storage';
 
 export const READ_RECEIVED_MESSAGE_IDS_KEY = 'love_alarm_read_received_message_ids';
 export const REPORTED_RECEIVED_MESSAGE_IDS_KEY = 'love_alarm_reported_received_message_ids';
+export const UNREAD_MESSAGE_BADGE_ENABLED_KEY = 'love_alarm_unread_message_badge_enabled';
 
 export function loadReadReceivedMessageIds() {
   const ids = storage.get(READ_RECEIVED_MESSAGE_IDS_KEY);
@@ -61,4 +62,13 @@ export function pruneReportedReceivedMessageIds(validMessageIds) {
   const nextIds = loadReportedReceivedMessageIds().filter((id) => validIdSet.has(id));
   saveReportedReceivedMessageIds(nextIds);
   return nextIds;
+}
+
+export function loadUnreadMessageBadgeEnabled() {
+  const value = localStorage.getItem(UNREAD_MESSAGE_BADGE_ENABLED_KEY);
+  return value === null ? true : value === 'true';
+}
+
+export function saveUnreadMessageBadgeEnabled(enabled) {
+  localStorage.setItem(UNREAD_MESSAGE_BADGE_ENABLED_KEY, String(enabled));
 }

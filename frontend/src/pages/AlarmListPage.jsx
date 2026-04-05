@@ -11,7 +11,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { hasConfirmedAbuseWarning } from '../utils/abuseWarning';
-import { countUnreadReceivedMessages } from '../utils/messages';
+import {
+  countUnreadReceivedMessages,
+  loadUnreadMessageBadgeEnabled,
+} from '../utils/messages';
 import { PaymentModal } from '../components/PaymentModal';
 import { LikeCountSheet } from '../components/LikeCountSheet';
 import './AlarmListPage.css';
@@ -154,6 +157,7 @@ export function AlarmListPage() {
   const [likeCountCache, setLikeCountCache] = useState(() => getLikeCountCache());
   // 메세지 배지 카운트
   const [msgBadgeCount, setMsgBadgeCount] = useState(0);
+  const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
   const alarmRefsRef = useRef([]);
   const addButtonRef = useRef(null); // 추가하기 버튼 ref
   const toastIdRef = useRef(0);
@@ -253,6 +257,13 @@ export function AlarmListPage() {
   // 메세지 배지 카운트 로드 (인증된 경우)
   useEffect(() => {
     const loadMsgBadge = async () => {
+      const badgeEnabled = loadUnreadMessageBadgeEnabled();
+      setUnreadMessageBadgeEnabled(badgeEnabled);
+      if (!badgeEnabled) {
+        setMsgBadgeCount(0);
+        return;
+      }
+
       const vid = localStorage.getItem(IG_VERIFIED_KEY);
       if (!vid && !import.meta.env.DEV) return;
       try {
@@ -543,7 +554,7 @@ export function AlarmListPage() {
                 draggable={false}
               />
             </span>
-            {msgBadgeCount > 0 && (
+            {unreadMessageBadgeEnabled && msgBadgeCount > 0 && (
               <span className="alarm-list-msg-badge alarm-list-msg-badge--dot" aria-hidden="true" />
             )}
           </button>

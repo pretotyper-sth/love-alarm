@@ -11,6 +11,10 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
+import {
+  loadUnreadMessageBadgeEnabled,
+  saveUnreadMessageBadgeEnabled,
+} from '../utils/messages';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './SettingsPage.css';
 
@@ -48,6 +52,7 @@ export function SettingsPage() {
   // 즉시 캐시된 값으로 초기화 (스켈레톤 없이 바로 표시)
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
   const [tossAppEnabled, setTossAppEnabled] = useState(user?.tossAppEnabled ?? false);
+  const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
   const [isSaving, setIsSaving] = useState(false);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
   const [verifiedUsername, setVerifiedUsername] = useState(
@@ -147,6 +152,12 @@ export function SettingsPage() {
     }
   };
 
+  const handleUnreadMessageBadgeToggle = () => {
+    const nextValue = !unreadMessageBadgeEnabled;
+    setUnreadMessageBadgeEnabled(nextValue);
+    saveUnreadMessageBadgeEnabled(nextValue);
+  };
+
   return (
     <div className="settings-page-container">
       <Spacing size={14} />
@@ -233,6 +244,22 @@ export function SettingsPage() {
               checked={tossAppEnabled}
               disabled={isSaving}
               onChange={() => handleSettingChange('tossAppEnabled', !tossAppEnabled)}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+        />
+
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              읽지 않은 메세지 표시
+            </Text>
+          }
+          right={
+            <Switch
+              checked={unreadMessageBadgeEnabled}
+              onChange={handleUnreadMessageBadgeToggle}
             />
           }
           verticalPadding="large"
