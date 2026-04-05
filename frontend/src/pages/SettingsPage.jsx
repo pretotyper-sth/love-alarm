@@ -253,7 +253,7 @@ export function SettingsPage() {
         <ListRow
           contents={
             <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              읽지 않은 메세지 표시
+              읽지 않은 메세지 배지 표시
             </Text>
           }
           right={
