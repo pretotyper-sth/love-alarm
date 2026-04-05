@@ -26,22 +26,22 @@ const isInvalidInstagramId = (text) => {
 };
 
 export function LikeCountSheet({ open, onClose, onResult }) {
-  const verifiedUsername = localStorage.getItem(IG_VERIFIED_KEY) || '';
   const cachedTarget = localStorage.getItem('love_alarm_like_count_target') || '';
+  const verifiedUsername = localStorage.getItem(IG_VERIFIED_KEY) || '';
 
-  const [instagramId, setInstagramId] = useState(cachedTarget || verifiedUsername || '');
+  const [instagramId, setInstagramId] = useState(cachedTarget || '');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
       const fresh = localStorage.getItem('love_alarm_like_count_target') || '';
-      const verified = localStorage.getItem(IG_VERIFIED_KEY) || '';
-      setInstagramId(fresh || verified || '');
+      setInstagramId(fresh || '');
     }
   }, [open]);
 
   const hasError = isInvalidInstagramId(instagramId);
-  const isVerifiedId = verifiedUsername && instagramId.trim().toLowerCase() === verifiedUsername.toLowerCase();
+  const canLoadVerifiedId =
+    !!verifiedUsername && instagramId.trim().toLowerCase() !== verifiedUsername.toLowerCase();
 
   const handleCheck = async () => {
     const trimmed = instagramId.trim().toLowerCase();
@@ -119,8 +119,15 @@ export function LikeCountSheet({ open, onClose, onResult }) {
             {hasError && (
               <p className="lcs-field-msg error">인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요</p>
             )}
-            {!hasError && isVerifiedId && (
-              <p className="lcs-field-msg hint">인증된 계정이에요. 다른 ID로 바꿔서 확인할 수도 있어요.</p>
+            {verifiedUsername && (
+              <button
+                type="button"
+                className={`lcs-verified-action${canLoadVerifiedId ? '' : ' is-active'}`}
+                onClick={() => setInstagramId(verifiedUsername)}
+              >
+                인증된 ID 불러오기
+                <span className="lcs-verified-action-id">@{verifiedUsername}</span>
+              </button>
             )}
           </div>
         </div>

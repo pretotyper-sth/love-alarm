@@ -120,6 +120,41 @@
   color: #8b95a1;
 }
 
+.lcs-verified-action {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 14px;
+  background: #f2f4f6;
+  color: #4e5968;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lcs-verified-action-id {
+  flex-shrink: 0;
+  color: #3182f6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lcs-verified-action.is-active {
+  background: #eef4ff;
+  color: #3182f6;
+}
+
+.lcs-verified-action:active {
+  opacity: 0.9;
+}
+
 /* 액션 버튼 */
 .lcs-actions {
   padding: 20px 24px 24px;
