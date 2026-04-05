@@ -40,43 +40,6 @@ function truncateText(text, max = 40) {
   return text.length > max ? text.slice(0, max) + '…' : text;
 }
 
-// DEV 목업 데이터
-const DEV_MOCK_SENT = [
-  {
-    id: 'mock-sent-1',
-    targetInstagramId: 'jungsoo.dev',
-    message: '안녕하세요, 우연히 같은 카페에서 자주 마주쳤는데 용기 내어 메세지 남겨요. 잘 지내고 계신가요? 언젠가 한번 이야기 나눠볼 수 있으면 좋겠습니다.',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    reactions: [{ emoji: '😊' }],
-  },
-  {
-    id: 'mock-sent-2',
-    targetInstagramId: 'hello_world_kr',
-    message: '지난번에 잠깐 이야기했는데 기억하실지 모르겠어요.',
-    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    reactions: [],
-  },
-];
-
-const DEV_MOCK_RECEIVED = [
-  {
-    id: 'mock-recv-1',
-    fromInstagramId: 'unknown_sender',
-    targetInstagramId: 'myid',
-    message: '항상 멀리서 응원하고 있어요. 한번쯤 이야기해 볼 수 있으면 좋겠어요.',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    reactions: [],
-  },
-  {
-    id: 'mock-recv-2',
-    fromInstagramId: 'unknown_sender_2',
-    targetInstagramId: 'myid',
-    message: '같은 동네에 사는 것 같아서요. 인연이 닿으면 좋겠습니다.',
-    createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-    reactions: [{ emoji: '❤️' }],
-  },
-];
-
 // ──────────────────────────────────────────────────────────────────────
 // 메세지 아이콘 컴포넌트 — TDS Asset squircle 스타일 (2D 이모지)
 // ──────────────────────────────────────────────────────────────────────
@@ -298,9 +261,9 @@ function ReportMessageSheet({
 function InstagramAuthCta({ onVerify }) {
   return (
     <div className="msg-auth-cta">
-      <div className="msg-auth-cta-title">메세지 확인을 위해선 인증이 필요해요</div>
+      <div className="msg-auth-cta-title">받은 메세지를 확인하려면 인증이 필요해요</div>
       <div className="msg-auth-cta-desc">
-        본인 계정이 맞는지 확인하기 위해<br />인스타그램 인증이 필요해요.
+        본인 확인이 끝나면<br />바로 볼 수 있어요
       </div>
       <button className="msg-auth-cta-btn" onClick={onVerify}>
         인스타그램 인증하기
@@ -337,35 +300,19 @@ export function MessagesPage() {
     const vid = currentVerifiedId ?? verifiedId;
     setIsLoading(true);
     try {
-      if (IS_DEV) {
-        setSentMessages(DEV_MOCK_SENT);
-        if (vid) {
-          const rawReceivedMessages = DEV_MOCK_RECEIVED;
-          const validMessageIds = rawReceivedMessages.map((message) => message.id);
-          const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
-          setReportedReceivedMessageIds(nextReportedIds);
-          setReadReceivedMessageIds(pruneReadReceivedMessageIds(validMessageIds));
-          setReceivedMessages(
-            rawReceivedMessages.filter((message) => !nextReportedIds.includes(message.id))
-          );
-        } else {
-          setReceivedMessages([]);
-        }
+      const sent = await api.getSentMessages();
+      setSentMessages(sent);
+      if (vid) {
+        const rawReceivedMessages = await api.getReceivedMessages(vid);
+        const validMessageIds = rawReceivedMessages.map((message) => message.id);
+        const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
+        setReportedReceivedMessageIds(nextReportedIds);
+        setReadReceivedMessageIds(pruneReadReceivedMessageIds(validMessageIds));
+        setReceivedMessages(
+          rawReceivedMessages.filter((message) => !nextReportedIds.includes(message.id))
+        );
       } else {
-        const sent = await api.getSentMessages();
-        setSentMessages(sent);
-        if (vid) {
-          const rawReceivedMessages = await api.getReceivedMessages(vid);
-          const validMessageIds = rawReceivedMessages.map((message) => message.id);
-          const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
-          setReportedReceivedMessageIds(nextReportedIds);
-          setReadReceivedMessageIds(pruneReadReceivedMessageIds(validMessageIds));
-          setReceivedMessages(
-            rawReceivedMessages.filter((message) => !nextReportedIds.includes(message.id))
-          );
-        } else {
-          setReceivedMessages([]);
-        }
+        setReceivedMessages([]);
       }
     } catch (err) {
       console.error('메세지 로드 실패:', err);

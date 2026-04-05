@@ -265,24 +265,16 @@ export function AlarmListPage() {
       }
 
       const vid = localStorage.getItem(IG_VERIFIED_KEY);
-      if (!vid && !import.meta.env.DEV) return;
+      if (!vid) {
+        setMsgBadgeCount(0);
+        return;
+      }
       try {
-        let messages;
-        if (import.meta.env.DEV) {
-          // DEV 모드: 받은 메세지 mock으로 unread red dot 확인
-          messages = [
-            { id: 'mock-recv-1', createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
-            { id: 'mock-recv-2', createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString() },
-          ];
-        } else {
-          messages = await api.getReceivedMessages(vid);
-        }
-
+        const messages = await api.getReceivedMessages(vid);
         setMsgBadgeCount(countUnreadReceivedMessages(messages));
       } catch { /* 조용히 실패 */ }
     };
-    // DEV 모드는 user 없어도 로드 (mock bypass)
-    if (user || import.meta.env.DEV) loadMsgBadge();
+    if (user) loadMsgBadge();
   }, [user]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
