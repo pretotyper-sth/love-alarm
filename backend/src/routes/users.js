@@ -57,6 +57,97 @@ router.put('/:id/instagram', async (req, res) => {
 });
 
 /**
+ * DELETE /api/users/:id/instagram-auth
+ * 인스타그램 인증 해제 + 해당 인증 ID로 등록한 알람 정리
+ *
+ * Body: { verifiedUsername?: string }
+ */
+router.delete('/:id/instagram-auth', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { verifiedUsername } = req.body || {};
+
+    const user = await req.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const normalizedVerifiedUsername =
+      user.instagramId?.trim().toLowerCase() ||
+      verifiedUsername?.trim().toLowerCase() ||
+      null;
+
+    if (normalizedVerifiedUsername) {
+      const alarmsToDelete = await req.prisma.alarm.findMany({
+        where: {
+          userId: id,
+          fromInstagramId: normalizedVerifiedUsername,
+          deletedAt: null,
+        },
+      });
+
+      for (const alarmToDelete of alarmsToDelete) {
+        if (alarmToDelete.status === 'matched' && alarmToDelete.fromInstagramId) {
+          const reverseAlarm = await req.prisma.alarm.findFirst({
+            where: {
+              fromInstagramId: alarmToDelete.targetInstagramId,
+              targetInstagramId: alarmToDelete.fromInstagramId,
+              deletedAt: null,
+            },
+            include: { user: true },
+          });
+
+          if (reverseAlarm) {
+            await req.prisma.alarm.update({
+              where: { id: reverseAlarm.id },
+              data: { status: 'waiting' },
+            });
+
+            await req.prisma.match.deleteMany({
+              where: {
+                OR: [
+                  { user1Id: alarmToDelete.userId, user2Id: reverseAlarm.userId },
+                  { user1Id: reverseAlarm.userId, user2Id: alarmToDelete.userId },
+                ],
+              },
+            });
+
+            const targetSocketId = req.userSockets.get(reverseAlarm.userId);
+            if (targetSocketId) {
+              req.io.to(targetSocketId).emit('matchCanceled', {
+                message: '매칭이 해제되었습니다',
+                canceledBy: alarmToDelete.fromInstagramId,
+              });
+            }
+          }
+        }
+
+        await req.prisma.alarm.update({
+          where: { id: alarmToDelete.id },
+          data: { deletedAt: new Date() },
+        });
+      }
+    }
+
+    const updatedUser = await req.prisma.user.update({
+      where: { id },
+      data: { instagramId: null },
+    });
+
+    res.json({
+      success: true,
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Disconnect instagram auth error:', error);
+    res.status(500).json({ error: '인증 해제 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
  * PATCH /api/users/:id/settings
  * 알림 설정 변경
  * 

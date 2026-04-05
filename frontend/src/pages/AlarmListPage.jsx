@@ -432,7 +432,7 @@ export function AlarmListPage() {
       setAlarms(previousAlarms);
       addToast({
         type: 'error',
-        message: '알람 삭제에 실패했어요',
+        message: '알람을 삭제하지 못했어요',
         duration: 3000,
       });
     }
