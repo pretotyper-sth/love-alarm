@@ -115,6 +115,10 @@ body {
   font-weight: bold;
 }
 
+.custom-toast.error .custom-toast-icon {
+  background: #f04452;
+}
+
 .custom-toast-error-icon {
   display: flex;
   align-items: center;

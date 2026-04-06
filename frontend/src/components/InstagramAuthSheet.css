@@ -172,6 +172,10 @@
 }
 
 /* ── Step 2: 팔로우 + 복사 ── */
+.ig-auth-step--center {
+  align-items: center;
+}
+
 .ig-auth-step2-row {
   display: flex;
   align-items: center;

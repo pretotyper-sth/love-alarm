@@ -234,11 +234,12 @@ export function InstagramAuthSheet({
           {stage === 'waiting' && (
             <>
               {/* Step 2 */}
-              <div className="ig-auth-step">
+              <div className="ig-auth-step ig-auth-step--center">
                 <span className="ig-auth-step-num">2</span>
                 <div className="ig-auth-step-content">
                   <div className="ig-auth-step2-row">
                     <p className="ig-auth-step-label">
+                      인스타그램으로 이동해서<br />
                       <span className="ig-auth-handle">@{IG_HANDLE}</span> 을 팔로우해요
                     </p>
                     <button className={`ig-auth-copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopyHandle}>

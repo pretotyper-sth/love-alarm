@@ -53,8 +53,8 @@ export function SettingsPage() {
     () => localStorage.getItem(IG_VERIFIED_KEY) || ''
   );
   
-  // 성공 토스트 상태
-  const [successToast, setSuccessToast] = useState({ show: false, message: '' });
+  // 토스트 상태 (성공/에러 공용)
+  const [successToast, setSuccessToast] = useState({ show: false, message: '', isError: false });
   const toastShownRef = useRef(false);
 
   // 피드백 제출 성공 토스트 표시
@@ -94,10 +94,18 @@ export function SettingsPage() {
   }, []);
 
   const showSuccessToastMessage = (message) => {
-    setSuccessToast({ show: true, message });
+    setSuccessToast({ show: true, message, isError: false });
     setTimeout(() => {
       setSuccessToast(prev => ({ ...prev, show: false }));
-      setTimeout(() => setSuccessToast({ show: false, message: '' }), 300);
+      setTimeout(() => setSuccessToast({ show: false, message: '', isError: false }), 300);
+    }, 3000);
+  };
+
+  const showErrorToastMessage = (message) => {
+    setSuccessToast({ show: true, message, isError: true });
+    setTimeout(() => {
+      setSuccessToast(prev => ({ ...prev, show: false }));
+      setTimeout(() => setSuccessToast({ show: false, message: '', isError: false }), 300);
     }, 3000);
   };
 
@@ -135,11 +143,11 @@ export function SettingsPage() {
     setIsDisconnectingAuth(true);
     try {
       const result = await api.disconnectInstagramAuth();
-      setUser(result.user);
+      if (result.user) setUser(result.user);
       applyDisconnectedAuthState();
     } catch (error) {
       console.error('Failed to disconnect instagram auth:', error);
-      window.alert(error.message || '인증 해제에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      showErrorToastMessage(error.message || '인증 해제에 실패했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDisconnectingAuth(false);
     }
@@ -320,12 +328,12 @@ export function SettingsPage() {
         />
       </List>
 
-      {/* 성공 토스트 - 기존 구조와 동일 */}
+      {/* 토스트 - 성공/에러 공용 */}
       <div className="toast-stack">
         {successToast.message && (
-          <div className={`custom-toast ${successToast.show ? 'show' : ''}`}>
+          <div className={`custom-toast ${successToast.show ? 'show' : ''} ${successToast.isError ? 'error' : ''}`}>
             <div className="custom-toast-content">
-              <span className="custom-toast-icon">✓</span>
+              <span className="custom-toast-icon">{successToast.isError ? '!' : '✓'}</span>
               <span className="custom-toast-text">{successToast.message}</span>
             </div>
           </div>
