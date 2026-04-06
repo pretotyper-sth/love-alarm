@@ -234,7 +234,7 @@ export function InstagramAuthSheet({
           {stage === 'waiting' && (
             <>
               {/* Step 2 */}
-              <div className="ig-auth-step ig-auth-step--center">
+              <div className="ig-auth-step">
                 <span className="ig-auth-step-num">2</span>
                 <div className="ig-auth-step-content">
                   <div className="ig-auth-step2-row">

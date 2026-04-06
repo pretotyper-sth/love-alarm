@@ -172,13 +172,9 @@
 }
 
 /* ── Step 2: 팔로우 + 복사 ── */
-.ig-auth-step--center {
-  align-items: center;
-}
-
 .ig-auth-step2-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
@@ -195,6 +191,7 @@
 .ig-auth-copy-btn {
   flex-shrink: 0;
   height: 32px;
+  margin-top: 1px;
   padding: 0 12px;
   border: 1.5px solid #d1d6db;
   border-radius: 8px;
