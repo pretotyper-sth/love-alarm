@@ -20,6 +20,7 @@ import './SettingsPage.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const IS_DEV = import.meta.env.DEV;
+const DEV_BYPASS_USERNAME = 'dev_bypass';
 const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
 const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
 const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
@@ -110,6 +111,17 @@ export function SettingsPage() {
     }, 3000);
   };
 
+  const syncLocalUserCache = (nextInstagramId) => {
+    if (!user) return;
+    localStorage.setItem(
+      'love_alarm_user',
+      JSON.stringify({
+        ...user,
+        instagramId: nextInstagramId,
+      }),
+    );
+  };
+
   const applyDisconnectedAuthState = () => {
     localStorage.removeItem(IG_VERIFIED_KEY);
     if (localStorage.getItem('love_alarm_my_instagram_id') === verifiedUsername) {
@@ -121,6 +133,26 @@ export function SettingsPage() {
     setShowAuthManageSheet(false);
     setAuthManageStep('menu');
     showSuccessToastMessage('인증을 해제했어요');
+  };
+
+  const handleDevAuthToggle = () => {
+    if (!user) return;
+
+    if (verifiedUsername === DEV_BYPASS_USERNAME) {
+      syncLocalUserCache(null);
+      setUser({ ...user, instagramId: null });
+      applyDisconnectedAuthState();
+      return;
+    }
+
+    localStorage.setItem(IG_VERIFIED_KEY, DEV_BYPASS_USERNAME);
+    setVerifiedUsername(DEV_BYPASS_USERNAME);
+    setShowAuthSheet(false);
+    setShowAuthManageSheet(false);
+    setAuthManageStep('menu');
+    syncLocalUserCache(DEV_BYPASS_USERNAME);
+    setUser({ ...user, instagramId: DEV_BYPASS_USERNAME });
+    showSuccessToastMessage('인증을 완료했어요');
   };
 
   const closeAuthManageSheet = () => {
@@ -140,6 +172,11 @@ export function SettingsPage() {
 
   const handleDisconnectInstagramAuth = async () => {
     if (!verifiedUsername || isDisconnectingAuth) return;
+
+    if (IS_DEV && verifiedUsername === DEV_BYPASS_USERNAME) {
+      handleDevAuthToggle();
+      return;
+    }
 
     setIsDisconnectingAuth(true);
     try {
@@ -489,8 +526,35 @@ export function SettingsPage() {
             🛠 DEV BYPASS
           </div>
 
+          {/* 인스타그램 인증 */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
+              인스타그램 인증
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                onClick={handleDevAuthToggle}
+                style={{
+                  fontSize: '13px',
+                  padding: '5px 12px',
+                  background: verifiedUsername === DEV_BYPASS_USERNAME ? '#e53e3e' : '#2f855a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                {verifiedUsername === DEV_BYPASS_USERNAME ? '인증 해제' : 'bypass 인증'}
+              </button>
+              <span style={{ fontSize: '12px', color: '#7c5c00' }}>
+                {verifiedUsername === DEV_BYPASS_USERNAME ? `@${verifiedUsername}` : '미인증'}
+              </span>
+            </div>
+          </div>
+
           {/* 좋아하는 사람 수 캐시 */}
-          <div>
+          <div style={{ borderTop: '1px solid #ffe066', paddingTop: '10px' }}>
             <div style={{ fontSize: '10px', color: '#7c5c00', marginBottom: '5px', fontWeight: 600 }}>
               좋아하는 사람 캐시
             </div>
