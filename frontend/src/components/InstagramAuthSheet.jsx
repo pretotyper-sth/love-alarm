@@ -5,7 +5,13 @@ import './InstagramAuthSheet.css';
 
 const IG_HANDLE = 'lovealarm.kr';
 
-export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified = false }) {
+export function InstagramAuthSheet({
+  open,
+  onClose,
+  onSuccess,
+  alreadyVerified = false,
+  currentVerifiedUsername = '',
+}) {
   const [username, setUsername] = useState('');
   const [stage, setStage] = useState('input'); // 'input' | 'waiting'
   const [sessionId, setSessionId] = useState(null);
@@ -55,6 +61,10 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
   const handleRequestCode = async () => {
     const trimmed = username.trim().toLowerCase().replace(/^@/, '');
     if (!trimmed) return;
+    if (alreadyVerified && trimmed === currentVerifiedUsername) {
+      setError('현재 인증된 ID로는 재인증할 수 없어요.');
+      return;
+    }
 
     setIsRequesting(true);
     setError('');
@@ -150,7 +160,18 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
   };
 
   const idHasError = isInvalidId(username);
-  const canRequest = username.trim().length > 0 && !idHasError && !isRequesting && stage === 'input';
+  const normalizedUsername = username.trim().toLowerCase().replace(/^@/, '');
+  const isSameAsCurrentVerified =
+    alreadyVerified &&
+    !!currentVerifiedUsername &&
+    normalizedUsername.length > 0 &&
+    normalizedUsername === currentVerifiedUsername;
+  const canRequest =
+    username.trim().length > 0 &&
+    !idHasError &&
+    !isSameAsCurrentVerified &&
+    !isRequesting &&
+    stage === 'input';
 
   return (
     <>
@@ -177,7 +198,7 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
           <div className="ig-auth-step">
             <span className="ig-auth-step-num">1</span>
             <div className="ig-auth-step-content">
-              <p className="ig-auth-step-label">인스타그램 아이디 입력</p>
+              <p className="ig-auth-step-label">인스타그램 ID 입력</p>
               <div className="ig-auth-step1-row">
                 <input
                   className={`ig-auth-id-input${idHasError ? ' error' : ''}`}
@@ -203,6 +224,9 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
               {idHasError && (
                 <p className="ig-auth-id-error">인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요</p>
               )}
+              {!idHasError && isSameAsCurrentVerified && (
+                <p className="ig-auth-id-error">현재 인증된 ID로는 재인증할 수 없어요.</p>
+              )}
             </div>
           </div>
 
@@ -215,6 +239,7 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
                 <div className="ig-auth-step-content">
                   <div className="ig-auth-step2-row">
                     <p className="ig-auth-step-label">
+                      인스타그램으로 이동해서<br />
                       <span className="ig-auth-handle">@{IG_HANDLE}</span> 을 팔로우해요
                     </p>
                     <button className={`ig-auth-copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopyHandle}>
@@ -265,6 +290,7 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
                       />
                     ))}
                   </div>
+                  {error && <p className="ig-auth-error">{error}</p>}
                 </div>
               </div>
 
@@ -276,9 +302,6 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
               </div>
             </>
           )}
-
-          {/* 에러 */}
-          {error && <p className="ig-auth-error">{error}</p>}
         </div>
 
         {/* 하단 버튼 */}
@@ -305,6 +328,19 @@ export function InstagramAuthSheet({ open, onClose, onSuccess, alreadyVerified =
               >
                 확인
               </Button>
+            )}
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={() => {
+                  const u = (username || 'test_user').trim().toLowerCase().replace(/^@/, '');
+                  localStorage.setItem('love_alarm_instagram_verified_username', u);
+                  onSuccess?.(u);
+                }}
+                style={{ marginTop: 4, background: '#fff0a0', border: '1px dashed #cca800', borderRadius: 10, padding: '6px 12px', fontSize: 12, color: '#7a6000', cursor: 'pointer', width: '100%' }}
+              >
+                [DEV] 인증 bypass
+              </button>
             )}
           </div>
         </div>
