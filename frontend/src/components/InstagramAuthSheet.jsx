@@ -239,6 +239,7 @@ export function InstagramAuthSheet({
                 <div className="ig-auth-step-content">
                   <div className="ig-auth-step2-row">
                     <p className="ig-auth-step-label">
+                      인스타그램으로 이동해서<br />
                       <span className="ig-auth-handle">@{IG_HANDLE}</span> 을 팔로우해요
                     </p>
                     <button className={`ig-auth-copy-btn ${copied ? 'copied' : ''}`} onClick={handleCopyHandle}>
@@ -289,6 +290,7 @@ export function InstagramAuthSheet({
                       />
                     ))}
                   </div>
+                  {error && <p className="ig-auth-error">{error}</p>}
                 </div>
               </div>
 
@@ -300,9 +302,6 @@ export function InstagramAuthSheet({
               </div>
             </>
           )}
-
-          {/* 에러 */}
-          {error && <p className="ig-auth-error">{error}</p>}
         </div>
 
         {/* 하단 버튼 */}
@@ -329,6 +328,19 @@ export function InstagramAuthSheet({
               >
                 확인
               </Button>
+            )}
+            {import.meta.env.DEV && (
+              <button
+                type="button"
+                onClick={() => {
+                  const u = (username || 'test_user').trim().toLowerCase().replace(/^@/, '');
+                  localStorage.setItem('love_alarm_instagram_verified_username', u);
+                  onSuccess?.(u);
+                }}
+                style={{ marginTop: 4, background: '#fff0a0', border: '1px dashed #cca800', borderRadius: 10, padding: '6px 12px', fontSize: 12, color: '#7a6000', cursor: 'pointer', width: '100%' }}
+              >
+                [DEV] 인증 bypass
+              </button>
             )}
           </div>
         </div>
