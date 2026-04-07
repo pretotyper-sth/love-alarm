@@ -45,7 +45,7 @@ body {
 /* 토스트 스택 컨테이너 */
 .toast-stack {
   position: fixed;
-  bottom: 120px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -75,7 +75,7 @@ body {
 /* 단독 Toast 스타일 (스택 외부) */
 .single-toast {
   position: fixed;
-  bottom: 140px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   z-index: 9999;
