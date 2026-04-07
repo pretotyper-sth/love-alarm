@@ -45,7 +45,7 @@ body {
 /* 토스트 스택 컨테이너 */
 .toast-stack {
   position: fixed;
-  bottom: 100px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
