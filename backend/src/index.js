@@ -106,3 +106,24 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// 예상치 못한 에러로 서버가 죽지 않도록 방지
+process.on('uncaughtException', (err) => {
+  console.error('❌ uncaughtException:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('❌ unhandledRejection:', reason);
+});
+
+// Render 무료 티어 스핀다운 방지: 14분마다 자기 자신에게 헬스체크
+const SELF_URL = process.env.RENDER_EXTERNAL_URL;
+if (SELF_URL) {
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${SELF_URL}/health`);
+      console.log(`[keep-alive] ping → ${res.status}`);
+    } catch (e) {
+      console.warn('[keep-alive] ping failed:', e.message);
+    }
+  }, 14 * 60 * 1000); // 14분
+}
+
