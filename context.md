@@ -168,8 +168,8 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 - [ ] **Unit 4**: 보상 체크인 — "15일" → "10일", "영구 누적" 제거, "받기" 버튼 항상 노출 (disabled 기본)
 - [ ] **Unit 5**: 알람 추가 — 하루 추가 제한 (`총 슬롯 × 2`) + 메세지(선택) 필드 + copy 수정
 
-### 검수 2 — 인스타그램 인증 도입
-> Unit 6 단독. 선행 조건: Meta 앱 Live 전환 + Render webhook URL 교체.
+### 검수 2 — 인스타그램 인증 도입 ✅ 승인 완료 (2026-04-08)
+> Unit 6 단독. Meta 앱 Live 전환 + Railway webhook URL 교체 완료.
 
 - [ ] **Unit 6**: 인증 바텀시트 전체 구현
   - 아이디 입력 + 코드 요청 버튼 (1행)
@@ -210,12 +210,11 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
   - 개인정보처리방침: `https://love-alarm.vercel.app/privacy.html`
   - 이용약관: `https://love-alarm.vercel.app/terms.html`
 
-- [ ] **Render webhook URL 교체**
-  - Meta 대시보드 콜백 URL을 `https://love-alarm-server.onrender.com/webhook/instagram` 으로 변경
-  - (현재 ngrok URL 등록 상태)
+- [x] **webhook URL 교체** ✅ (2026-04-08 완료)
+  - Meta 대시보드 콜백 URL → `https://love-alarm-production.up.railway.app/webhook/instagram` 으로 변경 완료
 
 - [ ] **INSTAGRAM_ACCESS_TOKEN 갱신 자동화**
-  - IGAA 토큰 60일 만료 → Render cron job 또는 수동 갱신
+  - IGAA 토큰 60일 만료 → Railway cron job 또는 수동 갱신
   - 갱신 endpoint: `GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token={token}`
 
 ### Phase 2 — 목업 → 프론트엔드 반영
@@ -235,6 +234,23 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 ## 참고
 
 - 앱인토스 정책: 백엔드에서 외부 API 직접 호출 ✅ / 앱 내 외부 redirect ❌
-- 프로덕션 서버: `https://love-alarm-server.onrender.com`
+- 프로덕션 서버: `https://love-alarm-production.up.railway.app` (Railway — 2026-04-08 Render에서 이전)
 - 개인정보처리방침: `https://love-alarm.vercel.app/privacy.html`
 - 이용약관: `https://love-alarm.vercel.app/terms.html`
+
+---
+
+## 서버 인프라 변경 이력
+
+### 2026-04-08 — Render → Railway 이전
+
+**원인**: Render 프리 티어 인프라 불안정 (CloudFlare 521 반복, 컨테이너 라우팅 단절)
+
+**변경 내용**:
+- 백엔드 서버: `https://love-alarm-server.onrender.com` → `https://love-alarm-production.up.railway.app`
+- Vercel `VITE_API_URL` 환경변수 업데이트 완료
+- Meta Instagram 웹훅 콜백 URL 업데이트 완료
+- `backend/railway.json`, `backend/Procfile` 추가
+- `backend/src/index.js`: `uncaughtException` / `unhandledRejection` 핸들러 추가 (서버 크래시 방지)
+
+**Railway 환경변수**: Render에서 사용하던 동일 값 그대로 복사 (`RENDER_EXTERNAL_URL` 제외)
