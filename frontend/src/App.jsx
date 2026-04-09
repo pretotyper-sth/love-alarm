@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Button } from '@toss/tds-mobile';
+import { Button, Spacing, Text } from '@toss/tds-mobile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
 import { AlarmListPage } from './pages/AlarmListPage';
@@ -60,6 +60,26 @@ function ExitConfirmModal({ onClose, onConfirm }) {
         </div>
       </div>
     </>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="app-loading-screen">
+      <div className="app-loading-screen__content">
+        <div className="app-loading-screen__spinner" aria-hidden="true" />
+
+        <Spacing size={16} />
+
+        <Text color="#191F28" typography="t5" fontWeight="bold">
+          앱을 불러오고 있어요
+        </Text>
+        <Spacing size={8} />
+        <Text color="#6B7684" typography="t7">
+          네트워크 상태에 따라 조금 늦어질 수 있어요.
+        </Text>
+      </div>
+    </div>
   );
 }
 
@@ -196,7 +216,17 @@ function AppRoutes() {
 
   // 로딩 중에는 빈 화면 (로그인 과정에서 알람 목록이 잠깐 보이는 문제 방지)
   if (loading) {
-    return null;
+    return (
+      <>
+        <LoadingScreen />
+        {showExitModal && (
+          <ExitConfirmModal
+            onClose={() => setShowExitModal(false)}
+            onConfirm={exitApp}
+          />
+        )}
+      </>
+    );
   }
 
   return (

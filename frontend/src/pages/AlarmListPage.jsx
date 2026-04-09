@@ -204,23 +204,24 @@ export function AlarmListPage() {
       }
       // ────────────────────────────────────────────────────────
 
+      const userPromise = api.getUser()
+        .then((latestUser) => {
+          if (latestUser?.maxSlots) {
+            setMaxSlots(latestUser.maxSlots);
+            localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
+          }
+        })
+        .catch((userError) => {
+          console.error('사용자 정보 조회 실패:', userError);
+        });
+
       const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
       localStorage.setItem('love_alarm_cached_list', JSON.stringify(fetchedAlarms));
       localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
       setLastAlarmCount(fetchedAlarms.length);
-
-      try {
-        const latestUser = await api.getUser();
-        if (latestUser?.maxSlots) {
-          setMaxSlots(latestUser.maxSlots);
-          localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
-        }
-      } catch (userError) {
-        console.error('사용자 정보 조회 실패:', userError);
-      }
-
       alarmRefsRef.current = [];
+      void userPromise;
     } catch (error) {
       console.error('알람 목록 조회 실패:', error);
     } finally {
@@ -590,6 +591,13 @@ export function AlarmListPage() {
           <Skeleton 
             custom={['listWithIcon']} 
             repeatLastItemCount={lastAlarmCount} 
+          />
+        )}
+
+        {isLoading && lastAlarmCount === 0 && (
+          <Skeleton 
+            custom={['listWithIcon']} 
+            repeatLastItemCount={3} 
           />
         )}
 
