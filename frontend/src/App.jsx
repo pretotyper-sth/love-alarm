@@ -62,6 +62,26 @@ function ExitConfirmModal({ onClose, onConfirm }) {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#fff',
+        color: '#4e5968',
+        fontSize: 15,
+        padding: '24px',
+        textAlign: 'center',
+      }}
+    >
+      불러오는 중이에요...
+    </div>
+  );
+}
+
 // 히스토리 가드 설정 (앱 시작 시 한 번만)
 function setupHistoryGuard() {
   if (sessionStorage.getItem('history_guard_set')) return;
@@ -195,7 +215,17 @@ function AppRoutes() {
 
   // 로딩 중에는 빈 화면 (로그인 과정에서 알람 목록이 잠깐 보이는 문제 방지)
   if (loading) {
-    return null;
+    return (
+      <>
+        <LoadingScreen />
+        {showExitModal && (
+          <ExitConfirmModal
+            onClose={() => setShowExitModal(false)}
+            onConfirm={exitApp}
+          />
+        )}
+      </>
+    );
   }
 
   return (
