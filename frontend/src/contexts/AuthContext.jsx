@@ -4,6 +4,16 @@ import { api } from '../utils/api';
 import { storage } from '../utils/storage';
 
 const AuthContext = createContext(null);
+const AUTO_LOGIN_TIMEOUT_MS = 8000;
+
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message)), timeoutMs);
+    }),
+  ]);
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -66,11 +76,16 @@ export function AuthProvider({ children }) {
           // → 토스 앱에서 약관 동의 후 복귀한 경우
           // → 자동으로 토스 로그인 시도 (인가 코드만 받으면 됨)
           try {
-            const newUser = await performTossLoginInternal();
+            const newUser = await withTimeout(
+              performTossLoginInternal(),
+              AUTO_LOGIN_TIMEOUT_MS,
+              '자동 로그인 시간이 초과됐어요.'
+            );
             setUser(newUser);
             api.connectSocket();
           } catch {
-            // 실패 시 IntroPage에서 다시 시도하도록 has_visited_intro 제거
+            // 실패 또는 무한 대기 시 IntroPage에서 다시 시도하도록 초기화
+            api.logout();
             storage.remove('has_visited_intro');
           }
         }
