@@ -1,0 +1,314 @@
+/* ─────────────────────────────────────────
+   Instagram Auth Bottom Sheet
+───────────────────────────────────────── */
+.ig-auth-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.ig-auth-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ig-auth-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  width: 100%;
+  max-width: 376px; /* #root max-width 와 동일 */
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  z-index: 10000;
+  transition: transform 0.3s ease-out;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ig-auth-sheet.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── 헤더 ── */
+.ig-auth-header {
+  padding: 28px 24px 0;
+  flex-shrink: 0;
+}
+
+.ig-auth-title {
+  margin: 0 0 8px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.ig-auth-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #8b95a1;
+  line-height: 1.6;
+}
+
+/* ── 바디 ── */
+.ig-auth-body {
+  padding: 20px 24px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── 스텝 ── */
+.ig-auth-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ig-auth-step-num {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f2f4f6;
+  color: #6b7684;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.ig-auth-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ig-auth-step-label {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #4e5968;
+  line-height: 1.4;
+}
+
+/* ── Step 1: ID 입력 + 버튼 ── */
+.ig-auth-step1-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ig-auth-id-input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid #e5e8eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #191f28;
+  background: #f9fafb;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.ig-auth-id-input:focus {
+  border-color: #3182f6;
+  background: #fff;
+}
+
+.ig-auth-id-input:disabled {
+  color: #8b95a1;
+  background: #f2f4f6;
+}
+
+.ig-auth-id-input.error {
+  border-color: #f04452;
+  background: #fff;
+}
+
+.ig-auth-id-error {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: #f04452;
+  font-weight: 500;
+}
+
+.ig-auth-code-btn {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #3182f6;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ig-auth-code-btn:disabled {
+  background: #d1d6db;
+  cursor: default;
+}
+
+.ig-auth-code-btn.waiting {
+  background: #f2f4f6;
+  color: #6b7684;
+  cursor: default;
+  font-size: 13px;
+}
+
+/* ── Step 2: 팔로우 + 복사 ── */
+.ig-auth-step2-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ig-auth-step2-row .ig-auth-step-label {
+  margin: 0;
+}
+
+.ig-auth-handle {
+  font-weight: 700;
+  color: #191f28;
+}
+
+.ig-auth-copy-btn {
+  flex-shrink: 0;
+  height: 32px;
+  margin-top: 1px;
+  padding: 0 12px;
+  border: 1.5px solid #d1d6db;
+  border-radius: 8px;
+  background: #fff;
+  color: #4e5968;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ig-auth-copy-btn.copied {
+  background: #eaf2ff;
+  color: #3182f6;
+  border-color: #3182f6;
+}
+
+/* ── Step 3: 키워드 강조 ── */
+.ig-auth-keyword {
+  font-weight: 700;
+  color: #191f28;
+}
+
+/* ── 타이머 ── */
+.ig-auth-timer {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3182f6;
+}
+
+.ig-auth-timer.expiring {
+  color: #f04452;
+}
+
+/* ── Step 4: OTP ── */
+.ig-auth-otp-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ig-auth-otp-box {
+  width: 42px;
+  height: 48px;
+  border: 1.5px solid #e5e8eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #191f28;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ig-auth-otp-box:focus {
+  border-color: #3182f6;
+  background: #fff;
+}
+
+.ig-auth-otp-box.filled {
+  border-color: #3182f6;
+  background: #fff;
+}
+
+.ig-auth-otp-box.otp-gap {
+  margin-left: 8px;
+}
+
+.ig-auth-otp-box:disabled {
+  opacity: 0.5;
+}
+
+/* ── 안내 ── */
+.ig-auth-notice {
+  margin: 0 0 4px;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.ig-auth-notice-title {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b95a1;
+}
+
+.ig-auth-notice-item {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: #8b95a1;
+  line-height: 1.5;
+}
+
+/* ── 에러 ── */
+.ig-auth-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #f04452;
+  font-weight: 500;
+}
+
+/* ── 하단 버튼 ── */
+.ig-auth-footer {
+  padding: 16px 24px 20px;
+  flex-shrink: 0;
+}
+
+.ig-auth-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ig-auth-btn-row > * {
+  flex: 1;
+}

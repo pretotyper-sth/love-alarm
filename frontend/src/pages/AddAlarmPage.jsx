@@ -15,6 +15,7 @@ import './AddAlarmPage.css';
 
 // 최초 알람 등록 여부 키
 const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
+const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 
 // 하루 추가 제한 키
 const DAILY_ADD_COUNT_KEY = 'love_alarm_daily_add_count';
@@ -66,11 +67,17 @@ export function AddAlarmPage() {
   const [isAdLoaded, setIsAdLoaded] = useState(false);
   const adCleanupRef = useRef(null);
 
+  // 인증된 Instagram 계정 여부
+  const verifiedUsername = localStorage.getItem(IG_VERIFIED_KEY) || '';
+  const isVerified = !!verifiedUsername;
+
   // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
   useEffect(() => {
-    const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
-    if (savedMyId) {
-      setMyId(savedMyId);
+    if (isVerified) {
+      setMyId(verifiedUsername);
+    } else {
+      const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
+      if (savedMyId) setMyId(savedMyId);
     }
   }, []);
 
@@ -268,7 +275,7 @@ export function AddAlarmPage() {
       }
     } catch (error) {
       console.error('❌ 알람 추가 실패:', error);
-      showErrorToast(error.message || '알람 추가에 실패했어요');
+      showErrorToast(error.message || '알람을 추가하지 못했어요');
     } finally {
       setIsSubmitting(false);
     }
@@ -356,41 +363,56 @@ export function AddAlarmPage() {
       <Spacing size={16} />
 
       <div className="add-alarm-content">
-          <TextField
-          variant="big"
-          hasError={myIdHasError}
-            label="본인 인스타그램 ID"
-          labelOption="sustain"
-          help={getMyIdErrorMessage()}
-            value={myId}
-            onChange={(e) => setMyId(e.target.value)}
-          placeholder="예: abcd1234"
-          right={
-            myId ? (
-              <button
-                onClick={handleClearMyId}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                }}
-                aria-label="지우기"
-              >
-                <Asset.Icon
-                  frameShape={Asset.frameShape.CleanW20}
-                  backgroundColor="transparent"
-                  name="icon-x-mono"
-                  color={adaptive.greyOpacity600}
-                  aria-hidden={true}
-                  ratio="1/1"
-                />
-              </button>
-            ) : null
-          }
-        />
+          {isVerified ? (
+            /* 인증된 경우: TDS TextField 동일 스타일, 읽기 전용 */
+            <div className="add-alarm-verified-field">
+              <TextField
+                variant="big"
+                label="본인 인스타그램 ID"
+                labelOption="sustain"
+                value={verifiedUsername}
+                disabled
+                onChange={() => {}}
+                help="인증된 계정으로 적용됐어요. (변경은 '더보기' 메뉴에서)"
+              />
+            </div>
+          ) : (
+            <TextField
+              variant="big"
+              hasError={myIdHasError}
+              label="본인 인스타그램 ID"
+              labelOption="sustain"
+              help={getMyIdErrorMessage()}
+              value={myId}
+              onChange={(e) => setMyId(e.target.value)}
+              placeholder="예: abcd1234"
+              right={
+                myId ? (
+                  <button
+                    onClick={handleClearMyId}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    aria-label="지우기"
+                  >
+                    <Asset.Icon
+                      frameShape={Asset.frameShape.CleanW20}
+                      backgroundColor="transparent"
+                      name="icon-x-mono"
+                      color={adaptive.greyOpacity600}
+                      aria-hidden={true}
+                      ratio="1/1"
+                    />
+                  </button>
+                ) : null
+              }
+            />
+          )}
 
         <Spacing size={16} />
 

@@ -162,23 +162,33 @@ export function AlarmListPage() {
         setIsLoading(true);
       }
 
+      // ─── 목업 모드 (로컬 테스트용) ───────────────────────────
+      if (localStorage.getItem('__mock_alarms__') === 'true') {
+        const mock = JSON.parse(localStorage.getItem('love_alarm_cached_list') || '[]');
+        setAlarms(mock);
+        setIsLoading(false);
+        return;
+      }
+      // ────────────────────────────────────────────────────────
+
+      const userPromise = api.getUser()
+        .then((latestUser) => {
+          if (latestUser?.maxSlots) {
+            setMaxSlots(latestUser.maxSlots);
+            localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
+          }
+        })
+        .catch((userError) => {
+          console.error('사용자 정보 조회 실패:', userError);
+        });
+
       const fetchedAlarms = await api.getAlarms();
       setAlarms(fetchedAlarms);
       localStorage.setItem('love_alarm_cached_list', JSON.stringify(fetchedAlarms));
       localStorage.setItem('love_alarm_last_count', fetchedAlarms.length.toString());
       setLastAlarmCount(fetchedAlarms.length);
-
-      try {
-        const latestUser = await api.getUser();
-        if (latestUser?.maxSlots) {
-          setMaxSlots(latestUser.maxSlots);
-          localStorage.setItem('love_alarm_cached_maxSlots', latestUser.maxSlots.toString());
-        }
-      } catch (userError) {
-        console.error('사용자 정보 조회 실패:', userError);
-      }
-
       alarmRefsRef.current = [];
+      void userPromise;
     } catch (error) {
       console.error('알람 목록 조회 실패:', error);
     } finally {
@@ -423,7 +433,7 @@ export function AlarmListPage() {
       setAlarms(previousAlarms);
       addToast({
         type: 'error',
-        message: '알람 삭제에 실패했어요',
+        message: '알람을 삭제하지 못했어요',
         duration: 3000,
       });
     }
@@ -484,6 +494,13 @@ export function AlarmListPage() {
           <Skeleton 
             custom={['listWithIcon']} 
             repeatLastItemCount={lastAlarmCount} 
+          />
+        )}
+
+        {isLoading && lastAlarmCount === 0 && (
+          <Skeleton 
+            custom={['listWithIcon']} 
+            repeatLastItemCount={3} 
           />
         )}
 

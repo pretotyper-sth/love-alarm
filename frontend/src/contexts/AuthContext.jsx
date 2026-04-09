@@ -59,18 +59,22 @@ export function AuthProvider({ children }) {
         const hasVisitedIntro = storage.get('has_visited_intro');
         
         if (currentUser) {
-          // 로컬에 저장된 사용자가 있음 - 서버에서 유효성 검증
-          try {
-            const validUser = await api.getUser();
-            setUser(validUser);
-            api.connectSocket();
-          } catch {
-            // 서버에서 사용자를 찾을 수 없음 (연결 해제됨)
-            // → 로컬 데이터 정리하고 IntroPage에서 다시 로그인하도록 함
-            api.logout();
-            storage.remove('has_visited_intro');
-            // 자동 로그인 시도 안 함 - 사용자가 직접 버튼 클릭하도록
-          }
+          // 저장된 사용자로 먼저 렌더하고, 유효성 검증은 백그라운드에서 진행
+          setUser(currentUser);
+          api.connectSocket();
+
+          void (async () => {
+            try {
+              const validUser = await api.getUser();
+              setUser(validUser);
+            } catch {
+              // 서버에서 사용자를 찾을 수 없음 (연결 해제됨)
+              // → 로컬 데이터 정리하고 IntroPage에서 다시 로그인하도록 함
+              api.logout();
+              setUser(null);
+              storage.remove('has_visited_intro');
+            }
+          })();
         } else if (hasVisitedIntro) {
           // 온보딩은 완료했지만 사용자 정보가 없음
           // → 토스 앱에서 약관 동의 후 복귀한 경우

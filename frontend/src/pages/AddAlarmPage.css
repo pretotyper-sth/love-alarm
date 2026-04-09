@@ -389,3 +389,7 @@
   word-spacing: normal !important;
 }
 
+/* 인증된 본인 ID — help 텍스트 회색 (label/input은 기존 !important 규칙이 우선) */
+.add-alarm-verified-field {
+  color: #8b95a1;
+}

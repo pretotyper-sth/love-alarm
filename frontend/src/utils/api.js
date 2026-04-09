@@ -302,6 +302,88 @@ export const api = {
     return data;
   },
 
+  /**
+   * 인스타그램 인증 해제
+   */
+  disconnectInstagramAuth: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/users/${user.id}/instagram-auth`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      let message = '인증 해제에 실패했어요.';
+      try {
+        const error = await response.json();
+        message = error.error || message;
+      } catch {
+        // 응답이 JSON이 아닌 경우 기본 메시지 사용
+      }
+      throw new Error(message);
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('서버 응답을 처리할 수 없어요. 잠시 후 다시 시도해 주세요.');
+    }
+    if (data.user) {
+      currentUser = data.user;
+      localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    }
+
+    return data;
+  },
+
+  // ==================== 인스타그램 인증 ====================
+
+  /**
+   * 인스타그램 인증 세션 시작
+   * instagramUsername 입력 → 서버가 DM 코드 발송 대기 세션 생성
+   */
+  verifyInstagramStart: async (instagramUsername) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/verify/instagram/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tossUserId: user.tossUserId || user.id, instagramUsername }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '코드 요청에 실패했습니다.');
+    }
+
+    return await response.json(); // { sessionId, expiresAt, instagramUsername }
+  },
+
+  /**
+   * 인스타그램 인증 코드 확인
+   */
+  verifyInstagramConfirm: async (sessionId, code) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/verify/instagram/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tossUserId: user.tossUserId || user.id, sessionId, code }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '인증에 실패했습니다.');
+    }
+
+    return await response.json(); // { ok, instagramUserId, instagramUsername }
+  },
+
   // ==================== 알람 ====================
 
   /**
