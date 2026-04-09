@@ -162,6 +162,43 @@ body {
   color: #1557d0;
 }
 
+/* 앱 초기 로딩 화면 */
+.app-loading-screen {
+  min-height: 100vh;
+  background: var(--adaptiveBackground, #ffffff);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 110px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.app-loading-screen__content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 280px;
+}
+
+.app-loading-screen__spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 4px solid rgba(49, 130, 246, 0.14);
+  border-top-color: #3182f6;
+  border-right-color: rgba(49, 130, 246, 0.42);
+  animation: app-loading-spin 0.9s linear infinite;
+}
+
+@keyframes app-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ===== 종료 확인 모달 (PaymentModal과 동일한 스타일) ===== */
 .exit-modal-overlay {
   position: fixed;

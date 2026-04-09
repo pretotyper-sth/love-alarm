@@ -57,8 +57,8 @@ export function SettingsPage() {
     () => localStorage.getItem(IG_VERIFIED_KEY) || ''
   );
   
-  // 성공 토스트 상태
-  const [successToast, setSuccessToast] = useState({ show: false, message: '' });
+  // 토스트 상태 (성공/에러 공용)
+  const [successToast, setSuccessToast] = useState({ show: false, message: '', isError: false });
   const toastShownRef = useRef(false);
 
   // 피드백 제출 성공 토스트 표시
@@ -98,10 +98,18 @@ export function SettingsPage() {
   }, []);
 
   const showSuccessToastMessage = (message) => {
-    setSuccessToast({ show: true, message });
+    setSuccessToast({ show: true, message, isError: false });
     setTimeout(() => {
       setSuccessToast(prev => ({ ...prev, show: false }));
-      setTimeout(() => setSuccessToast({ show: false, message: '' }), 300);
+      setTimeout(() => setSuccessToast({ show: false, message: '', isError: false }), 300);
+    }, 3000);
+  };
+
+  const showErrorToastMessage = (message) => {
+    setSuccessToast({ show: true, message, isError: true });
+    setTimeout(() => {
+      setSuccessToast(prev => ({ ...prev, show: false }));
+      setTimeout(() => setSuccessToast({ show: false, message: '', isError: false }), 300);
     }, 3000);
   };
 
@@ -139,11 +147,11 @@ export function SettingsPage() {
     setIsDisconnectingAuth(true);
     try {
       const result = await api.disconnectInstagramAuth();
-      setUser(result.user);
+      if (result.user) setUser(result.user);
       applyDisconnectedAuthState();
     } catch (error) {
       console.error('Failed to disconnect instagram auth:', error);
-      window.alert(error.message || '인증 해제에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      showErrorToastMessage(error.message || '인증 해제에 실패했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDisconnectingAuth(false);
     }
@@ -163,7 +171,6 @@ export function SettingsPage() {
   const likeCountCacheStatus = likeCountTarget
     ? `@${likeCountTarget} = ${likeCountResult ?? '?'}명 (${likeCountCheckedAt ? new Date(likeCountCheckedAt).toLocaleTimeString('ko-KR') : '-'})`
     : '없음';
-
   // 설정 변경 핸들러
   const handleSettingChange = async (field, value) => {
     // Optimistic UI
@@ -339,12 +346,12 @@ export function SettingsPage() {
         />
       </List>
 
-      {/* 성공 토스트 - 기존 구조와 동일 */}
+      {/* 토스트 - 성공/에러 공용 */}
       <div className="toast-stack">
         {successToast.message && (
-          <div className={`custom-toast ${successToast.show ? 'show' : ''}`}>
+          <div className={`custom-toast ${successToast.show ? 'show' : ''} ${successToast.isError ? 'error' : ''}`}>
             <div className="custom-toast-content">
-              <span className="custom-toast-icon">✓</span>
+              <span className="custom-toast-icon">{successToast.isError ? '!' : '✓'}</span>
               <span className="custom-toast-text">{successToast.message}</span>
             </div>
           </div>
@@ -366,19 +373,18 @@ export function SettingsPage() {
       />
 
       <div
-        className={`settings-auth-sheet-overlay ${showAuthManageSheet ? 'show' : ''}`}
+        className={`auth-manage-card-overlay ${showAuthManageSheet ? 'show' : ''}`}
         onClick={closeAuthManageSheet}
       >
         <div
-          className={`settings-auth-sheet ${showAuthManageSheet ? 'show' : ''}`}
+          className={`auth-manage-card ${showAuthManageSheet ? 'show' : ''}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="settings-auth-sheet-handle" />
-          <div className="settings-auth-sheet-header">
+          <div className="auth-manage-card-header">
             {authManageStep === 'menu' ? (
               <>
-                <h3 className="settings-auth-sheet-title">인스타그램 인증 관리</h3>
-                <p className="settings-auth-sheet-desc">
+                <h3 className="auth-manage-card-title">인스타그램 인증 관리</h3>
+                <p className="auth-manage-card-desc">
                   현재 @{verifiedUsername} 계정이 인증돼 있어요.
                   <br />
                   재인증하거나 인증을 해제할 수 있어요.
@@ -386,19 +392,19 @@ export function SettingsPage() {
               </>
             ) : (
               <>
-                <h3 className="settings-auth-sheet-title">인증을 해제할까요?</h3>
-                <p className="settings-auth-sheet-desc">
+                <h3 className="auth-manage-card-title">인증을 해제할까요?</h3>
+                <p className="auth-manage-card-desc">
                   해제 시 현재 ID로 등록한 알람도 함께 정리돼요.
                 </p>
               </>
             )}
           </div>
-          <div className="settings-auth-sheet-actions">
+          <div className="auth-manage-card-actions">
             {authManageStep === 'menu' ? (
               <>
                 <button
                   type="button"
-                  className="settings-auth-sheet-btn settings-auth-sheet-btn--primary"
+                  className="auth-manage-card-btn auth-manage-card-btn--primary"
                   onClick={() => {
                     setShowAuthManageSheet(false);
                     setAuthManageStep('menu');
@@ -410,7 +416,7 @@ export function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  className="settings-auth-sheet-btn settings-auth-sheet-btn--danger"
+                  className="auth-manage-card-btn auth-manage-card-btn--danger"
                   onClick={() => setAuthManageStep('confirm-disconnect')}
                   disabled={isDisconnectingAuth}
                 >
@@ -418,7 +424,7 @@ export function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  className="settings-auth-sheet-btn settings-auth-sheet-btn--ghost"
+                  className="auth-manage-card-btn auth-manage-card-btn--ghost"
                   onClick={closeAuthManageSheet}
                   disabled={isDisconnectingAuth}
                 >
@@ -429,7 +435,7 @@ export function SettingsPage() {
               <>
                 <button
                   type="button"
-                  className="settings-auth-sheet-btn settings-auth-sheet-btn--danger"
+                  className="auth-manage-card-btn auth-manage-card-btn--danger"
                   onClick={handleDisconnectInstagramAuth}
                   disabled={isDisconnectingAuth}
                 >
@@ -437,7 +443,7 @@ export function SettingsPage() {
                 </button>
                 <button
                   type="button"
-                  className="settings-auth-sheet-btn settings-auth-sheet-btn--ghost"
+                  className="auth-manage-card-btn auth-manage-card-btn--ghost"
                   onClick={() => setAuthManageStep('menu')}
                   disabled={isDisconnectingAuth}
                 >
@@ -488,7 +494,6 @@ export function SettingsPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // API 클라이언트
 import { io } from 'socket.io-client';
 
-// API URL 설정 (Render 서버)
+// API URL 설정
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com') + '/api';
 const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com';
 
@@ -315,13 +315,26 @@ export const api = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '인증 해제 실패');
+      let message = '인증 해제에 실패했어요.';
+      try {
+        const error = await response.json();
+        message = error.error || message;
+      } catch {
+        // 응답이 JSON이 아닌 경우 기본 메시지 사용
+      }
+      throw new Error(message);
     }
 
-    const data = await response.json();
-    currentUser = data.user;
-    localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('서버 응답을 처리할 수 없어요. 잠시 후 다시 시도해 주세요.');
+    }
+    if (data.user) {
+      currentUser = data.user;
+      localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
+    }
 
     return data;
   },

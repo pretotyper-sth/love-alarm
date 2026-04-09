@@ -123,3 +123,92 @@
   stroke: #6b7684 !important;
 }
 
+/* ── 인증 관리 바텀 카드 ── */
+.auth-manage-card-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+}
+
+.auth-manage-card-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.auth-manage-card {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(calc(100% + 20px));
+  width: calc(100% - 16px);
+  max-width: 376px;
+  background: #ffffff;
+  border-radius: 24px;
+  z-index: 1001;
+  padding: 24px 24px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  transition: transform 0.3s ease-out;
+}
+
+.auth-manage-card.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.auth-manage-card-header {
+  margin-bottom: 20px;
+}
+
+.auth-manage-card-title {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.auth-manage-card-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7684;
+  line-height: 1.6;
+}
+
+.auth-manage-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-manage-card-btn {
+  width: 100%;
+  min-height: 52px;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-manage-card-btn--primary {
+  background: #3182f6;
+  color: #ffffff;
+}
+
+.auth-manage-card-btn--danger {
+  background: #fff2f4;
+  color: #f04452;
+}
+
+.auth-manage-card-btn--ghost {
+  background: #f2f4f6;
+  color: #6b7684;
+}
+
+.auth-manage-card-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+

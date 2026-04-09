@@ -52,7 +52,7 @@
 ```
 
 **에러 메시지**: "코드가 일치하지 않거나 만료되었습니다."
-**인증 성공**: 시트 닫힘 + "@username 인증됐어요!" 토스트
+**인증 성공**: 시트 닫힘 + "인증을 완료했어요" 토스트
 
 ### 2. 나를 좋아하는 사람 확인 (하단 고정 바)
 
@@ -182,8 +182,8 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 - [ ] **Unit 4**: 보상 체크인 — "15일" → "10일", "영구 누적" 제거, "받기" 버튼 항상 노출 (disabled 기본)
 - [ ] **Unit 5**: 알람 추가 — 하루 추가 제한 (`총 슬롯 × 2`) + 메세지(선택) 필드 + copy 수정
 
-### 검수 2 — 인스타그램 인증 도입
-> Unit 6 단독. 선행 조건: Meta 앱 Live 전환 + Render webhook URL 교체.
+### 검수 2 — 인스타그램 인증 도입 ✅ 승인 완료 (2026-04-08)
+> Unit 6 단독. Meta 앱 Live 전환 + Railway webhook URL 교체 완료.
 > 메세지 기능(검수 4)과 함께 들어가므로, 검수 2는 인증 인프라 + 더보기 연동 항목이 핵심.
 
 - [ ] **Unit 6**: 인증 바텀시트 전체 구현
@@ -192,7 +192,7 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
   - DM '인증' 발송 안내
   - OTP 6박스 + 10분 카운트다운
   - 에러: "코드가 일치하지 않거나 만료되었습니다."
-  - 성공: "@username 인증됐어요!" 토스트
+  - 성공: "인증을 완료했어요" 토스트
   - **진입점**: 더보기 탭 상단 "인스타그램 연동" 항목 (자발적), 받은 메세지 탭 접근 시, 랭킹 노출 동의 토글 ON 시
   - **더보기 탭**: 인스타그램 연동 항목 상단 추가 (연동 전 CTA / 연동 후 "@username 연동됨")
   - **알람 추가 페이지**: 인증 완료 후 본인 ID 읽기 전용으로 자동 채워짐
@@ -216,6 +216,21 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
   - 메세지 상세 바텀시트 (전체 내용 + 이모지 반응: ❤️ 😊 🤔 😳 🥹)
   - 배지 카운트: 메세지 페이지 최초 진입 시 cleared
 
+### 브랜치 운영 원칙
+
+- `main`은 항상 **현재 라이브 기준**으로 유지한다.
+- `review/x` 브랜치는 **검수 제출용 임시 브랜치**로만 사용한다.
+- 검수 요청은 `main`에서 분기한 `review/x`에서 진행하고, 통과 전 수정도 해당 브랜치에서만 반영한다.
+- 검수 통과 후에는 해당 브랜치의 승인 기준 커밋을 `main`에 반영한다.
+- 반영 직후 새 작업 기준은 다시 `main`으로 되돌린다.
+- 기존 `review/x` 브랜치는 즉시 삭제하지 않고, 단기 롤백/비교용으로 잠시 유지한 뒤 정리한다.
+
+### 현재 운영 메모
+
+- `review/2+` 빌드 `019d7026-fc2b-78e2-9151-5f226b1e28d1` 는 검수 통과 완료.
+- 승인 기준 커밋은 `main`에 통합 완료 (`8e78f84`).
+- 통합 후에도 `review/2` 브랜치는 당분간 유지하고, 다음 검수 작업의 출발점은 `main`으로 전환한다.
+
 ---
 
 ## 남은 작업
@@ -227,12 +242,11 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
   - 개인정보처리방침: `https://love-alarm.vercel.app/privacy.html`
   - 이용약관: `https://love-alarm.vercel.app/terms.html`
 
-- [ ] **Render webhook URL 교체**
-  - Meta 대시보드 콜백 URL을 `https://love-alarm-server.onrender.com/webhook/instagram` 으로 변경
-  - (현재 ngrok URL 등록 상태)
+- [x] **webhook URL 교체** ✅ (2026-04-08 완료)
+  - Meta 대시보드 콜백 URL → `https://love-alarm-production.up.railway.app/webhook/instagram` 으로 변경 완료
 
 - [ ] **INSTAGRAM_ACCESS_TOKEN 갱신 자동화**
-  - IGAA 토큰 60일 만료 → Render cron job 또는 수동 갱신
+  - IGAA 토큰 60일 만료 → Railway cron job 또는 수동 갱신
   - 갱신 endpoint: `GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token={token}`
 
 ### Phase 2 — 목업 → 프론트엔드 반영
@@ -252,6 +266,23 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 ## 참고
 
 - 앱인토스 정책: 백엔드에서 외부 API 직접 호출 ✅ / 앱 내 외부 redirect ❌
-- 프로덕션 서버: `https://love-alarm-server.onrender.com`
+- 프로덕션 서버: `https://love-alarm-production.up.railway.app` (Railway — 2026-04-08 Render에서 이전)
 - 개인정보처리방침: `https://love-alarm.vercel.app/privacy.html`
 - 이용약관: `https://love-alarm.vercel.app/terms.html`
+
+---
+
+## 서버 인프라 변경 이력
+
+### 2026-04-08 — Render → Railway 이전
+
+**원인**: Render 프리 티어 인프라 불안정 (CloudFlare 521 반복, 컨테이너 라우팅 단절)
+
+**변경 내용**:
+- 백엔드 서버: `https://love-alarm-server.onrender.com` → `https://love-alarm-production.up.railway.app`
+- Vercel `VITE_API_URL` 환경변수 업데이트 완료
+- Meta Instagram 웹훅 콜백 URL 업데이트 완료
+- `backend/railway.json`, `backend/Procfile` 추가
+- `backend/src/index.js`: `uncaughtException` / `unhandledRejection` 핸들러 추가 (서버 크래시 방지)
+
+**Railway 환경변수**: Render에서 사용하던 동일 값 그대로 복사 (`RENDER_EXTERNAL_URL` 제외)
