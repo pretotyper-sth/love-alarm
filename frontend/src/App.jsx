@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Button, Spacing, Text } from '@toss/tds-mobile';
+import { Button, Skeleton, Spacing, Text } from '@toss/tds-mobile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
 import { AlarmListPage } from './pages/AlarmListPage';
@@ -78,6 +78,31 @@ function LoadingScreen() {
         <Text color="#6B7684" typography="t7">
           네트워크 상태에 따라 조금 늦어질 수 있어요.
         </Text>
+      </div>
+    </div>
+  );
+}
+
+function AlarmListLoadingShell() {
+  return (
+    <div className="app-loading-shell">
+      <div className="app-loading-shell__header">
+        <div className="app-loading-shell__header-skeleton" aria-hidden="true" />
+      </div>
+
+      <div className="app-loading-shell__content">
+        <Skeleton custom={['listWithIcon']} repeatLastItemCount={4} />
+      </div>
+
+      <div className="app-loading-shell__like-count-bar" aria-hidden="true">
+        <div className="app-loading-shell__like-count-pill" />
+        <div className="app-loading-shell__like-count-arrow" />
+      </div>
+
+      <div className="app-loading-shell__bottom-nav" aria-hidden="true">
+        <div className="app-loading-shell__bottom-tab app-loading-shell__bottom-tab--active" />
+        <div className="app-loading-shell__bottom-tab" />
+        <div className="app-loading-shell__bottom-tab" />
       </div>
     </div>
   );
@@ -218,7 +243,7 @@ function AppRoutes() {
   if (loading) {
     return (
       <>
-        <LoadingScreen />
+        {hasVisited ? <AlarmListLoadingShell /> : <LoadingScreen />}
         {showExitModal && (
           <ExitConfirmModal
             onClose={() => setShowExitModal(false)}

@@ -1,9 +1,10 @@
 // API 클라이언트
 import { io } from 'socket.io-client';
 
-// API URL 설정 (Render 서버)
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com') + '/api';
-const SOCKET_URL = import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com';
+// AppsInToss 빌드는 VITE_API_URL이 비어 있을 수 있어 현재 프로덕션 서버를 fallback으로 둔다.
+const DEFAULT_API_URL = 'https://love-alarm-production.up.railway.app';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL) + '/api';
+const SOCKET_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
 // 현재 사용자 정보 (로그인 후 저장)
 let currentUser = null;
@@ -541,7 +542,7 @@ export const api = {
    */
   healthCheck: async () => {
     try {
-      const baseUrl = import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com';
+      const baseUrl = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
       const response = await fetch(`${baseUrl}/health`);
       return response.ok;
     } catch {
