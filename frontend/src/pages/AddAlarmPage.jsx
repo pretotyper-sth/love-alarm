@@ -61,7 +61,7 @@ export function AddAlarmPage() {
   const { user } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
-  const [message, setMessage] = useState('');
+  const [message] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
   const [isAdLoaded, setIsAdLoaded] = useState(false);
@@ -79,7 +79,7 @@ export function AddAlarmPage() {
       const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
       if (savedMyId) setMyId(savedMyId);
     }
-  }, []);
+  }, [isVerified, verifiedUsername]);
 
   // 페이지 진입 시 광고 사전 로드 (Preload) - 검수 필수 요건
   useEffect(() => {

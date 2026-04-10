@@ -101,9 +101,23 @@
   cursor: pointer;
   font-size: 18px;
   color: #b0b8c1;
+  width: 24px;
+  height: 24px;
   padding: 0 0 0 6px;
   line-height: 1;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lcs-clear.is-visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .lcs-field-msg {
@@ -161,6 +175,10 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.lcs-actions button:first-child {
+  transition: opacity 0.15s ease, background-color 0.15s ease !important;
 }
 
 .lcs-cancel {

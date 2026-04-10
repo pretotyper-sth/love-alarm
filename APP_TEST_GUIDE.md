@@ -152,7 +152,7 @@ ifconfig | grep "inet " | grep -v 127.0.0.1
 ## 💡 추가 정보
 
 ### 백엔드는?
-- 백엔드는 Render 서버(`https://love-alarm-server.onrender.com`)를 자동으로 사용합니다
+- 백엔드는 Railway 서버(`https://love-alarm-production.up.railway.app`)를 자동으로 사용합니다
 - 별도로 백엔드 서버를 실행할 필요 없습니다
 
 ### 브라우저에서도 테스트하려면?
