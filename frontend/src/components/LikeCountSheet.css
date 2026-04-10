@@ -1,0 +1,198 @@
+.lcs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.lcs-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 376px;
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  z-index: 1001;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.lcs-handle {
+  width: 36px;
+  height: 4px;
+  background: #e5e8eb;
+  border-radius: 2px;
+  margin: 12px auto 0;
+}
+
+/* 헤더: 제목 + 설명 */
+.lcs-header {
+  padding: 20px 24px 0;
+}
+
+.lcs-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.lcs-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7684;
+  line-height: 1.6;
+}
+
+/* 필드 */
+.lcs-body {
+  padding: 20px 24px 0;
+}
+
+.lcs-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.lcs-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #4e5968;
+  margin-bottom: 8px;
+}
+
+.lcs-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid #d1d6db;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #ffffff;
+  transition: border-color 0.15s;
+}
+
+.lcs-input-wrap:focus-within {
+  border-color: #3182f6;
+}
+
+.lcs-input-wrap.error {
+  border-color: #f04452;
+}
+
+.lcs-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+  color: #191f28;
+  padding: 13px 0;
+  min-width: 0;
+}
+
+.lcs-input::placeholder {
+  color: #b0b8c1;
+}
+
+.lcs-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #b0b8c1;
+  width: 24px;
+  height: 24px;
+  padding: 0 0 0 6px;
+  line-height: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lcs-clear.is-visible {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lcs-field-msg {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lcs-field-msg.error {
+  color: #f04452;
+}
+
+.lcs-field-msg.hint {
+  color: #8b95a1;
+}
+
+.lcs-verified-action {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 14px;
+  background: #f2f4f6;
+  color: #4e5968;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  text-align: left;
+}
+
+.lcs-verified-action-id {
+  flex-shrink: 0;
+  color: #3182f6;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.lcs-verified-action.is-active {
+  background: #eef4ff;
+  color: #3182f6;
+}
+
+.lcs-verified-action:active {
+  opacity: 0.9;
+}
+
+/* 액션 버튼 */
+.lcs-actions {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lcs-actions button:first-child {
+  transition: opacity 0.15s ease, background-color 0.15s ease !important;
+}
+
+.lcs-cancel {
+  width: 100%;
+  min-height: 52px;
+  background: #f2f4f6;
+  color: #6b7684;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lcs-cancel:active {
+  background: #e5e8eb;
+}

@@ -12,7 +12,29 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { hasConfirmedAbuseWarning } from '../utils/abuseWarning';
 import { PaymentModal } from '../components/PaymentModal';
+import { LikeCountSheet } from '../components/LikeCountSheet';
 import './AlarmListPage.css';
+
+const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
+const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
+const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
+const ALARM_LIST_TOAST_BOTTOM_PX = 50;
+
+function getLikeCountCache() {
+  const target = localStorage.getItem(LIKE_COUNT_TARGET_KEY);
+  const result = localStorage.getItem(LIKE_COUNT_RESULT_KEY);
+  const checkedAt = localStorage.getItem(LIKE_COUNT_CHECKED_AT_KEY);
+  if (!target || result === null || !checkedAt) return { target: target || null, count: null };
+  const isValid = Date.now() - new Date(checkedAt).getTime() < CACHE_TTL_MS;
+  return { target, count: isValid ? parseInt(result, 10) : null };
+}
+
+// 바에 표시할 ID — 최대 13자, 초과 시 말줄임
+function truncateId(id, max = 13) {
+  if (!id) return '?';
+  return id.length > max ? id.slice(0, max) + '…' : id;
+}
 
 // 알람 아이템 컴포넌트
 function AlarmItem({ alarm, onRemove, onMatchedClick, listRowRef }) {
@@ -125,6 +147,10 @@ export function AlarmListPage() {
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   // 캐시된 maxSlots 또는 user.maxSlots로 초기화
   const [maxSlots, setMaxSlots] = useState(() => user?.maxSlots || getCachedMaxSlots());
+
+  // 좋아하는 사람 수 확인 상태
+  const [showLikeCountSheet, setShowLikeCountSheet] = useState(false);
+  const [likeCountCache, setLikeCountCache] = useState(() => getLikeCountCache());
   const alarmRefsRef = useRef([]);
   const addButtonRef = useRef(null); // 추가하기 버튼 ref
   const toastIdRef = useRef(0);
@@ -205,9 +231,25 @@ export function AlarmListPage() {
     }
   }, [loadAlarms, user]);
 
+  // 포그라운드 복귀 시 12h 이내면 좋아하는 사람 수 조용한 재조회
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const cache = getLikeCountCache();
+      if (!cache.target || cache.count === null) return;
+      try {
+        const { count } = await api.getLikeCount(cache.target);
+        localStorage.setItem(LIKE_COUNT_RESULT_KEY, String(count));
+        localStorage.setItem(LIKE_COUNT_CHECKED_AT_KEY, new Date().toISOString());
+        setLikeCountCache({ target: cache.target, count });
+      } catch { /* 조용히 실패 */ }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   // WebSocket 이벤트 리스너 (실시간 업데이트)
   useEffect(() => {
-    // 매칭 성공 이벤트
     api.onMatched(() => {
       loadAlarms(); // 목록 새로고침 (아이콘으로 구별)
     });
@@ -526,7 +568,7 @@ export function AlarmListPage() {
       </div>
 
       {/* 토스트 스택 */}
-      <div className="toast-stack">
+      <div className="toast-stack alarm-list-toast-stack">
         {toasts.map((toast, index) => (
           <div 
             key={toast.id} 
@@ -534,6 +576,7 @@ export function AlarmListPage() {
             style={{ 
               transform: `translateX(-50%) translateY(${toast.show ? -index * 60 : 20}px)`,
               zIndex: 9999 - index,
+              bottom: `calc(${ALARM_LIST_TOAST_BOTTOM_PX + (toast.bottomOffset ?? 0)}px + env(safe-area-inset-bottom, 0px))`,
             }}
           >
             <div className="custom-toast-content">
@@ -564,6 +607,42 @@ export function AlarmListPage() {
           onSuccess={handlePaymentSuccess}
         />
       )}
+
+      {/* 좋아하는 사람 수 확인 고정 바 */}
+      <div className="like-count-bar" onClick={() => setShowLikeCountSheet(true)}>
+        <span className="like-count-bar-text">
+          지금{' '}
+          <strong className="like-count-bar-highlight">
+            {likeCountCache.target ? truncateId(likeCountCache.target) : '?'}
+          </strong>
+          {' '}을 좋아하는 사람{' '}
+          <strong className="like-count-bar-highlight">
+            {likeCountCache.count !== null ? likeCountCache.count : '?'}
+          </strong>
+          {' '}명
+        </span>
+        <span className="like-count-bar-cta">
+          <img
+            src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
+            alt=""
+            style={{ width: '20px', height: '20px', filter: 'invert(40%) sepia(98%) saturate(600%) hue-rotate(196deg) brightness(100%) contrast(95%)' }}
+          />
+        </span>
+      </div>
+
+      {/* 좋아하는 사람 수 확인 시트 */}
+      <LikeCountSheet
+        open={showLikeCountSheet}
+        onClose={() => setShowLikeCountSheet(false)}
+        onResult={({ targetId, count }) => {
+          setLikeCountCache({ target: targetId, count });
+          addToast({
+            type: 'success',
+            message: '결과를 불러왔어요 (12시간 노출 유지)',
+            duration: 4000,
+          });
+        }}
+      />
 
       {/* 알림 허용 BottomSheet */}
       <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>

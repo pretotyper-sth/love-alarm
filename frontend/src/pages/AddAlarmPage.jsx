@@ -42,7 +42,7 @@ function incrementDailyAddCount() {
 }
 
 // 리워드 광고 그룹 ID (콘솔에서 발급)
-const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
+const REWARDED_AD_GROUP_ID = 'ait.v2.live.a0fa3947ad744201';
 const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
 
 function isAdFree() {
@@ -61,7 +61,7 @@ export function AddAlarmPage() {
   const { user } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
-  const [message, setMessage] = useState('');
+  const [message] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
   const [isAdLoaded, setIsAdLoaded] = useState(false);
@@ -79,7 +79,7 @@ export function AddAlarmPage() {
       const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
       if (savedMyId) setMyId(savedMyId);
     }
-  }, []);
+  }, [isVerified, verifiedUsername]);
 
   // 페이지 진입 시 광고 사전 로드 (Preload) - 검수 필수 요건
   useEffect(() => {
@@ -224,7 +224,7 @@ export function AddAlarmPage() {
       // 광고를 끝까지 보지 않으면 알람 추가 안 함
       if (!adResult.rewarded) {
         if (adResult.cancelled) {
-          showErrorToast('시청을 완료해 주세요');
+          showErrorToast('광고를 끝까지 봐 주세요');
         }
         setIsSubmitting(false);
         return;
