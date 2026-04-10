@@ -39,7 +39,7 @@ model Alarm {
   fromInstagramId    String                          // 본인 인스타그램 ID (알람별로 다를 수 있음)
   targetInstagramId  String                          // 대상의 인스타그램 ID
   status             String    @default("waiting")   // waiting | matched
-  message            String?                         // 알람 등록 시 남기는 메세지 (선택)
+  message            String?                         // 알람 등록 시 남기는 메시지 (선택)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   deletedAt          DateTime?                       // Soft Delete용 (null = 활성, 값 있으면 = 삭제됨)
@@ -51,10 +51,10 @@ model Alarm {
   @@unique([userId, targetInstagramId]) // 같은 대상에게 중복 알람 방지
 }
 
-// 메세지 반응 테이블 (받은 메세지에 이모지 반응)
+// 메시지 반응 테이블 (받은 메시지에 이모지 반응)
 model MessageReaction {
   id        String   @id @default(uuid())
-  alarmId   String   @unique          // 메세지당 1개 반응 (upsert)
+  alarmId   String   @unique          // 메시지당 1개 반응 (upsert)
   emoji     String                    // ❤️ 😊 🤔 😳 🥹
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

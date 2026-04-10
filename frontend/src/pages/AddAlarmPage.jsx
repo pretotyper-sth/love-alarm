@@ -63,7 +63,7 @@ export function AddAlarmPage() {
   const { user } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
-  const [message] = useState('');
+  const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
   const [isAdLoaded, setIsAdLoaded] = useState(false);
@@ -460,7 +460,7 @@ export function AddAlarmPage() {
           <TextArea
             variant="box"
             minHeight={112}
-            label="메세지 (선택)"
+            label="메시지 (선택)"
             labelOption="sustain"
             placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요."
             value={message}
@@ -469,9 +469,9 @@ export function AddAlarmPage() {
           />
           <div className="add-alarm-message-footer">
             <p className="add-alarm-message-hint">
-              상대가 메세지를 확인하려면 인스타그램 인증이 필요해요.
+              상대가 메시지를 확인하려면 인스타그램 인증이 필요해요.
               <br />
-              보낸 메세지는 메세지함에서 다시 볼 수 있어요.
+              보낸 메시지는 메시지함에서 다시 볼 수 있어요.
             </p>
             <div className="add-alarm-message-count">{message.length}/{MESSAGE_MAX_LENGTH}</div>
           </div>

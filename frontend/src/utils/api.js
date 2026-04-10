@@ -459,10 +459,10 @@ export const api = {
     return await response.json(); // { count }
   },
 
-  // ==================== 메세지 ====================
+  // ==================== 메시지 ====================
 
   /**
-   * 내가 보낸 메세지 목록 (userId 기반)
+   * 내가 보낸 메시지 목록 (userId 기반)
    */
   getSentMessages: async () => {
     const user = api.getCurrentUser();
@@ -471,7 +471,7 @@ export const api = {
     const response = await fetch(`${API_BASE_URL}/messages/sent?userId=${user.id}`);
 
     if (!response.ok) {
-      throw new Error('보낸 메세지 조회 실패');
+      throw new Error('보낸 메시지 조회 실패');
     }
 
     const data = await response.json();
@@ -479,7 +479,7 @@ export const api = {
   },
 
   /**
-   * 받은 메세지 목록 (인증된 instagramId 기반)
+   * 받은 메시지 목록 (인증된 instagramId 기반)
    */
   getReceivedMessages: async (instagramId) => {
     const response = await fetch(
@@ -487,7 +487,7 @@ export const api = {
     );
 
     if (!response.ok) {
-      throw new Error('받은 메세지 조회 실패');
+      throw new Error('받은 메시지 조회 실패');
     }
 
     const data = await response.json();
@@ -495,7 +495,7 @@ export const api = {
   },
 
   /**
-   * 받은 메세지에 이모지 반응 (upsert)
+   * 받은 메시지에 이모지 반응 (upsert)
    */
   reactToMessage: async (alarmId, emoji) => {
     const response = await fetch(`${API_BASE_URL}/messages/${alarmId}/reaction`, {
@@ -512,7 +512,7 @@ export const api = {
   },
 
   /**
-   * 받은 메세지 신고
+   * 받은 메시지 신고
    */
   reportMessage: async (alarmId, reason, instagramId) => {
     const user = api.getCurrentUser();

@@ -2,8 +2,8 @@ import express from 'express';
 const router = express.Router();
 
 // ==================== GET /api/messages/sent ====================
-// 내가 보낸 메세지 목록 (userId 기반, 인증 불필요)
-// 메세지가 있는 알람만 반환
+// 내가 보낸 메시지 목록 (userId 기반, 인증 불필요)
+// 메시지가 있는 알람만 반환
 router.get('/sent', async (req, res) => {
   try {
     const { userId } = req.query;
@@ -25,13 +25,13 @@ router.get('/sent', async (req, res) => {
 
     return res.json({ messages });
   } catch (error) {
-    console.error('보낸 메세지 조회 실패:', error);
+    console.error('보낸 메시지 조회 실패:', error);
     return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
 
 // ==================== GET /api/messages/received ====================
-// 받은 메세지 목록 (인증된 instagramId 기반)
+// 받은 메시지 목록 (인증된 instagramId 기반)
 router.get('/received', async (req, res) => {
   try {
     const { instagram_id } = req.query;
@@ -55,13 +55,13 @@ router.get('/received', async (req, res) => {
 
     return res.json({ messages });
   } catch (error) {
-    console.error('받은 메세지 조회 실패:', error);
+    console.error('받은 메시지 조회 실패:', error);
     return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
 
 // ==================== POST /api/messages/:alarmId/reaction ====================
-// 받은 메세지에 이모지 반응 (upsert)
+// 받은 메시지에 이모지 반응 (upsert)
 router.post('/:alarmId/reaction', async (req, res) => {
   try {
     const { alarmId } = req.params;
@@ -77,7 +77,7 @@ router.post('/:alarmId/reaction', async (req, res) => {
       where: { id: alarmId },
     });
     if (!alarm) {
-      return res.status(404).json({ error: '메세지를 찾을 수 없습니다.' });
+      return res.status(404).json({ error: '메시지를 찾을 수 없습니다.' });
     }
 
     // upsert: 이미 반응이 있으면 업데이트, 없으면 생성
@@ -95,7 +95,7 @@ router.post('/:alarmId/reaction', async (req, res) => {
 });
 
 // ==================== POST /api/messages/:alarmId/report ====================
-// 받은 메세지 신고
+// 받은 메시지 신고
 router.post('/:alarmId/report', async (req, res) => {
   try {
     const { alarmId } = req.params;
@@ -118,13 +118,13 @@ router.post('/:alarmId/report', async (req, res) => {
     });
 
     if (!alarm || !alarm.message || alarm.deletedAt) {
-      return res.status(404).json({ error: '신고할 메세지를 찾을 수 없습니다.' });
+      return res.status(404).json({ error: '신고할 메시지를 찾을 수 없습니다.' });
     }
 
     if (instagramId) {
       const normalizedInstagramId = instagramId.trim().toLowerCase();
       if (normalizedInstagramId !== alarm.targetInstagramId) {
-        return res.status(403).json({ error: '이 메세지를 신고할 권한이 없습니다.' });
+        return res.status(403).json({ error: '이 메시지를 신고할 권한이 없습니다.' });
       }
     }
 
@@ -133,7 +133,7 @@ router.post('/:alarmId/report', async (req, res) => {
         category: '신고',
         userId: userId || null,
         content: [
-          '[받은 메세지 신고]',
+          '[받은 메시지 신고]',
           `alarmId: ${alarm.id}`,
           `reason: ${reason}`,
           `reportedInstagramId: ${alarm.targetInstagramId}`,
@@ -149,7 +149,7 @@ router.post('/:alarmId/report', async (req, res) => {
       reportId: feedback.id,
     });
   } catch (error) {
-    console.error('메세지 신고 실패:', error);
+    console.error('메시지 신고 실패:', error);
     return res.status(500).json({ error: '신고 접수에 실패했습니다.' });
   }
 });

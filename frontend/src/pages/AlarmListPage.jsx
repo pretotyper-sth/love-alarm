@@ -156,7 +156,7 @@ export function AlarmListPage() {
   // 좋아하는 사람 수 확인 상태
   const [showLikeCountSheet, setShowLikeCountSheet] = useState(false);
   const [likeCountCache, setLikeCountCache] = useState(() => getLikeCountCache());
-  // 메세지 배지 카운트
+  // 메시지 배지 카운트
   const [msgBadgeCount, setMsgBadgeCount] = useState(0);
   const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
   const alarmRefsRef = useRef([]);
@@ -256,7 +256,7 @@ export function AlarmListPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // 메세지 배지 카운트 로드 (인증된 경우)
+  // 메시지 배지 카운트 로드 (인증된 경우)
   useEffect(() => {
     const loadMsgBadge = async () => {
       const badgeEnabled = loadUnreadMessageBadgeEnabled();
@@ -536,18 +536,16 @@ export function AlarmListPage() {
           <button
             className="alarm-list-msg-btn"
             onClick={() => navigate('/messages')}
-            aria-label="메세지 확인"
+            aria-label="메시지 확인"
           >
-            <span className="alarm-list-msg-icon-box">
-              <img
-                src="https://static.toss.im/2d-emojis/png/4x/u1F48C.png"
-                alt=""
-                className="alarm-list-msg-toss-icon"
-                width={24}
-                height={24}
-                draggable={false}
-              />
-            </span>
+            <img
+              src="https://static.toss.im/2d-emojis/png/4x/u1F48C.png"
+              alt=""
+              className="alarm-list-msg-toss-icon"
+              width={24}
+              height={24}
+              draggable={false}
+            />
             {unreadMessageBadgeEnabled && msgBadgeCount > 0 && (
               <span className="alarm-list-msg-badge alarm-list-msg-badge--dot" aria-hidden="true" />
             )}

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Top, Spacing } from '@toss/tds-mobile';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Top, Skeleton, Spacing } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
 import {
@@ -41,7 +42,7 @@ function truncateText(text, max = 40) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// 메세지 아이콘 컴포넌트 — TDS Asset squircle 스타일 (2D 이모지)
+// 메시지 아이콘 컴포넌트 — TDS Asset squircle 스타일 (2D 이모지)
 // ──────────────────────────────────────────────────────────────────────
 // Toss 2D 이모지 💌 (u1F48C) — 보낸/받은 공통, 배경색으로 구분
 const MSG_EMOJI_URL = 'https://static.toss.im/2d-emojis/png/4x/u1F48C.png';
@@ -59,21 +60,29 @@ function MessageIcon({ type = 'received' }) {
   );
 }
 
+// 이모지 → 토스 2D 에셋 매핑
+const EMOJI_ASSET_MAP = {
+  '❤️': { url: 'https://static.toss.im/2d-emojis/png/4x/u2764.png', label: '좋아해요' },
+  '😊': { url: 'https://static.toss.im/2d-emojis/png/4x/u1F60A.png', label: '고마워요' },
+  '🤔': { url: 'https://static.toss.im/2d-emojis/png/4x/u1F914.png', label: '누구지?' },
+  '😳': { url: 'https://static.toss.im/2d-emojis/png/4x/u1F633.png', label: '두근두근' },
+  '🥹': { url: 'https://static.toss.im/2d-emojis/png/4x/u1F979.png', label: '감동이에요' },
+};
+
 // ──────────────────────────────────────────────────────────────────────
-// SentMessageDetailSheet — 보낸 메세지 상세 (반응 수신 확인용)
+// SentMessageDetailSheet — 보낸 메시지 상세 (반응 수신 확인용)
 // ──────────────────────────────────────────────────────────────────────
 function SentMessageDetailSheet({ message, onClose }) {
   if (!message) return null;
   const reaction = message.reactions?.[0]?.emoji ?? null;
+  const reactionAsset = reaction ? EMOJI_ASSET_MAP[reaction] : null;
 
   return (
     <>
       <div className="msg-sheet-overlay" onClick={onClose} />
       <div className="msg-sheet">
-        {/* 드래그 핸들 */}
         <div className="msg-sheet-handle" />
 
-        {/* 수신자 배지 */}
         <div className="msg-sheet-badge-row">
           <span className="msg-sheet-badge msg-sheet-badge--sent">
             <img
@@ -86,27 +95,31 @@ function SentMessageDetailSheet({ message, onClose }) {
           <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
         </div>
 
-        {/* 메세지 카드 */}
         <div className="msg-sheet-card">
           <p className="msg-sheet-text">{message.message}</p>
         </div>
 
-        {/* 반응 섹션 */}
         <div className="msg-sheet-react-section">
           <span className="msg-sheet-react-label">상대방의 반응</span>
-          {reaction ? (
-            <div className="msg-sent-reaction-chip">
-              <span>{reaction}</span>
-              <span className="msg-sent-reaction-text">반응했어요</span>
+          {reactionAsset ? (
+            <div className="msg-sent-reaction-card">
+              <img
+                src={reactionAsset.url}
+                alt={reactionAsset.label}
+                className="msg-sent-reaction-emoji"
+                draggable={false}
+              />
+              <span className="msg-sent-reaction-label">{reactionAsset.label}</span>
             </div>
           ) : (
-            <div className="msg-no-reaction">
+            <div className="msg-no-reaction-card">
               <img
-                src="https://static.toss.im/icons/png/4x/icon-clock-mono.png"
+                src="https://static.toss.im/2d-emojis/png/4x/u23F3.png"
                 alt=""
-                style={{ width: 14, height: 14, marginRight: 4, opacity: 0.4, verticalAlign: 'middle' }}
+                className="msg-no-reaction-emoji"
+                draggable={false}
               />
-              아직 반응이 없어요
+              <span className="msg-no-reaction-label">아직 반응이 없어요</span>
             </div>
           )}
         </div>
@@ -116,7 +129,7 @@ function SentMessageDetailSheet({ message, onClose }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// MessageDetailSheet — 받은 메세지 상세 바텀시트
+// MessageDetailSheet — 받은 메시지 상세 바텀시트
 // ──────────────────────────────────────────────────────────────────────
 function MessageDetailSheet({ message, onClose, onReact, onReport }) {
   const EMOJIS = ['❤️', '😊', '🤔', '😳', '🥹'];
@@ -156,7 +169,7 @@ function MessageDetailSheet({ message, onClose, onReact, onReport }) {
           <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
         </div>
 
-        {/* 메세지 카드 */}
+        {/* 메시지 카드 */}
         <div className="msg-sheet-card">
           <p className="msg-sheet-text">{message.message}</p>
         </div>
@@ -165,28 +178,36 @@ function MessageDetailSheet({ message, onClose, onReact, onReport }) {
         <div className="msg-sheet-react-section">
           <span className="msg-sheet-react-label">반응하기</span>
           <div className="msg-sheet-emoji-row">
-            {EMOJIS.map((emoji) => (
-              <button
-                key={emoji}
-                className={`msg-sheet-emoji-btn${currentEmoji === emoji ? ' active' : ''}`}
-                onClick={() => onReact(message.id, emoji)}
-                aria-label={emoji}
-              >
-                <span className="msg-sheet-emoji-glyph">{emoji}</span>
-                {currentEmoji === emoji && (
-                  <span className="msg-sheet-emoji-check">✓</span>
-                )}
-              </button>
-            ))}
+            {EMOJIS.map((emoji) => {
+              const asset = EMOJI_ASSET_MAP[emoji];
+              return (
+                <button
+                  key={emoji}
+                  className={`msg-sheet-emoji-btn${currentEmoji === emoji ? ' active' : ''}`}
+                  onClick={() => onReact(message.id, emoji)}
+                  aria-label={asset?.label || emoji}
+                >
+                  <img
+                    src={asset?.url}
+                    alt=""
+                    className="msg-sheet-emoji-img"
+                    draggable={false}
+                  />
+                  {currentEmoji === emoji && (
+                    <span className="msg-sheet-emoji-check">✓</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         <div className="msg-sheet-report-section">
           <div className="msg-sheet-report-copy">
-            불쾌하거나 부적절한 메세지라면 신고할 수 있어요.
+            불쾌하거나 부적절한 메시지라면 신고할 수 있어요.
           </div>
           <button className="msg-sheet-report-trigger" type="button" onClick={() => onReport(message)}>
-            이 메세지 신고하기
+            이 메시지 신고하기
           </button>
         </div>
       </div>
@@ -211,11 +232,11 @@ function ReportMessageSheet({
         <div className="msg-sheet-handle" />
 
         <div className="msg-report-header">
-          <h3 className="msg-report-title">이 메세지를 신고할까요?</h3>
+          <h3 className="msg-report-title">이 메시지를 신고할까요?</h3>
           <p className="msg-report-desc">
             신고 사유를 선택해 주세요.
             <br />
-            제출하면 이 메세지는 받은 목록에서 숨겨져요.
+            제출하면 이 메시지는 받은 목록에서 숨겨져요.
           </p>
         </div>
 
@@ -256,16 +277,14 @@ function ReportMessageSheet({
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// InstagramAuthCta — 받은 메세지 탭 미인증 CTA
+// InstagramAuthCta — 받은 메시지 탭 미인증 CTA
 // ──────────────────────────────────────────────────────────────────────
 function InstagramAuthCta({ onVerify }) {
   return (
-    <div className="msg-auth-cta">
-      <div className="msg-auth-cta-title">받은 메세지를 확인하려면 인증이 필요해요</div>
-      <div className="msg-auth-cta-desc">
-        본인 확인이 끝나면 바로 볼 수 있어요
-      </div>
-      <button className="msg-auth-cta-btn" onClick={onVerify}>
+    <div className="messages-empty">
+      <p className="messages-empty-title">받은 메시지를 확인하려면 인증이 필요해요.</p>
+      <p className="messages-empty-desc">본인 확인이 끝나면 바로 볼 수 있어요.</p>
+      <button className="messages-empty-btn messages-empty-btn--primary" onClick={onVerify}>
         인스타그램 인증하기
       </button>
     </div>
@@ -276,15 +295,17 @@ function InstagramAuthCta({ onVerify }) {
 // MessagesPage
 // ──────────────────────────────────────────────────────────────────────
 export function MessagesPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('sent'); // 'sent' | 'received'
   const [sentMessages, setSentMessages] = useState([]);
   const [receivedMessages, setReceivedMessages] = useState([]);
   const [readReceivedMessageIds, setReadReceivedMessageIds] = useState(() => loadReadReceivedMessageIds());
   const [, setReportedReceivedMessageIds] = useState(() => loadReportedReceivedMessageIds());
   const [isLoading, setIsLoading] = useState(true);
-  // 받은 메세지 상세 시트
+  const prevCountRef = useRef({ sent: 0, received: 0 });
+  // 받은 메시지 상세 시트
   const [selectedReceivedMsg, setSelectedReceivedMsg] = useState(null);
-  // 보낸 메세지 상세 시트
+  // 보낸 메시지 상세 시트
   const [selectedSentMsg, setSelectedSentMsg] = useState(null);
   // 인증 시트
   const [showAuthSheet, setShowAuthSheet] = useState(false);
@@ -294,28 +315,56 @@ export function MessagesPage() {
   const [reportTargetMessage, setReportTargetMessage] = useState(null);
   const [selectedReportReason, setSelectedReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [reportToastMessage, setReportToastMessage] = useState('');
+  const [reportToast, setReportToast] = useState({ show: false, message: '' });
+
+  // TODO: MOCK DATA — 검수 전 제거
+  const MOCK_SENT = [
+    { id: 'mock-s1', targetInstagramId: 'cute_puppy_lover', message: '혹시 강남역 스타벅스에서 자주 보이시는 분 맞나요? 항상 아메리카노 드시던데 용기 내서 보내봐요 ☕', createdAt: '2026-04-10T09:12:00Z', reactions: [{ emoji: '❤️' }] },
+    { id: 'mock-s2', targetInstagramId: 'music_wave_99', message: '같은 수업 듣는 거 맞죠? 늘 앞자리에 앉으시길래 한번 말 걸어보고 싶었어요', createdAt: '2026-04-09T18:30:00Z', reactions: [{ emoji: '😊' }] },
+    { id: 'mock-s3', targetInstagramId: 'sunny.day_23', message: '인스타 피드 보고 취향이 비슷한 것 같아서요. 혹시 다음에 같이 전시 보러 갈 수 있을까요?', createdAt: '2026-04-08T14:05:00Z', reactions: [{ emoji: '🤔' }] },
+    { id: 'mock-s4', targetInstagramId: 'night_runner_7', message: '매일 저녁 한강에서 러닝하시는 거 맞죠? 저도 같은 코스 뛰는데 페이스가 비슷한 것 같아요', createdAt: '2026-04-07T21:00:00Z', reactions: [{ emoji: '😳' }] },
+    { id: 'mock-s5', targetInstagramId: 'film_grain_', message: '필름 카메라 들고 다니시는 거 봤어요. 저도 필름 좋아하는데 언젠가 같이 출사 가면 좋겠어요', createdAt: '2026-04-06T15:20:00Z', reactions: [{ emoji: '🥹' }] },
+    { id: 'mock-s6', targetInstagramId: 'bookworm.lee', message: '도서관에서 항상 같은 자리에 앉으시길래 궁금했어요', createdAt: '2026-04-05T10:00:00Z', reactions: [] },
+  ];
+  const MOCK_RECEIVED = [
+    { id: 'mock-r1', fromInstagramId: null, message: '3월에 홍대에서 우연히 마주쳤었는데 기억하시나요? 검은색 코트 입고 있었어요', createdAt: '2026-04-10T11:45:00Z', reactions: [] },
+    { id: 'mock-r2', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [{ emoji: '😊' }] },
+  ];
 
   const loadMessages = useCallback(async (currentVerifiedId) => {
     const vid = currentVerifiedId ?? verifiedId;
     setIsLoading(true);
     try {
-      const sent = await api.getSentMessages();
-      setSentMessages(sent);
+      let sent;
+      try {
+        sent = await api.getSentMessages();
+      } catch {
+        sent = [];
+      }
+      const mergedSent = [...MOCK_SENT, ...sent];
+      setSentMessages(mergedSent);
+      prevCountRef.current.sent = mergedSent.length;
       if (vid) {
-        const rawReceivedMessages = await api.getReceivedMessages(vid);
-        const validMessageIds = rawReceivedMessages.map((message) => message.id);
+        let rawReceivedMessages;
+        try {
+          rawReceivedMessages = await api.getReceivedMessages(vid);
+        } catch {
+          rawReceivedMessages = [];
+        }
+        const allReceived = [...MOCK_RECEIVED, ...rawReceivedMessages];
+        const validMessageIds = allReceived.map((message) => message.id);
         const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
         setReportedReceivedMessageIds(nextReportedIds);
         setReadReceivedMessageIds(pruneReadReceivedMessageIds(validMessageIds));
-        setReceivedMessages(
-          rawReceivedMessages.filter((message) => !nextReportedIds.includes(message.id))
-        );
+        const filteredReceived = allReceived.filter((message) => !nextReportedIds.includes(message.id));
+        setReceivedMessages(filteredReceived);
+        prevCountRef.current.received = filteredReceived.length;
       } else {
-        setReceivedMessages([]);
+        setReceivedMessages(MOCK_RECEIVED);
+        prevCountRef.current.received = MOCK_RECEIVED.length;
       }
     } catch (err) {
-      console.error('메세지 로드 실패:', err);
+      console.error('메시지 로드 실패:', err);
     } finally {
       setIsLoading(false);
     }
@@ -374,18 +423,20 @@ export function MessagesPage() {
 
     setIsSubmittingReport(true);
     try {
-      await api.reportMessage(reportTargetMessage.id, selectedReportReason, verifiedId);
+      if (!IS_DEV) {
+        await api.reportMessage(reportTargetMessage.id, selectedReportReason, verifiedId);
+      }
 
       setReportedReceivedMessageIds(markReceivedMessageAsReported(reportTargetMessage.id));
       setReceivedMessages((prev) => prev.filter((message) => message.id !== reportTargetMessage.id));
       setSelectedReceivedMsg(null);
       setReportTargetMessage(null);
       setSelectedReportReason('');
-      setReportToastMessage('신고를 접수했고 받은 메세지에서 숨겼어요');
-      window.setTimeout(() => setReportToastMessage(''), 2500);
+      setReportToast({ show: true, message: '신고 및 숨김 처리를 완료했어요' });
+      window.setTimeout(() => setReportToast(prev => ({ ...prev, show: false })), 3000);
     } catch (error) {
-      setReportToastMessage(error.message || '신고 접수에 실패했어요');
-      window.setTimeout(() => setReportToastMessage(''), 2500);
+      setReportToast({ show: true, message: error.message || '신고 접수에 실패했어요' });
+      window.setTimeout(() => setReportToast(prev => ({ ...prev, show: false })), 3000);
     } finally {
       setIsSubmittingReport(false);
     }
@@ -403,7 +454,7 @@ export function MessagesPage() {
               color={adaptive.grey900}
               style={{ fontSize: '22px' }}
             >
-              메세지
+              메시지
             </Top.TitleParagraph>
           }
         />
@@ -412,7 +463,7 @@ export function MessagesPage() {
       <Spacing size={12} />
 
       <div className="messages-segmented-wrap">
-        <div className="messages-segmented" role="tablist" aria-label="메세지 탭">
+        <div className="messages-segmented" role="tablist" aria-label="메시지 탭">
           <button
             className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`}
             onClick={() => setActiveTab('sent')}
@@ -420,7 +471,7 @@ export function MessagesPage() {
             aria-selected={activeTab === 'sent'}
             type="button"
           >
-            내가 보낸 메세지
+            내가 보낸 메시지
           </button>
           <button
             className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`}
@@ -429,18 +480,26 @@ export function MessagesPage() {
             aria-selected={activeTab === 'received'}
             type="button"
           >
-            받은 메세지
+            받은 메시지
           </button>
         </div>
       </div>
 
-      {/* 보낸 메세지 탭 */}
+      {/* 보낸 메시지 탭 */}
       {activeTab === 'sent' && (
         <div className="messages-content">
           {isLoading ? (
-            <div className="messages-loading">불러오는 중...</div>
+            <div className="messages-skeleton-wrap">
+              <Skeleton custom={['listWithIcon']} repeatLastItemCount={Math.max(prevCountRef.current.sent, 1)} />
+            </div>
           ) : sentMessages.length === 0 ? (
-            <div className="messages-empty">보낸 메세지가 없어요</div>
+            <div className="messages-empty">
+              <p className="messages-empty-title">아직 보낸 메시지가 없어요.</p>
+              <p className="messages-empty-desc">알람을 추가할 때 메시지도 함께 보낼 수 있어요.</p>
+              <button className="messages-empty-btn" onClick={() => navigate('/add')}>
+                알람 추가하러 가기
+              </button>
+            </div>
           ) : (
             sentMessages.map((msg) => (
               <div
@@ -466,15 +525,20 @@ export function MessagesPage() {
         </div>
       )}
 
-      {/* 받은 메세지 탭 */}
+      {/* 받은 메시지 탭 */}
       {activeTab === 'received' && (
         <div className="messages-content">
           {!isVerified ? (
             <InstagramAuthCta onVerify={() => setShowAuthSheet(true)} />
           ) : isLoading ? (
-            <div className="messages-loading">불러오는 중...</div>
+            <div className="messages-skeleton-wrap">
+              <Skeleton custom={['listWithIcon']} repeatLastItemCount={Math.max(prevCountRef.current.received, 1)} />
+            </div>
           ) : receivedMessages.length === 0 ? (
-            <div className="messages-empty">받은 메세지가 없어요</div>
+            <div className="messages-empty">
+              <p className="messages-empty-title">아직 받은 메시지가 없어요.</p>
+              <p className="messages-empty-desc">누군가 메시지를 보내면 여기서 확인할 수 있어요.</p>
+            </div>
           ) : (
             receivedMessages.map((msg) => (
               <div
@@ -505,7 +569,7 @@ export function MessagesPage() {
         </div>
       )}
 
-      {/* 받은 메세지 상세 시트 */}
+      {/* 받은 메시지 상세 시트 */}
       {selectedReceivedMsg && (
         <MessageDetailSheet
           message={selectedReceivedMsg}
@@ -526,7 +590,7 @@ export function MessagesPage() {
         />
       )}
 
-      {/* 보낸 메세지 상세 시트 */}
+      {/* 보낸 메시지 상세 시트 */}
       {selectedSentMsg && (
         <SentMessageDetailSheet
           message={selectedSentMsg}
@@ -534,18 +598,24 @@ export function MessagesPage() {
         />
       )}
 
-      {/* 인스타그램 인증 시트 (받은 메세지 탭 CTA에서 진입) */}
+      {/* 인스타그램 인증 시트 (받은 메시지 탭 CTA에서 진입) */}
       <InstagramAuthSheet
         open={showAuthSheet}
         onClose={() => setShowAuthSheet(false)}
         onSuccess={handleAuthSuccess}
       />
 
-      {reportToastMessage && (
-        <div className="messages-inline-toast" role="status" aria-live="polite">
-          {reportToastMessage}
+      <div className="toast-stack messages-toast-stack">
+        <div
+          className={`custom-toast ${reportToast.show ? 'show' : ''}`}
+          style={{ bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <div className="custom-toast-content">
+            <span className="custom-toast-icon">✓</span>
+            <span className="custom-toast-text">{reportToast.message}</span>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -362,14 +362,14 @@
 }
 
 .add-alarm-message-count {
-  font-size: 12px;
+  font-size: 11px;
   color: #8b95a1;
   flex-shrink: 0;
   line-height: 1.6;
 }
 
 .add-alarm-message-hint {
-  font-size: 12px;
+  font-size: 11px;
   color: #8b95a1;
   line-height: 1.6;
   padding: 0;
@@ -381,7 +381,7 @@
 /* TextArea 내부 스타일 — FeedbackPage 동일하게 적용 */
 .add-alarm-message-wrapper textarea::placeholder {
   color: #b0b8c1 !important;
-  font-size: 15px !important;
+  font-size: 13px !important;
 }
 
 .add-alarm-message-wrapper > div > div > div {
