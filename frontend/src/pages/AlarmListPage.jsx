@@ -19,6 +19,7 @@ const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
 const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
 const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
+const ALARM_LIST_TOAST_BOTTOM_PX = 50;
 
 function getLikeCountCache() {
   const target = localStorage.getItem(LIKE_COUNT_TARGET_KEY);
@@ -567,7 +568,7 @@ export function AlarmListPage() {
       </div>
 
       {/* 토스트 스택 */}
-      <div className="toast-stack">
+      <div className="toast-stack alarm-list-toast-stack">
         {toasts.map((toast, index) => (
           <div 
             key={toast.id} 
@@ -575,7 +576,7 @@ export function AlarmListPage() {
             style={{ 
               transform: `translateX(-50%) translateY(${toast.show ? -index * 60 : 20}px)`,
               zIndex: 9999 - index,
-              bottom: toast.bottomOffset ?? 0,
+              bottom: `calc(${ALARM_LIST_TOAST_BOTTOM_PX + (toast.bottomOffset ?? 0)}px + env(safe-area-inset-bottom, 0px))`,
             }}
           >
             <div className="custom-toast-content">
@@ -639,7 +640,6 @@ export function AlarmListPage() {
             type: 'success',
             message: '결과를 불러왔어요 (12시간 노출 유지)',
             duration: 4000,
-            bottomOffset: 64,
           });
         }}
       />

@@ -1,3 +1,5 @@
+
+
 .alarm-list-page-container {
   display: flex;
   flex-direction: column;
@@ -32,6 +34,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1;
 }
 
 .like-count-bar-highlight {
@@ -44,6 +47,10 @@
   margin-left: 12px;
   display: flex;
   align-items: center;
+}
+
+.alarm-list-toast-stack {
+  bottom: 0;
 }
 
 .alarm-list-first-hint {
