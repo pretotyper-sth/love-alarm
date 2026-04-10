@@ -86,7 +86,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
         <div className="lcs-header">
           <h2 className="lcs-title">좋아하는 사람 수 확인하기</h2>
           <p className="lcs-desc">
-            ID를 입력하고 짧은 광고를 보면<br />
+            인스타그램 ID를 입력하고 짧은 광고를 보면<br />
             지금 몇 명이 좋아하는지 알 수 있어요.
           </p>
         </div>
