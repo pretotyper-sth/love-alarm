@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { api } from '../utils/api';
 import './LikeCountSheet.css';
@@ -31,12 +31,60 @@ export function LikeCountSheet({ open, onClose, onResult }) {
 
   const [instagramId, setInstagramId] = useState(cachedTarget || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAdLoaded, setIsAdLoaded] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState('');
+  const adCleanupRef = useRef(null);
 
   useEffect(() => {
     if (open) {
       const fresh = localStorage.getItem('love_alarm_like_count_target') || '';
       setInstagramId(fresh || '');
+      setSubmitMessage('');
+      setIsAdLoaded(isAdFree());
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || isAdFree()) return undefined;
+
+    let cancelled = false;
+
+    const preloadAd = async () => {
+      try {
+        const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
+
+        if (GoogleAdMob.loadAppsInTossAdMob.isSupported() !== true) {
+          if (!cancelled) setIsAdLoaded(true);
+          return;
+        }
+
+        adCleanupRef.current = GoogleAdMob.loadAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (event) => {
+            if (event.type === 'loaded') {
+              if (!cancelled) setIsAdLoaded(true);
+              adCleanupRef.current?.();
+              adCleanupRef.current = null;
+            }
+          },
+          onError: () => {
+            if (!cancelled) setIsAdLoaded(true);
+            adCleanupRef.current?.();
+            adCleanupRef.current = null;
+          },
+        });
+      } catch {
+        if (!cancelled) setIsAdLoaded(true);
+      }
+    };
+
+    preloadAd();
+
+    return () => {
+      cancelled = true;
+      adCleanupRef.current?.();
+      adCleanupRef.current = null;
+    };
   }, [open]);
 
   const hasError = isInvalidInstagramId(instagramId);
@@ -45,14 +93,24 @@ export function LikeCountSheet({ open, onClose, onResult }) {
 
   const handleCheck = async () => {
     const trimmed = instagramId.trim().toLowerCase();
-    if (!trimmed || hasError) return;
+    if (!trimmed) {
+      setSubmitMessage('인스타그램 ID를 입력해 주세요');
+      return;
+    }
+    if (hasError) {
+      setSubmitMessage('인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요');
+      return;
+    }
 
     setIsLoading(true);
+    setSubmitMessage('');
     try {
       if (!isAdFree()) {
-        const adResult = await showRewardedAd();
+        const adResult = await showRewardedAd({ isAdLoaded, setIsAdLoaded });
         if (!adResult.rewarded) {
-          setIsLoading(false);
+          if (adResult.cancelled) {
+            setSubmitMessage('광고를 끝까지 봐 주세요');
+          }
           return;
         }
       }
@@ -68,8 +126,8 @@ export function LikeCountSheet({ open, onClose, onResult }) {
 
       onResult({ targetId: trimmed, count });
       onClose();
-    } catch {
-      // 조용히 실패
+    } catch (error) {
+      setSubmitMessage(error?.message || '지금은 결과를 불러오지 못했어요. 다시 시도해 주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +158,10 @@ export function LikeCountSheet({ open, onClose, onResult }) {
                 type="text"
                 placeholder="예: abcd1234"
                 value={instagramId}
-                onChange={(e) => setInstagramId(e.target.value.toLowerCase())}
+                onChange={(e) => {
+                  setSubmitMessage('');
+                  setInstagramId(e.target.value.toLowerCase());
+                }}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
@@ -108,7 +169,10 @@ export function LikeCountSheet({ open, onClose, onResult }) {
               {instagramId && (
                 <button
                   className="lcs-clear"
-                  onClick={() => setInstagramId('')}
+                  onClick={() => {
+                    setSubmitMessage('');
+                    setInstagramId('');
+                  }}
                   aria-label="지우기"
                   tabIndex={-1}
                 >
@@ -119,11 +183,17 @@ export function LikeCountSheet({ open, onClose, onResult }) {
             {hasError && (
               <p className="lcs-field-msg error">인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요</p>
             )}
+            {!hasError && submitMessage && (
+              <p className="lcs-field-msg error">{submitMessage}</p>
+            )}
             {verifiedUsername && (
               <button
                 type="button"
                 className={`lcs-verified-action${canLoadVerifiedId ? '' : ' is-active'}`}
-                onClick={() => setInstagramId(verifiedUsername)}
+                onClick={() => {
+                  setSubmitMessage('');
+                  setInstagramId(verifiedUsername);
+                }}
               >
                 인증된 ID 불러오기
                 <span className="lcs-verified-action-id">@{verifiedUsername}</span>
@@ -137,7 +207,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
             size="xlarge"
             display="block"
             onClick={handleCheck}
-            disabled={!instagramId.trim() || hasError || isLoading}
+            disabled={isLoading || !instagramId.trim()}
             loading={isLoading}
           >
             {isAdFree() ? '확인하기' : '광고 보고 확인하기'}
@@ -151,7 +221,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
   );
 }
 
-async function showRewardedAd() {
+async function showRewardedAd({ isAdLoaded, setIsAdLoaded }) {
   try {
     const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
 
@@ -160,26 +230,61 @@ async function showRewardedAd() {
       return { rewarded: true, skipped: true };
     }
 
-    await new Promise((resolve, reject) => {
-      const cleanup = GoogleAdMob.loadAppsInTossAdMob({
-        options: { adGroupId: REWARDED_AD_GROUP_ID },
-        onEvent: (e) => { if (e.type === 'loaded') { cleanup?.(); resolve(); } },
-        onError: (err) => { cleanup?.(); reject(err); },
+    if (!isAdLoaded) {
+      await new Promise((resolve, reject) => {
+        const cleanup = GoogleAdMob.loadAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (e) => {
+            if (e.type === 'loaded') {
+              cleanup?.();
+              resolve();
+            }
+          },
+          onError: (err) => {
+            cleanup?.();
+            reject(err);
+          },
+        });
       });
-    });
+    }
 
     return await new Promise((resolve, reject) => {
       let rewarded = false;
+      let dismissed = false;
+
+      const finish = () => {
+        cleanup?.();
+        setIsAdLoaded(false);
+        resolve({ rewarded });
+      };
+
       const cleanup = GoogleAdMob.showAppsInTossAdMob({
         options: { adGroupId: REWARDED_AD_GROUP_ID },
         onEvent: (e) => {
           if (e.type === 'userEarnedReward') rewarded = true;
-          if (e.type === 'dismissed') { cleanup?.(); resolve({ rewarded }); }
+          if (e.type === 'dismissed') {
+            dismissed = true;
+            // 일부 환경에서는 rewarded 이벤트가 dismissed 직전/직후로 들어올 수 있어 한 틱 기다린다.
+            setTimeout(() => {
+              if (dismissed) finish();
+            }, 150);
+          }
+          if (e.type === 'failedToShow') {
+            cleanup?.();
+            reject(new Error('광고를 표시하지 못했어요. 다시 시도해 주세요.'));
+          }
         },
         onError: (err) => { cleanup?.(); reject(err); },
       });
     });
-  } catch {
-    return { rewarded: true, skipped: true };
+  } catch (error) {
+    if (error?.code === 'USER_CANCELLED' || error?.message?.includes('cancel')) {
+      return { rewarded: false, cancelled: true };
+    }
+    if (error?.code === 'AD_NOT_READY' || error?.code === 'AD_LOAD_FAILED') {
+      return { rewarded: true, skipped: true };
+    }
+    if (error instanceof Error) throw error;
+    throw new Error('광고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
   }
 }
