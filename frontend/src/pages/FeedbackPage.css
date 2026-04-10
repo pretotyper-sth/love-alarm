@@ -319,8 +319,8 @@
   color: #4e5968 !important;
 }
 
-/* 커스텀 BottomSheet 스타일 (AlarmListPage와 동일) */
-.custom-bottom-sheet-overlay {
+/* 피드백 전용 바텀시트 */
+.feedback-bottom-sheet-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -333,12 +333,12 @@
   transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
 }
 
-.custom-bottom-sheet-overlay.show {
+.feedback-bottom-sheet-overlay.show {
   opacity: 1;
   visibility: visible;
 }
 
-.custom-bottom-sheet {
+.feedback-bottom-sheet {
   position: fixed;
   bottom: 0;
   left: 50%;
@@ -353,7 +353,7 @@
   box-sizing: border-box;
 }
 
-.custom-bottom-sheet.show {
+.feedback-bottom-sheet.show {
   transform: translateX(-50%) translateY(0);
 }
 

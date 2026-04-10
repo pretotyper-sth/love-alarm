@@ -195,8 +195,8 @@ export function FeedbackPage() {
       )}
 
       {/* 카테고리 선택 BottomSheet */}
-      <div className={`custom-bottom-sheet-overlay ${showCategorySheet ? 'show' : ''}`} onClick={() => setShowCategorySheet(false)}>
-        <div className={`custom-bottom-sheet ${showCategorySheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`feedback-bottom-sheet-overlay ${showCategorySheet ? 'show' : ''}`} onClick={() => setShowCategorySheet(false)}>
+        <div className={`feedback-bottom-sheet ${showCategorySheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="feedback-sheet-handle" />
           <div className="bottom-sheet-header">
             <h3 className="bottom-sheet-title">카테고리 선택</h3>

@@ -319,16 +319,11 @@ export function MessagesPage() {
 
   // TODO: MOCK DATA — 검수 전 제거
   const MOCK_SENT = [
-    { id: 'mock-s1', targetInstagramId: 'cute_puppy_lover', message: '혹시 강남역 스타벅스에서 자주 보이시는 분 맞나요? 항상 아메리카노 드시던데 용기 내서 보내봐요 ☕', createdAt: '2026-04-10T09:12:00Z', reactions: [{ emoji: '❤️' }] },
-    { id: 'mock-s2', targetInstagramId: 'music_wave_99', message: '같은 수업 듣는 거 맞죠? 늘 앞자리에 앉으시길래 한번 말 걸어보고 싶었어요', createdAt: '2026-04-09T18:30:00Z', reactions: [{ emoji: '😊' }] },
-    { id: 'mock-s3', targetInstagramId: 'sunny.day_23', message: '인스타 피드 보고 취향이 비슷한 것 같아서요. 혹시 다음에 같이 전시 보러 갈 수 있을까요?', createdAt: '2026-04-08T14:05:00Z', reactions: [{ emoji: '🤔' }] },
-    { id: 'mock-s4', targetInstagramId: 'night_runner_7', message: '매일 저녁 한강에서 러닝하시는 거 맞죠? 저도 같은 코스 뛰는데 페이스가 비슷한 것 같아요', createdAt: '2026-04-07T21:00:00Z', reactions: [{ emoji: '😳' }] },
-    { id: 'mock-s5', targetInstagramId: 'film_grain_', message: '필름 카메라 들고 다니시는 거 봤어요. 저도 필름 좋아하는데 언젠가 같이 출사 가면 좋겠어요', createdAt: '2026-04-06T15:20:00Z', reactions: [{ emoji: '🥹' }] },
-    { id: 'mock-s6', targetInstagramId: 'bookworm.lee', message: '도서관에서 항상 같은 자리에 앉으시길래 궁금했어요', createdAt: '2026-04-05T10:00:00Z', reactions: [] },
+    { id: 'mock-s1', targetInstagramId: 'cute_puppy_lover', message: '혹시 강남역 스타벅스에서 자주 보이시는 분 맞나요? 용기 내서 보내봐요 ☕', createdAt: '2026-04-10T09:12:00Z', reactions: [{ emoji: '❤️' }] },
+    { id: 'mock-s2', targetInstagramId: 'music_wave_99', message: '같은 수업 듣는 거 맞죠? 한번 말 걸어보고 싶었어요', createdAt: '2026-04-09T18:30:00Z', reactions: [] },
   ];
   const MOCK_RECEIVED = [
-    { id: 'mock-r1', fromInstagramId: null, message: '3월에 홍대에서 우연히 마주쳤었는데 기억하시나요? 검은색 코트 입고 있었어요', createdAt: '2026-04-10T11:45:00Z', reactions: [] },
-    { id: 'mock-r2', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [{ emoji: '😊' }] },
+    { id: 'mock-r1', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [] },
   ];
 
   const loadMessages = useCallback(async (currentVerifiedId) => {
@@ -341,7 +336,7 @@ export function MessagesPage() {
       } catch {
         sent = [];
       }
-      const mergedSent = [...MOCK_SENT, ...sent];
+      const mergedSent = [...sent, ...MOCK_SENT];
       setSentMessages(mergedSent);
       prevCountRef.current.sent = mergedSent.length;
       if (vid) {
@@ -351,7 +346,7 @@ export function MessagesPage() {
         } catch {
           rawReceivedMessages = [];
         }
-        const allReceived = [...MOCK_RECEIVED, ...rawReceivedMessages];
+        const allReceived = [...rawReceivedMessages, ...MOCK_RECEIVED];
         const validMessageIds = allReceived.map((message) => message.id);
         const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
         setReportedReceivedMessageIds(nextReportedIds);
