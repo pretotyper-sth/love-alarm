@@ -42,7 +42,7 @@ function incrementDailyAddCount() {
 }
 
 // 리워드 광고 그룹 ID (콘솔에서 발급)
-const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
+const REWARDED_AD_GROUP_ID = 'ait.v2.live.a0fa3947ad744201';
 const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
 
 function isAdFree() {

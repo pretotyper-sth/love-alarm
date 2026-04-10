@@ -5,7 +5,7 @@ import './LikeCountSheet.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
-const REWARDED_AD_GROUP_ID = 'ait.v2.live.3c9485e5e7974743';
+const REWARDED_AD_GROUP_ID = 'ait.v2.live.a0fa3947ad744201';
 const IS_DEV = import.meta.env.DEV;
 
 function isAdFree() {
@@ -86,7 +86,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
         <div className="lcs-header">
           <h2 className="lcs-title">좋아하는 사람 수 확인하기</h2>
           <p className="lcs-desc">
-            ID를 입력하고 짧은 광고를 보면<br />
+            인스타그램 ID를 입력하고 짧은 광고를 보면<br />
             지금 몇 명이 좋아하는지 알 수 있어요.
           </p>
         </div>
