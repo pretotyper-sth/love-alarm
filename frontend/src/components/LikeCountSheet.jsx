@@ -7,6 +7,7 @@ const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
 const REWARDED_AD_GROUP_ID = 'ait.v2.live.a0fa3947ad744201';
 const IS_DEV = import.meta.env.DEV;
+const MIN_SUBMITTABLE_ID_LENGTH = 1;
 
 function isAdFree() {
   if (localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true') return true;
@@ -88,8 +89,11 @@ export function LikeCountSheet({ open, onClose, onResult }) {
   }, [open]);
 
   const hasError = isInvalidInstagramId(instagramId);
+  const trimmedInstagramId = instagramId.trim();
   const canLoadVerifiedId =
-    !!verifiedUsername && instagramId.trim().toLowerCase() !== verifiedUsername.toLowerCase();
+    !!verifiedUsername && trimmedInstagramId.toLowerCase() !== verifiedUsername.toLowerCase();
+
+  const isActionReady = !isLoading && trimmedInstagramId.length >= MIN_SUBMITTABLE_ID_LENGTH && !hasError;
 
   const handleCheck = async () => {
     const trimmed = instagramId.trim().toLowerCase();
@@ -166,19 +170,18 @@ export function LikeCountSheet({ open, onClose, onResult }) {
                 autoCorrect="off"
                 spellCheck={false}
               />
-              {instagramId && (
-                <button
-                  className="lcs-clear"
-                  onClick={() => {
-                    setSubmitMessage('');
-                    setInstagramId('');
-                  }}
-                  aria-label="지우기"
-                  tabIndex={-1}
-                >
-                  ×
-                </button>
-              )}
+              <button
+                type="button"
+                className={`lcs-clear${instagramId ? ' is-visible' : ''}`}
+                onClick={() => {
+                  setSubmitMessage('');
+                  setInstagramId('');
+                }}
+                aria-label="지우기"
+                tabIndex={instagramId ? 0 : -1}
+              >
+                ×
+              </button>
             </div>
             {hasError && (
               <p className="lcs-field-msg error">인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요</p>
@@ -207,7 +210,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
             size="xlarge"
             display="block"
             onClick={handleCheck}
-            disabled={isLoading || !instagramId.trim()}
+            disabled={!isActionReady}
             loading={isLoading}
           >
             {isAdFree() ? '확인하기' : '광고 보고 확인하기'}
