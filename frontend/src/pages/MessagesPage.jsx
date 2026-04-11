@@ -16,6 +16,25 @@ import './MessagesPage.css';
 
 const IS_DEV = import.meta.env.DEV;
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
+const MSG_CACHE_KEY = 'love_alarm_messages_cache';
+const MSG_BADGE_COUNT_KEY = 'love_alarm_msg_badge_count';
+
+function isMockId(id) {
+  return typeof id === 'string' && id.startsWith('mock-');
+}
+
+function getCachedMessages() {
+  try {
+    const raw = localStorage.getItem(MSG_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function setCachedMessages(sent, received) {
+  try {
+    localStorage.setItem(MSG_CACHE_KEY, JSON.stringify({ sent, received, ts: Date.now() }));
+  } catch { /* ignore */ }
+}
 const REPORT_REASON_OPTIONS = [
   '불쾌하거나 과도하게 성적인 내용',
   '욕설, 혐오, 위협이 느껴져요',
@@ -297,12 +316,16 @@ function InstagramAuthCta({ onVerify }) {
 export function MessagesPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('sent'); // 'sent' | 'received'
-  const [sentMessages, setSentMessages] = useState([]);
-  const [receivedMessages, setReceivedMessages] = useState([]);
+  const cachedRef = useRef(getCachedMessages());
+  const [sentMessages, setSentMessages] = useState(() => cachedRef.current?.sent ?? []);
+  const [receivedMessages, setReceivedMessages] = useState(() => cachedRef.current?.received ?? []);
   const [readReceivedMessageIds, setReadReceivedMessageIds] = useState(() => loadReadReceivedMessageIds());
   const [, setReportedReceivedMessageIds] = useState(() => loadReportedReceivedMessageIds());
-  const [isLoading, setIsLoading] = useState(true);
-  const prevCountRef = useRef({ sent: 0, received: 0 });
+  const [isLoading, setIsLoading] = useState(() => !cachedRef.current);
+  const prevCountRef = useRef({
+    sent: cachedRef.current?.sent?.length ?? 0,
+    received: cachedRef.current?.received?.length ?? 0,
+  });
   // 받은 메시지 상세 시트
   const [selectedReceivedMsg, setSelectedReceivedMsg] = useState(null);
   // 보낸 메시지 상세 시트
@@ -315,20 +338,20 @@ export function MessagesPage() {
   const [reportTargetMessage, setReportTargetMessage] = useState(null);
   const [selectedReportReason, setSelectedReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [reportToast, setReportToast] = useState({ show: false, message: '' });
+  const [reportToast, setReportToast] = useState({ show: false, message: '', type: 'success' });
 
-  // TODO: MOCK DATA — 검수 전 제거
-  const MOCK_SENT = [
+  const MOCK_SENT = IS_DEV ? [
     { id: 'mock-s1', targetInstagramId: 'cute_puppy_lover', message: '혹시 강남역 스타벅스에서 자주 보이시는 분 맞나요? 용기 내서 보내봐요 ☕', createdAt: '2026-04-10T09:12:00Z', reactions: [{ emoji: '❤️' }] },
     { id: 'mock-s2', targetInstagramId: 'music_wave_99', message: '같은 수업 듣는 거 맞죠? 한번 말 걸어보고 싶었어요', createdAt: '2026-04-09T18:30:00Z', reactions: [] },
-  ];
-  const MOCK_RECEIVED = [
+  ] : [];
+  const MOCK_RECEIVED = IS_DEV ? [
     { id: 'mock-r1', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [] },
-  ];
+  ] : [];
 
   const loadMessages = useCallback(async (currentVerifiedId) => {
     const vid = currentVerifiedId ?? verifiedId;
-    setIsLoading(true);
+    const hasCache = !!cachedRef.current;
+    if (!hasCache) setIsLoading(true);
     try {
       let sent;
       try {
@@ -339,6 +362,7 @@ export function MessagesPage() {
       const mergedSent = [...sent, ...MOCK_SENT];
       setSentMessages(mergedSent);
       prevCountRef.current.sent = mergedSent.length;
+      let filteredReceived;
       if (vid) {
         let rawReceivedMessages;
         try {
@@ -351,13 +375,16 @@ export function MessagesPage() {
         const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
         setReportedReceivedMessageIds(nextReportedIds);
         setReadReceivedMessageIds(pruneReadReceivedMessageIds(validMessageIds));
-        const filteredReceived = allReceived.filter((message) => !nextReportedIds.includes(message.id));
+        filteredReceived = allReceived.filter((message) => !nextReportedIds.includes(message.id));
         setReceivedMessages(filteredReceived);
         prevCountRef.current.received = filteredReceived.length;
       } else {
-        setReceivedMessages(MOCK_RECEIVED);
-        prevCountRef.current.received = MOCK_RECEIVED.length;
+        filteredReceived = [...MOCK_RECEIVED];
+        setReceivedMessages(filteredReceived);
+        prevCountRef.current.received = filteredReceived.length;
       }
+      setCachedMessages(mergedSent, filteredReceived);
+      cachedRef.current = { sent: mergedSent, received: filteredReceived };
     } catch (err) {
       console.error('메시지 로드 실패:', err);
     } finally {
@@ -380,7 +407,7 @@ export function MessagesPage() {
       prev?.id === alarmId ? { ...prev, reactions: [{ emoji }] } : prev
     );
 
-    if (!IS_DEV) {
+    if (!isMockId(alarmId)) {
       try {
         await api.reactToMessage(alarmId, emoji);
       } catch (err) {
@@ -398,8 +425,14 @@ export function MessagesPage() {
   };
 
   const handleOpenReceivedMessage = (message) => {
-    setReadReceivedMessageIds(markReceivedMessageAsRead(message.id));
+    const nextReadIds = markReceivedMessageAsRead(message.id);
+    setReadReceivedMessageIds(nextReadIds);
     setSelectedReceivedMsg(message);
+    // 홈 배지 카운트 즉시 동기화 (API 대기 없이 복귀 시 반영)
+    const readSet = new Set(nextReadIds);
+    const reportedSet = new Set(loadReportedReceivedMessageIds());
+    const unread = receivedMessages.filter(m => !readSet.has(m.id) && !reportedSet.has(m.id)).length;
+    localStorage.setItem(MSG_BADGE_COUNT_KEY, String(unread));
   };
 
   const handleOpenReportSheet = (message) => {
@@ -418,19 +451,29 @@ export function MessagesPage() {
 
     setIsSubmittingReport(true);
     try {
-      if (!IS_DEV) {
+      if (!isMockId(reportTargetMessage.id)) {
         await api.reportMessage(reportTargetMessage.id, selectedReportReason, verifiedId);
       }
 
-      setReportedReceivedMessageIds(markReceivedMessageAsReported(reportTargetMessage.id));
-      setReceivedMessages((prev) => prev.filter((message) => message.id !== reportTargetMessage.id));
+      const nextReportedIds = markReceivedMessageAsReported(reportTargetMessage.id);
+      setReportedReceivedMessageIds(nextReportedIds);
+      setReceivedMessages((prev) => {
+        const next = prev.filter((message) => message.id !== reportTargetMessage.id);
+        setCachedMessages(sentMessages, next);
+        // 홈 배지 카운트 즉시 동기화
+        const readSet = new Set(readReceivedMessageIds);
+        const reportedSet = new Set(nextReportedIds);
+        const unread = next.filter(m => !readSet.has(m.id) && !reportedSet.has(m.id)).length;
+        localStorage.setItem(MSG_BADGE_COUNT_KEY, String(unread));
+        return next;
+      });
       setSelectedReceivedMsg(null);
       setReportTargetMessage(null);
       setSelectedReportReason('');
-      setReportToast({ show: true, message: '신고 및 숨김 처리를 완료했어요' });
+      setReportToast({ show: true, message: '신고 및 숨김 처리를 완료했어요', type: 'success' });
       window.setTimeout(() => setReportToast(prev => ({ ...prev, show: false })), 3000);
     } catch (error) {
-      setReportToast({ show: true, message: error.message || '신고 접수에 실패했어요' });
+      setReportToast({ show: true, message: error.message || '신고 접수에 실패했어요', type: 'error' });
       window.setTimeout(() => setReportToast(prev => ({ ...prev, show: false })), 3000);
     } finally {
       setIsSubmittingReport(false);
@@ -602,11 +645,11 @@ export function MessagesPage() {
 
       <div className="toast-stack messages-toast-stack">
         <div
-          className={`custom-toast ${reportToast.show ? 'show' : ''}`}
+          className={`custom-toast ${reportToast.show ? 'show' : ''}${reportToast.type === 'error' ? ' error' : ''}`}
           style={{ bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
         >
           <div className="custom-toast-content">
-            <span className="custom-toast-icon">✓</span>
+            <span className="custom-toast-icon">{reportToast.type === 'error' ? '!' : '✓'}</span>
             <span className="custom-toast-text">{reportToast.message}</span>
           </div>
         </div>

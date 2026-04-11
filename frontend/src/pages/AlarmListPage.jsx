@@ -24,6 +24,7 @@ const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
 const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
+const MSG_BADGE_COUNT_KEY = 'love_alarm_msg_badge_count';
 const ALARM_LIST_TOAST_BOTTOM_PX = 50;
 
 function getLikeCountCache() {
@@ -39,6 +40,22 @@ function getLikeCountCache() {
 function truncateId(id, max = 13) {
   if (!id) return '?';
   return id.length > max ? id.slice(0, max) + '…' : id;
+}
+
+// 한국어 조사 자동 판별 (을/를, 이/가, 은/는 등)
+function getParticle(text, withBatchim, withoutBatchim) {
+  if (!text) return withoutBatchim;
+  const cleaned = text.replace(/[^a-zA-Z0-9가-힣]/g, '');
+  if (!cleaned) return withBatchim;
+  const last = cleaned[cleaned.length - 1];
+  const code = last.charCodeAt(0);
+  if (code >= 0xAC00 && code <= 0xD7A3) {
+    return (code - 0xAC00) % 28 !== 0 ? withBatchim : withoutBatchim;
+  }
+  if (/[0-9]/.test(last)) {
+    return '013678'.includes(last) ? withBatchim : withoutBatchim;
+  }
+  return 'lmnr'.includes(last.toLowerCase()) ? withBatchim : withoutBatchim;
 }
 
 // 알람 아이템 컴포넌트
@@ -157,7 +174,10 @@ export function AlarmListPage() {
   const [showLikeCountSheet, setShowLikeCountSheet] = useState(false);
   const [likeCountCache, setLikeCountCache] = useState(() => getLikeCountCache());
   // 메시지 배지 카운트
-  const [msgBadgeCount, setMsgBadgeCount] = useState(0);
+  const [msgBadgeCount, setMsgBadgeCount] = useState(() => {
+    const cached = localStorage.getItem(MSG_BADGE_COUNT_KEY);
+    return cached ? parseInt(cached, 10) : 0;
+  });
   const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
   const alarmRefsRef = useRef([]);
   const addButtonRef = useRef(null); // 추가하기 버튼 ref
@@ -256,27 +276,40 @@ export function AlarmListPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // 메시지 배지 카운트 로드 (인증된 경우)
+  const IS_DEV = import.meta.env.DEV;
+  const MOCK_RECEIVED_FOR_BADGE = IS_DEV ? [
+    { id: 'mock-r1', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [] },
+  ] : [];
+
+  // 메시지 배지 카운트 로드 (인증된 경우, 페이지 복귀마다 재계산)
   useEffect(() => {
+    if (!user) return;
     const loadMsgBadge = async () => {
       const badgeEnabled = loadUnreadMessageBadgeEnabled();
       setUnreadMessageBadgeEnabled(badgeEnabled);
-      if (!badgeEnabled) {
-        setMsgBadgeCount(0);
-        return;
-      }
 
       const vid = localStorage.getItem(IG_VERIFIED_KEY);
-      if (!vid) {
+      if (!vid && !IS_DEV) {
         setMsgBadgeCount(0);
+        localStorage.setItem(MSG_BADGE_COUNT_KEY, '0');
         return;
       }
       try {
-        const messages = await api.getReceivedMessages(vid);
-        setMsgBadgeCount(countUnreadReceivedMessages(messages));
-      } catch { /* 조용히 실패 */ }
+        let messages = [];
+        if (vid) {
+          try {
+            messages = await api.getReceivedMessages(vid);
+          } catch {
+            messages = [];
+          }
+        }
+        const allMessages = [...messages, ...MOCK_RECEIVED_FOR_BADGE];
+        const count = countUnreadReceivedMessages(allMessages);
+        setMsgBadgeCount(count);
+        localStorage.setItem(MSG_BADGE_COUNT_KEY, String(count));
+      } catch { /* 캐시값 유지 */ }
     };
-    if (user) loadMsgBadge();
+    loadMsgBadge();
   }, [user]);
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
@@ -669,7 +702,7 @@ export function AlarmListPage() {
           <strong className="like-count-bar-highlight">
             {likeCountCache.target ? truncateId(likeCountCache.target) : '?'}
           </strong>
-          {' '}을 좋아하는 사람{' '}
+          {' '}{getParticle(likeCountCache.target, '을', '를')} 좋아하는 사람{' '}
           <strong className="like-count-bar-highlight">
             {likeCountCache.count !== null ? likeCountCache.count : '?'}
           </strong>
