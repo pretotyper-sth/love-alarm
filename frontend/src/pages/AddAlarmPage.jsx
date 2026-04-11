@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { logScreen, logClick } from '../utils/analytics';
+import { AlarmPreviewSheet } from '../components/AlarmPreviewSheet';
 import './AddAlarmPage.css';
 
 // 최초 알람 등록 여부 키
@@ -68,6 +69,8 @@ export function AddAlarmPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
   const [isAdLoaded, setIsAdLoaded] = useState(false);
+  const [showPreviewSheet, setShowPreviewSheet] = useState(false);
+  const [previewChecked, setPreviewChecked] = useState(false);
   const adCleanupRef = useRef(null);
 
   // 인증된 Instagram 계정 여부
@@ -132,6 +135,20 @@ export function AddAlarmPage() {
   };
 
   const handleSubmit = async () => {
+    // AI 미리보기 가능 여부 체크 (아직 안 했으면)
+    if (!previewChecked && targetId.trim()) {
+      try {
+        const { available } = await api.checkAlarmPreview(targetId.trim().toLowerCase());
+        setPreviewChecked(true);
+        if (available) {
+          logClick('alarm_preview_available');
+          setShowPreviewSheet(true);
+          return;
+        }
+      } catch {
+        // 체크 실패 시 그냥 진행
+      }
+    }
     await addAlarm();
   };
 
@@ -301,6 +318,7 @@ export function AddAlarmPage() {
 
   const handleClearTargetId = () => {
     setTargetId('');
+    setPreviewChecked(false);
   };
 
   // 인스타그램 ID 유효성 검사
@@ -502,6 +520,20 @@ export function AddAlarmPage() {
           {isAdFree() ? '알람 추가하기' : '광고보고 추가하기'}
         </Button>
       </div>
+
+      {/* AI 미리보기 시트 */}
+      {showPreviewSheet && (
+        <AlarmPreviewSheet
+          targetInstagramId={targetId.trim().toLowerCase()}
+          onClose={() => {
+            setShowPreviewSheet(false);
+          }}
+          onSkip={() => {
+            setShowPreviewSheet(false);
+            addAlarm();
+          }}
+        />
+      )}
 
       {/* 에러 Toast */}
       <div className={`single-toast ${errorToast.show ? 'show' : ''}`}>

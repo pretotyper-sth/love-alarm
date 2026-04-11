@@ -13,6 +13,8 @@ import { RewardsPage } from './pages/RewardsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { ErrorPage } from './pages/ErrorPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { CloneManagePage } from './pages/CloneManagePage';
+import { CloneConversationsPage } from './pages/CloneConversationsPage';
 import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import './App.css';
@@ -311,6 +313,14 @@ function AppRoutes() {
             <Route 
               path="/messages" 
               element={hasVisited ? <MessagesPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/clone" 
+              element={hasVisited ? <CloneManagePage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/clone-conversations" 
+              element={hasVisited ? <CloneConversationsPage /> : <Navigate to="/" replace />} 
             />
             <Route path="/error" element={<ErrorPage />} />
           </Routes>

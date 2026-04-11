@@ -147,6 +147,63 @@ router.get('/top', requireDashAuth, async (req, res) => {
   }
 });
 
+// GET /api/events/daily-users — 일별 유니크 유저/세션 수
+router.get('/daily-users', requireDashAuth, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const since = new Date(Date.now() - days * 86400000);
+
+    const data = await req.prisma.$queryRaw`
+      SELECT DATE("createdAt") as date,
+             COUNT(DISTINCT "sessionId")::int as sessions,
+             COUNT(DISTINCT "userId")::int as users
+      FROM "AnalyticsEvent"
+      WHERE "createdAt" >= ${since}
+      GROUP BY DATE("createdAt")
+      ORDER BY date
+    `;
+
+    res.json({ days, data });
+  } catch (err) {
+    console.error('[events] daily-users error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/events/param-distribution — 특정 이벤트의 params 값 분포
+router.get('/param-distribution', requireDashAuth, async (req, res) => {
+  try {
+    const { name, key } = req.query;
+    if (!name || !key) return res.status(400).json({ error: 'name and key required' });
+
+    const days = parseInt(req.query.days) || 7;
+    const since = new Date(Date.now() - days * 86400000);
+
+    const events = await req.prisma.analyticsEvent.findMany({
+      where: { name, createdAt: { gte: since }, params: { not: null } },
+      select: { params: true },
+    });
+
+    const dist = {};
+    for (const e of events) {
+      const val = e.params?.[key];
+      if (val !== undefined && val !== null) {
+        const label = String(val);
+        dist[label] = (dist[label] || 0) + 1;
+      }
+    }
+
+    const sorted = Object.entries(dist)
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count);
+
+    res.json({ name, key, days, distribution: sorted });
+  } catch (err) {
+    console.error('[events] param-distribution error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/events/trend — 특정 이벤트의 일별 추이
 router.get('/trend', requireDashAuth, async (req, res) => {
   try {
@@ -169,6 +226,42 @@ router.get('/trend', requireDashAuth, async (req, res) => {
   } catch (err) {
     console.error('[events] trend error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/events/query — 대시보드 SQL 쿼리 실행 (SELECT만 허용)
+router.post('/query', requireDashAuth, async (req, res) => {
+  try {
+    const { sql } = req.body;
+    if (!sql || typeof sql !== 'string') {
+      return res.status(400).json({ error: 'sql required' });
+    }
+
+    const normalized = sql.trim().replace(/\/\*[\s\S]*?\*\//g, '').replace(/--.*$/gm, '');
+    const firstWord = normalized.split(/\s+/)[0].toUpperCase();
+    if (firstWord !== 'SELECT') {
+      return res.status(403).json({ error: 'SELECT 쿼리만 허용됩니다' });
+    }
+
+    const forbidden = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
+    if (forbidden.test(normalized)) {
+      return res.status(403).json({ error: '읽기 전용: 데이터 변경 쿼리는 차단됩니다' });
+    }
+
+    const start = Date.now();
+    const rows = await req.prisma.$queryRawUnsafe(sql);
+    const elapsed = Date.now() - start;
+
+    const limited = Array.isArray(rows) ? rows.slice(0, 500) : rows;
+
+    res.json({
+      rows: limited,
+      rowCount: Array.isArray(rows) ? rows.length : 0,
+      truncated: Array.isArray(rows) && rows.length > 500,
+      elapsed,
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

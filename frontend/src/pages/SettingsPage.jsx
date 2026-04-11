@@ -314,6 +314,26 @@ export function SettingsPage() {
           horizontalPadding="medium"
           onClick={handleShareApp}
         />
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              AI 클론 관리
+            </Text>
+          }
+          right={
+            <img 
+              src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png"
+              alt="오른쪽 화살표"
+              style={{ width: '20px', height: '20px', opacity: 0.6 }}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+          onClick={() => {
+            logClick('settings_clone_manage_click');
+            navigate('/clone');
+          }}
+        />
       </List>
 
       {/* 토스트 - 성공/에러 공용 */}

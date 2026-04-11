@@ -32,6 +32,8 @@ model User {
   matchesAsUser2 Match[]  @relation("MatchUser2")
   feedbacks    Feedback[]                              // 내가 보낸 피드백들
   verificationSessions VerificationSession[]
+  aiClone      AiClone?
+  cloneViewPurchases CloneViewPurchase[]
 }
 
 // 알람 (좋아요) 테이블
@@ -123,5 +125,63 @@ model VerificationSession {
 
   @@index([instagramUsername, status])
   @@index([userId, status])
+}
+
+// AI 클론 테이블
+model AiClone {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  instagramId     String
+  personalityData Json?    // Big Five 점수, 언어 패턴, 감정 역학 분석 결과
+  clonePrompt     String?  @db.Text // LLM 시스템 프롬프트 (클론 페르소나)
+  allowMatching   Boolean  @default(false) // 다른 사용자와의 AI 대화 허용
+  gender          String?  // male / female / other
+  interestedIn    String?  // male / female / all
+  status          String   @default("active") // active / paused / deleted
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversationsAsClone1 AiConversation[] @relation("ConversationClone1")
+  conversationsAsClone2 AiConversation[] @relation("ConversationClone2")
+
+  @@index([allowMatching, status])
+  @@index([instagramId])
+}
+
+// AI 클론 대화 시뮬레이션 테이블
+model AiConversation {
+  id              String    @id @default(uuid())
+  clone1Id        String
+  clone2Id        String
+  messages        Json      @default("[]") // [{role, content, timestamp}, ...]
+  chemistryScore  Float?    // 케미 점수 (0~100)
+  summary         String?   @db.Text
+  status          String    @default("pending") // pending / in_progress / completed / failed
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  completedAt     DateTime?
+
+  clone1          AiClone   @relation("ConversationClone1", fields: [clone1Id], references: [id], onDelete: Cascade)
+  clone2          AiClone   @relation("ConversationClone2", fields: [clone2Id], references: [id], onDelete: Cascade)
+  purchases       CloneViewPurchase[]
+
+  @@unique([clone1Id, clone2Id])
+  @@index([status])
+}
+
+// AI 클론 대화 조회 구매 테이블
+model CloneViewPurchase {
+  id              String   @id @default(uuid())
+  userId          String
+  conversationId  String
+  amount          Int      // 결제 금액 (원)
+  purchaseType    String   // conversation_view / alarm_preview
+  purchasedAt     DateTime @default(now())
+
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 

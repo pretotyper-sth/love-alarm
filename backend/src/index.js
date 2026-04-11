@@ -16,6 +16,8 @@ import webhooksInstagramRoutes from './routes/webhooksInstagram.js';
 import verifyInstagramRoutes from './routes/verifyInstagram.js';
 import messagesRoutes from './routes/messages.js';
 import eventsRoutes from './routes/events.js';
+import clonesRoutes from './routes/clones.js';
+import { startMatchingScheduler } from './services/matchingEngine.js';
 
 dotenv.config();
 
@@ -88,6 +90,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/verify/instagram', verifyInstagramRoutes);
+app.use('/api/clones', clonesRoutes);
 app.use('/webhook', webhooksInstagramRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
@@ -107,6 +110,11 @@ app.use((err, req, res, next) => {
 httpServer.listen(PORT, () => {
   console.log(`🚀 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
   console.log(`🔌 WebSocket 활성화됨`);
+
+  // AI 클론 매칭 엔진 시작
+  if (process.env.ENABLE_MATCHING_ENGINE !== 'false') {
+    startMatchingScheduler(prisma, io, userSockets);
+  }
 });
 
 // Graceful shutdown

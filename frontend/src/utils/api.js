@@ -535,6 +535,173 @@ export const api = {
     return await response.json();
   },
 
+  // ==================== AI 클론 ====================
+
+  /**
+   * AI 클론 생성
+   */
+  createClone: async (instagramId, options = {}) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/clones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: user.id,
+        instagramId,
+        ...options,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '클론 생성 실패');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * 사용자의 AI 클론 조회
+   */
+  getClone: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/clones/${user.id}`);
+
+    if (!response.ok) {
+      if (response.status === 404) return { clone: null };
+      throw new Error('클론 조회 실패');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * AI 클론 설정 업데이트
+   */
+  updateClone: async (updates) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/clones/${user.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '클론 업데이트 실패');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * AI 클론 삭제
+   */
+  deleteClone: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/clones/${user.id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) throw new Error('클론 삭제 실패');
+    return await response.json();
+  },
+
+  /**
+   * 알람 미리보기 가능 여부 확인
+   */
+  checkAlarmPreview: async (targetInstagramId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/clones/alarm-preview/check?targetInstagramId=${encodeURIComponent(targetInstagramId)}`
+    );
+
+    if (!response.ok) return { available: false };
+    return await response.json();
+  },
+
+  /**
+   * 알람 미리보기 시뮬레이션 실행
+   */
+  runAlarmPreview: async (targetInstagramId) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(`${API_BASE_URL}/clones/alarm-preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, targetInstagramId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '미리보기 실패');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * 대화 조회 구매
+   */
+  purchaseConversationView: async (conversationId, purchaseType) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(
+      `${API_BASE_URL}/clones/conversations/${conversationId}/purchase`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, purchaseType }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '구매 실패');
+    }
+
+    return await response.json();
+  },
+
+  /**
+   * 사용자의 대화 목록 조회
+   */
+  getConversations: async () => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(
+      `${API_BASE_URL}/clones/conversations/user/${user.id}`
+    );
+
+    if (!response.ok) throw new Error('대화 목록 조회 실패');
+    return await response.json();
+  },
+
+  /**
+   * 특정 대화 조회
+   */
+  getConversation: async (conversationId) => {
+    const user = api.getCurrentUser();
+    if (!user) throw new Error('로그인이 필요합니다.');
+
+    const response = await fetch(
+      `${API_BASE_URL}/clones/conversations/${conversationId}?userId=${user.id}`
+    );
+
+    if (!response.ok) throw new Error('대화 조회 실패');
+    return await response.json();
+  },
+
   // ==================== 헬스체크 ====================
 
   /**
