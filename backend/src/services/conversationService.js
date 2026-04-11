@@ -3,10 +3,12 @@
  *
  * 두 클론 간의 대화를 LLM 멀티턴으로 시뮬레이션하고
  * 케미 점수 및 요약을 생성한다.
+ *
+ * 비용: Groq/Gemini 무료 티어 사용 → 고정비용 0원
  */
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+import { callLLM, callLLMJson } from './llmProvider.js';
+
 const CONVERSATION_TURNS = parseInt(process.env.CLONE_CONVERSATION_TURNS || '8', 10);
 
 /**
@@ -39,45 +41,22 @@ ${clone2.clonePrompt}
 
 /**
  * LLM에 대화 생성 요청
+ * Groq/Gemini 무료 티어로 비용 0원 운영.
  */
 async function generateConversation(clone1, clone2) {
-  if (!OPENAI_API_KEY) {
-    return generateMockConversation(clone1, clone2);
-  }
+  const systemPrompt = buildConversationSystemPrompt(clone1, clone2);
+  const userPrompt = `두 사람이 처음 만나 ${CONVERSATION_TURNS}턴의 대화를 나눈다. A가 먼저 말을 건다. 자연스러운 첫 만남 대화를 JSON 배열로 시뮬레이션하라.`;
 
   try {
-    const systemPrompt = buildConversationSystemPrompt(clone1, clone2);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `두 사람이 처음 만나 ${CONVERSATION_TURNS}턴의 대화를 나눈다. A가 먼저 말을 건다. 자연스러운 첫 만남 대화를 시뮬레이션하라.`,
-          },
-        ],
-        temperature: 0.9,
-        max_tokens: 3000,
-        response_format: { type: 'json_object' },
-      }),
+    const content = await callLLMJson(systemPrompt, userPrompt, {
+      temperature: 0.9,
+      maxTokens: 3000,
     });
 
-    if (!response.ok) {
-      console.error('OpenAI conversation API error:', response.status);
+    if (!content) {
       return generateMockConversation(clone1, clone2);
     }
 
-    const data = await response.json();
-    const content = JSON.parse(data.choices[0].message.content);
-
-    // API가 { messages: [...] } 또는 [...] 둘 다 올 수 있음
     const messages = Array.isArray(content) ? content : content.messages || content.conversation || [];
 
     return messages.map((m, i) => ({
@@ -93,34 +72,16 @@ async function generateConversation(clone1, clone2) {
 
 /**
  * 케미 점수 및 대화 요약 분석
+ * Groq/Gemini 무료 티어로 비용 0원 운영.
  */
 async function analyzeChemistry(messages, clone1, clone2) {
-  if (!OPENAI_API_KEY) {
-    return { score: 65, summary: buildMockSummary(clone1, clone2) };
-  }
-
   const conversationText = messages
     .map((m) => `${m.speaker === 'A' ? clone1.instagramId : clone2.instagramId}: ${m.message}`)
     .join('\n');
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `너는 관계 심리학 전문가다. 두 사람의 대화를 분석해서 케미 점수와 요약을 제공한다.
-반드시 JSON으로만 응답하라.`,
-          },
-          {
-            role: 'user',
-            content: `다음 대화를 분석하라:
+  const systemPrompt = `너는 관계 심리학 전문가다. 두 사람의 대화를 분석해서 케미 점수와 요약을 제공한다. 반드시 JSON으로만 응답하라.`;
+
+  const userPrompt = `다음 대화를 분석하라:
 
 ${conversationText}
 
@@ -135,21 +96,17 @@ ${conversationText}
     "interestOverlap": "high|medium|low",
     "emotionalSync": "high|medium|low"
   }
-}`,
-          },
-        ],
-        temperature: 0.5,
-        max_tokens: 800,
-        response_format: { type: 'json_object' },
-      }),
+}`;
+
+  try {
+    const result = await callLLMJson(systemPrompt, userPrompt, {
+      temperature: 0.5,
+      maxTokens: 800,
     });
 
-    if (!response.ok) {
+    if (!result) {
       return { score: 65, summary: buildMockSummary(clone1, clone2) };
     }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
 
     return {
       score: Math.max(0, Math.min(100, result.score || 65)),

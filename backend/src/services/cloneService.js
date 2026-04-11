@@ -3,10 +3,11 @@
  *
  * 인스타그램 공개 프로필 데이터를 기반으로 성격을 분석하고
  * LLM 시스템 프롬프트(클론 페르소나)를 생성한다.
+ *
+ * 비용: Groq/Gemini 무료 티어 사용 → 고정비용 0원
  */
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+import { callLLMJson } from './llmProvider.js';
 
 /**
  * 인스타그램 공개 프로필에서 분석 가능한 데이터를 수집한다.
@@ -78,45 +79,24 @@ function extractRecentCaptions(user) {
 
 /**
  * 인스타그램 프로필 데이터를 기반으로 성격 분석(Big Five + 대화 스타일)을 수행한다.
+ * Groq/Gemini 무료 티어로 비용 0원 운영.
  */
 export async function analyzePersonality(profileData, userInputs = {}) {
-  if (!OPENAI_API_KEY) {
-    return buildDefaultPersonality(profileData, userInputs);
-  }
-
   const prompt = buildAnalysisPrompt(profileData, userInputs);
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `너는 심리분석 전문 AI다. Big Five 성격 모델과 Gottman 관계 이론을 기반으로 
+  const systemPrompt = `너는 심리분석 전문 AI다. Big Five 성격 모델과 Gottman 관계 이론을 기반으로 
 SNS 프로필과 게시물을 분석해서 성격 프로파일을 생성한다.
-반드시 JSON으로만 응답하라. 다른 텍스트는 포함하지 마라.`,
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-        response_format: { type: 'json_object' },
-      }),
+반드시 JSON으로만 응답하라. 다른 텍스트는 포함하지 마라.`;
+
+  try {
+    const result = await callLLMJson(systemPrompt, prompt, {
+      temperature: 0.7,
+      maxTokens: 1500,
     });
 
-    if (!response.ok) {
-      console.error('OpenAI API error:', response.status);
+    if (!result) {
       return buildDefaultPersonality(profileData, userInputs);
     }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
 
     return {
       bigFive: result.bigFive || defaultBigFive(),
