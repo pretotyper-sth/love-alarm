@@ -314,9 +314,14 @@ export function SettingsPage() {
         {/* 연결 시 푸시 알림 */}
         <ListRow
           contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              연결 시 푸시 알림
-            </Text>
+            <div>
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                연결 시 푸시 알림
+              </Text>
+              <Text color="#8b95a1" typography="t7" style={{ marginTop: 2 }}>
+                서로 알람을 등록하면 푸시로 알려드려요
+              </Text>
+            </div>
           }
           right={
             <Switch
@@ -332,9 +337,14 @@ export function SettingsPage() {
         {/* 연결 시 토스 앱 알림 */}
         <ListRow
           contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              연결 시 토스 앱 알림
-            </Text>
+            <div>
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                연결 시 토스 앱 알림
+              </Text>
+              <Text color="#8b95a1" typography="t7" style={{ marginTop: 2 }}>
+                서로 알람을 등록하면 토스 앱에서 알려드려요
+              </Text>
+            </div>
           }
           right={
             <Switch
@@ -350,9 +360,14 @@ export function SettingsPage() {
         {/* 메시지 수신 시 푸시 알림 */}
         <ListRow
           contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              메시지 수신 시 푸시 알림
-            </Text>
+            <div>
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                메시지 수신 시 푸시 알림
+              </Text>
+              <Text color="#8b95a1" typography="t7" style={{ marginTop: 2 }}>
+                메시지를 받으면 푸시로 알려드려요
+              </Text>
+            </div>
           }
           right={
             <Switch
@@ -368,9 +383,14 @@ export function SettingsPage() {
         {/* 메시지 수신 시 토스 앱 알림 */}
         <ListRow
           contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              메시지 수신 시 토스 앱 알림
-            </Text>
+            <div>
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                메시지 수신 시 토스 앱 알림
+              </Text>
+              <Text color="#8b95a1" typography="t7" style={{ marginTop: 2 }}>
+                메시지를 받으면 토스 앱에서 알려드려요
+              </Text>
+            </div>
           }
           right={
             <Switch
@@ -385,9 +405,14 @@ export function SettingsPage() {
 
         <ListRow
           contents={
-            <Text color="#4e5968" typography="t5" fontWeight="semibold">
-              읽지 않은 메시지 배지 표시
-            </Text>
+            <div>
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                읽지 않은 메시지 배지 표시
+              </Text>
+              <Text color="#8b95a1" typography="t7" style={{ marginTop: 2 }}>
+                안 읽은 메시지가 있으면 아이콘에 표시해요
+              </Text>
+            </div>
           }
           right={
             <Switch
