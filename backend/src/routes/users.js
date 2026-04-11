@@ -169,22 +169,21 @@ router.delete('/:id/instagram-auth', async (req, res) => {
 /**
  * PATCH /api/users/:id/settings
  * 알림 설정 변경
- * 
- * Body: { pushEnabled?: boolean, tossAppEnabled?: boolean }
  */
 router.patch('/:id/settings', async (req, res) => {
   try {
     const { id } = req.params;
-    const { pushEnabled, tossAppEnabled } = req.body;
+    const { pushEnabled, tossAppEnabled, messagePushEnabled, messageTossAppEnabled } = req.body;
 
-    // 최소 하나의 설정값이 있어야 함
-    if (pushEnabled === undefined && tossAppEnabled === undefined) {
-      return res.status(400).json({ error: '변경할 설정이 없습니다.' });
+    const ALLOWED_FIELDS = ['pushEnabled', 'tossAppEnabled', 'messagePushEnabled', 'messageTossAppEnabled'];
+    const updateData = {};
+    for (const field of ALLOWED_FIELDS) {
+      if (req.body[field] !== undefined) updateData[field] = req.body[field];
     }
 
-    const updateData = {};
-    if (pushEnabled !== undefined) updateData.pushEnabled = pushEnabled;
-    if (tossAppEnabled !== undefined) updateData.tossAppEnabled = tossAppEnabled;
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: '변경할 설정이 없습니다.' });
+    }
 
     const user = await req.prisma.user.update({
       where: { id },

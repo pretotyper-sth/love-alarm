@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { checkMatching } from '../services/matching.js';
-import { notifyConnectionSuccess } from '../services/pushNotification.js';
+import { notifyConnectionSuccess, sendMessageReceivedNotification } from '../services/pushNotification.js';
 
 const router = Router();
 
@@ -104,6 +104,17 @@ router.post('/', async (req, res) => {
         // 비동기로 푸시 발송 (응답 지연 방지)
         notifyConnectionSuccess(user, matchResult.targetUser).catch(() => {});
       }
+    }
+
+    // 메시지가 포함된 알람이면 대상 유저에게 메시지 수신 알림 발송
+    if (alarm.message) {
+      req.prisma.user.findMany({
+        where: { instagramId: targetInstagramId.toLowerCase() },
+      }).then(targetUsers => {
+        for (const tu of targetUsers) {
+          sendMessageReceivedNotification(tu).catch(() => {});
+        }
+      }).catch(() => {});
     }
 
     res.status(201).json({ 

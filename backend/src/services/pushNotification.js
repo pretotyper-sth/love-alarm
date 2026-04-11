@@ -21,6 +21,7 @@ const SEND_MESSAGE_ENDPOINT = '/api-partner/v1/apps-in-toss/messenger/send-messa
 // 템플릿 코드
 const TEMPLATE_CODES = {
   CONNECTION_SUCCESS: 'love-alarm-connection_success',
+  MESSAGE_RECEIVED: 'love-alarm-message_received',
 };
 
 // mTLS 인증서 로드
@@ -130,8 +131,25 @@ export async function notifyConnectionSuccess(user1, user2) {
   };
 }
 
+/**
+ * 메시지 수신 알림 발송
+ * @param {object} targetUser - 알림 받을 사용자 (User 모델)
+ */
+export async function sendMessageReceivedNotification(targetUser) {
+  if (!targetUser.messagePushEnabled && !targetUser.messageTossAppEnabled) {
+    return { success: false, reason: '메시지 알림 설정 꺼짐' };
+  }
+
+  return await sendPushNotification(
+    targetUser.tossUserId,
+    TEMPLATE_CODES.MESSAGE_RECEIVED,
+    {}
+  );
+}
+
 export default {
   sendConnectionSuccessNotification,
   notifyConnectionSuccess,
+  sendMessageReceivedNotification,
   TEMPLATE_CODES,
 };

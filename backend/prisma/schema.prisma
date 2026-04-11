@@ -19,8 +19,10 @@ model User {
   instagramId     String?            // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
   maxSlots        Int       @default(2) // 최대 알람 슬롯 수 (기본 2개, 결제로 증가)
   adFree          Boolean   @default(false) // 광고 영구 제거 (30일 체크인 보상)
-  pushEnabled     Boolean   @default(false) // 푸시 알림 허용 여부
-  tossAppEnabled  Boolean   @default(false) // 토스 앱 알림 허용 여부
+  pushEnabled     Boolean   @default(false) // 연결 시 푸시 알림 허용 여부
+  tossAppEnabled  Boolean   @default(false) // 연결 시 토스 앱 알림 허용 여부
+  messagePushEnabled    Boolean @default(false) // 메시지 수신 시 푸시 알림
+  messageTossAppEnabled Boolean @default(false) // 메시지 수신 시 토스 앱 알림
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

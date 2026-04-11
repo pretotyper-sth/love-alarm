@@ -53,6 +53,8 @@ export function SettingsPage() {
   // 즉시 캐시된 값으로 초기화 (스켈레톤 없이 바로 표시)
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
   const [tossAppEnabled, setTossAppEnabled] = useState(user?.tossAppEnabled ?? false);
+  const [messagePushEnabled, setMessagePushEnabled] = useState(user?.messagePushEnabled ?? false);
+  const [messageTossAppEnabled, setMessageTossAppEnabled] = useState(user?.messageTossAppEnabled ?? false);
   const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
   const [isSaving, setIsSaving] = useState(false);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
@@ -94,6 +96,8 @@ export function SettingsPage() {
         const userData = await api.getUser();
         setPushEnabled(userData.pushEnabled ?? false);
         setTossAppEnabled(userData.tossAppEnabled ?? false);
+        setMessagePushEnabled(userData.messagePushEnabled ?? false);
+        setMessageTossAppEnabled(userData.messageTossAppEnabled ?? false);
       } catch (error) {
         console.error('Failed to sync settings:', error);
       }
@@ -214,27 +218,25 @@ export function SettingsPage() {
     ? `@${likeCountTarget} = ${likeCountResult ?? '?'}명 (${likeCountCheckedAt ? new Date(likeCountCheckedAt).toLocaleTimeString('ko-KR') : '-'})`
     : '없음';
 
-  // 설정 변경 핸들러
-  const handleSettingChange = async (field, value) => {
-    // Optimistic UI
-    if (field === 'pushEnabled') {
-      setPushEnabled(value);
-    } else {
-      setTossAppEnabled(value);
-    }
+  const SETTING_SETTERS = {
+    pushEnabled: setPushEnabled,
+    tossAppEnabled: setTossAppEnabled,
+    messagePushEnabled: setMessagePushEnabled,
+    messageTossAppEnabled: setMessageTossAppEnabled,
+  };
 
+  const handleSettingChange = async (field, value) => {
+    const setter = SETTING_SETTERS[field];
+    if (!setter) return;
+
+    setter(value);
     setIsSaving(true);
     try {
       const updatedUser = await api.updateSettings({ [field]: value });
       setUser(updatedUser);
     } catch (error) {
       console.error('Failed to save settings:', error);
-      // 롤백
-      if (field === 'pushEnabled') {
-        setPushEnabled(!value);
-      } else {
-        setTossAppEnabled(!value);
-      }
+      setter(!value);
     } finally {
       setIsSaving(false);
     }
@@ -339,6 +341,42 @@ export function SettingsPage() {
               checked={tossAppEnabled}
               disabled={isSaving}
               onChange={() => handleSettingChange('tossAppEnabled', !tossAppEnabled)}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+        />
+
+        {/* 메시지 수신 시 푸시 알림 */}
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              메시지 수신 시 푸시 알림
+            </Text>
+          }
+          right={
+            <Switch
+              checked={messagePushEnabled}
+              disabled={isSaving}
+              onChange={() => handleSettingChange('messagePushEnabled', !messagePushEnabled)}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+        />
+
+        {/* 메시지 수신 시 토스 앱 알림 */}
+        <ListRow
+          contents={
+            <Text color="#4e5968" typography="t5" fontWeight="semibold">
+              메시지 수신 시 토스 앱 알림
+            </Text>
+          }
+          right={
+            <Switch
+              checked={messageTossAppEnabled}
+              disabled={isSaving}
+              onChange={() => handleSettingChange('messageTossAppEnabled', !messageTossAppEnabled)}
             />
           }
           verticalPadding="large"

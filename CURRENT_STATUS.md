@@ -1,135 +1,80 @@
-# 좋아하면 울리는 - 현재 상태 (2026-01-08)
+# 좋아하면 울리는 - 현재 상태 (2026-04-11)
 
-## 🔴 검수 반려 후 수정 중인 항목
+## 📍 현재 위치
 
-### 1. ❓ 다이얼로그 (백버튼 종료 확인)
-- **파일**: `frontend/src/App.jsx`
-- **상태**: 코드는 수정됨, 웹에서 확인 필요
-- **문제**: TDS ConfirmDialog가 제대로 렌더링되지 않음 (흰색 배경 없음, 버튼 둘 다 파란색)
-- **앱 빌더 코드** (이대로 해야 함):
-```jsx
-import { ConfirmDialog } from '@toss/tds-mobile'
+- **라이브 버전**: 검수 2 (EXP-005, `review/2` → `main`)
+- **검수 중**: 검수 3 (`review/3`, EXP-006 좋아하는 사람 수 확인)
+- **검수 중**: 검수 4 (`review/4`, EXP-007 메시지 + EXP-008 메시지 수신 알림)
+- **현재 브랜치**: `review/4`
+- **서버**: Railway (`love-alarm-production.up.railway.app`)
 
-<ConfirmDialog
-  title="좋아하면 울리는을 종료할까요?"
-  cancelButton={
-    <ConfirmDialog.CancelButton size="xlarge">취소</ConfirmDialog.CancelButton>
-  }
-  confirmButton={
-    <ConfirmDialog.ConfirmButton size="xlarge">종료하기</ConfirmDialog.ConfirmButton>
-  }
-/>
-```
-- **버튼 속성**:
-  - left (취소): type="dark", style="weak", size="xlarge"
-  - right (종료하기): type="primary", style="fill", size="xlarge"
+## 🏁 마일스톤
 
-### 2. ✅ 공유 링크 (intoss:// 딥링크)
-- **파일**: `frontend/src/pages/SettingsPage.jsx`
-- **상태**: 코드 수정 완료
-- **코드**:
-```javascript
-const OG_IMAGE_URL = 'https://static.toss.im/appsintoss/9737/f6aa6697-d258-40c2-a59f-91f8e8bab8be.png';
+> **review/4까지 = 기본 기능 구축 완료**
+> **review/5부터 = 그로스 실험 (A/B 테스트, 퍼널 최적화, 리텐션 실험)**
 
-const tossLink = await getTossShareLink('intoss://love-alarm', OG_IMAGE_URL);
-await share({ message: tossLink });
-```
-- **참고**: 출력 링크는 `https://toss.im/_m/...` 형태가 정상 (내부에 intoss:// 포함)
+| 검수 | 브랜치 | 핵심 | 상태 |
+|------|--------|------|------|
+| 검수 1 | review/1 | 탭바, 체크인, 광고 CTA, 연결 화면 | 🟡 검수 중 |
+| 검수 2 | review/2 | 인스타그램 인증 + 초기 진입 | ✅ 라이브 |
+| 검수 3 | review/3 | 좋아하는 사람 수 확인 + 로딩 UX | 🟡 검수 중 |
+| 검수 4 | review/4 | 메시지 페이지 + 수신 알림 | 🟡 검수 중 |
 
-### 3. ✅ 광고 사전 고지
-- **파일**: `frontend/src/pages/AddAlarmPage.jsx`
-- **상태**: 완료
-- **변경**: 버튼 텍스트 "추가하기" → "광고 보고 추가하기"
+## ⏳ 대기 중인 작업
 
-### 4. ✅ 기능 스킴 (콘솔 설정)
-- **콘솔에서 설정**: `intoss://love-alarm/alarms`
+### 메시지 수신 알림 (EXP-008)
+- **토스 콘솔 검토 요청**: 2026-04-11 제출
+- **예상 승인**: 영업일 2~3일
+- **코드**: 전부 완료 (Prisma, API, UI, 발송 함수, 트리거)
+- **승인 후 할 일**: Railway 배포 (`npx prisma migrate deploy`) + 템플릿 코드 확인
 
-### 5. ✅ 백버튼 종료 처리
-- **파일**: `frontend/src/App.jsx`
-- **상태**: 코드 완료 (다이얼로그 렌더링 문제만 해결하면 됨)
-- **방식**: History API + popstate 이벤트 + ConfirmDialog
-
----
+### A/B 테스트 소재
+| | 제목 | 본문 |
+|---|---|---|
+| A안 | 메시지 도착 | 누군가 메시지를 남겼어요. |
+| B안 | 새 메시지 | 누군가 마음을 전했어요. |
 
 ## 📁 주요 파일
 
 ### Frontend
-- `frontend/src/App.jsx` - 라우팅 + 백버튼 종료 다이얼로그
-- `frontend/src/pages/IntroPage.jsx` - 온보딩/로그인
-- `frontend/src/pages/AlarmListPage.jsx` - 알람 목록
-- `frontend/src/pages/AddAlarmPage.jsx` - 알람 추가 (광고)
-- `frontend/src/pages/SettingsPage.jsx` - 설정 (공유 기능)
-- `frontend/src/components/PaymentModal.jsx` - 인앱 결제
+- `frontend/src/App.jsx` — 라우팅 + 스켈레톤 로딩
+- `frontend/src/pages/AlarmListPage.jsx` — 알람 목록 + 좋아하는 사람 수 바 + 메시지 배지
+- `frontend/src/pages/AddAlarmPage.jsx` — 알람 추가 (광고 + 메시지 입력)
+- `frontend/src/pages/MessagesPage.jsx` — 보낸/받은 메시지 + 반응/신고
+- `frontend/src/pages/SettingsPage.jsx` — 알림 설정 (연결/메시지 푸시·토스 앱, 배지)
+- `frontend/src/pages/RewardsPage.jsx` — 체크인 보상
+- `frontend/src/pages/FeedbackPage.jsx` — 피드백/건의
+- `frontend/src/components/LikeCountSheet.jsx` — 좋아하는 사람 수 조회 시트
 
 ### Backend
-- `backend/src/routes/auth.js` - 토스 로그인
-- `backend/src/services/tossAuth.js` - 토스 API 통신 (mTLS)
-- `backend/src/services/pushNotification.js` - 푸시 알림
+- `backend/src/routes/alarms.js` — 알람 CRUD + 메시지 수신 알림 트리거
+- `backend/src/routes/messages.js` — 메시지 조회/반응/신고
+- `backend/src/routes/users.js` — 사용자 설정 (알림 포함)
+- `backend/src/routes/auth.js` — 토스 로그인
+- `backend/src/services/pushNotification.js` — 푸시 알림 (mTLS, 연결+메시지)
+- `backend/src/services/matching.js` — 매칭 로직
+- `backend/prisma/schema.prisma` — DB 스키마
 
 ### Config
-- `granite.config.ts` - 앱인토스 빌드 설정
-- `frontend/vite.config.js` - Vite 빌드 설정
-
----
-
-## 🔧 라우팅 로직
-
-```
-/ (루트)
-  └── hasVisited = true → /alarms 리다이렉트
-  └── hasVisited = false → IntroPage (온보딩)
-
-/alarms
-  └── hasVisited = true → AlarmListPage
-  └── hasVisited = false → / 리다이렉트 (온보딩 먼저)
-```
-
-**첫 방문자가 공유 링크(/alarms)로 접근하면 → / → IntroPage 표시**
-
----
+- `granite.config.ts` — 앱인토스 빌드 설정
+- `frontend/vite.config.js` — Vite 빌드 설정
 
 ## 🚀 빌드 & 배포
 
 ```bash
 # Frontend 빌드
-cd frontend && npm run vite:build
+cd frontend && npm run build
 
 # 번들 빌드 (.ait 파일 생성)
 cd .. && npx granite build
 
 # 배포
-# - Frontend: Vercel
-# - Backend: Render
-# - 번들: 토스 콘솔에 업로드
+# - Backend: Railway (main push 시 자동 배포)
+# - 번들: 토스 콘솔에 .ait 업로드
 ```
-
----
-
-## 📝 콘솔 설정 (검수 요청 시)
-
-- **기능 이름**: 15자 이내로 서비스 가치 전달
-  - 예: "좋아하는 사람 등록하기", "마음 전달하기" 등
-- **기능 스킴**: `/alarms` (intoss://love-alarm/alarms)
-- **딥링크**: `intoss://love-alarm` 스킴 사용
-
----
-
-## ⚠️ 알려진 이슈
-
-1. **TDS ConfirmDialog 렌더링 문제**
-   - 웹에서 제대로 안 보임
-   - 앱에서 테스트 필요
-
-2. **OG 이미지 캐싱**
-   - 카카오톡 디버거로 캐시 클리어 필요: https://developers.kakao.com/tool/clear/og
-
----
 
 ## 📚 참고 문서
 
-- [TDS ConfirmDialog](https://tossmini-docs.toss.im/tds-mobile/components/Dialog/confirm-dialog/)
-- [getTossShareLink](https://developers-apps-in-toss.toss.im/bedrock/reference/framework/공유/getTossShareLink.html)
-- [백버튼 처리](https://developers-apps-in-toss.toss.im/bedrock/reference/framework/UI/Config.html)
-- [인앱 결제](https://developers-apps-in-toss.toss.im/iap/develop.html)
-- [리워드 광고](https://developers-apps-in-toss.toss.im/admob/develop.html)
-
+- [실험 로그](experiments.md) — 전체 실험 기록 및 측정 계획
+- [배포 가이드](DEPLOY_GUIDE.md) — Railway 배포 절차
+- [앱 테스트 가이드](APP_TEST_GUIDE.md) — 개발 서버 연결 방법
