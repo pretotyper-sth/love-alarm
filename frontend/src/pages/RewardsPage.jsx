@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   List,
   ListRow,
@@ -8,6 +8,7 @@ import {
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
+import { logScreen, logClick } from '../utils/analytics';
 import './RewardsPage.css';
 
 // ─── localStorage 키 ───────────────────────────────────────
@@ -27,21 +28,42 @@ function loadVisitDates() {
   }
 }
 
-function getInitialVisitDates() {
-  const dates = loadVisitDates();
-  const today = getTodayStr();
-  const updated = dates.includes(today) ? dates : [...dates, today];
-
-  if (updated.length !== dates.length) {
-    localStorage.setItem(VISIT_DATES_KEY, JSON.stringify(updated));
+function getConsecutiveStreak(dates) {
+  const set = new Set(dates);
+  let streak = 0;
+  const d = new Date();
+  for (;;) {
+    const key = d.toISOString().split('T')[0];
+    if (!set.has(key)) break;
+    streak += 1;
+    d.setDate(d.getDate() - 1);
   }
-
-  return updated;
+  return streak;
 }
 
 // ─── 컴포넌트 ───────────────────────────────────────────────
 export function RewardsPage() {
-  const [visitDates] = useState(getInitialVisitDates);
+  const appendedTodayRef = useRef(false);
+  const [visitDates] = useState(() => {
+    const dates = loadVisitDates();
+    const today = getTodayStr();
+    const updated = dates.includes(today) ? dates : [...dates, today];
+    if (updated.length !== dates.length) {
+      appendedTodayRef.current = true;
+      localStorage.setItem(VISIT_DATES_KEY, JSON.stringify(updated));
+    }
+    return updated;
+  });
+
+  useEffect(() => {
+    logScreen('rewards_screen', {
+      checkin_days: visitDates.length,
+      streak: getConsecutiveStreak(visitDates),
+    });
+    if (appendedTodayRef.current) {
+      logClick('rewards_checkin_click', { day_count: visitDates.length });
+    }
+  }, []);
   const [claimed10Cycles, setClaimed10Cycles] = useState(() => (
     parseInt(localStorage.getItem(CHECKIN10_CYCLES_KEY) || '0', 10)
   ));
@@ -66,6 +88,7 @@ export function RewardsPage() {
   // ─── 수령 핸들러 ─────────────────────────────────────────
   const handleClaim30 = async () => {
     if (!canClaim30) return;
+    logClick('rewards_claim_adfree');
     localStorage.setItem(CHECKIN30_CLAIMED_KEY, 'true');
     setClaimed30(true);
     try {
@@ -78,6 +101,7 @@ export function RewardsPage() {
 
   const handleClaim10 = async () => {
     if (!canClaim10) return;
+    logClick('rewards_claim_slot');
     const next = claimed10Cycles + 1;
     localStorage.setItem(CHECKIN10_CYCLES_KEY, String(next));
     setClaimed10Cycles(next);

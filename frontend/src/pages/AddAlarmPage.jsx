@@ -12,6 +12,7 @@ import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
+import { logScreen, logClick } from '../utils/analytics';
 import './AddAlarmPage.css';
 
 // 최초 알람 등록 여부 키
@@ -82,6 +83,10 @@ export function AddAlarmPage() {
       if (savedMyId) setMyId(savedMyId);
     }
   }, [isVerified, verifiedUsername]);
+
+  useEffect(() => {
+    logScreen('add_alarm_screen');
+  }, []);
 
   // 페이지 진입 시 광고 사전 로드 (Preload) - 검수 필수 요건
   useEffect(() => {
@@ -170,11 +175,13 @@ export function AddAlarmPage() {
       const result = await new Promise((resolve, reject) => {
         let rewarded = false;
         
+        logClick('add_alarm_ad_start');
         const cleanup = GoogleAdMob.showAppsInTossAdMob({
           options: { adGroupId: REWARDED_AD_GROUP_ID },
           onEvent: (event) => {
             if (event.type === 'userEarnedReward') {
               rewarded = true;
+              logClick('add_alarm_ad_complete');
             }
             if (event.type === 'dismissed') {
               cleanup?.();
@@ -242,6 +249,8 @@ export function AddAlarmPage() {
       // 4. API로 알람 생성 (fromInstagramId + message 포함)
       const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed, messageTrimmed);
 
+      logClick('add_alarm_success', { has_message: !!message });
+
       // 5. 성공 시 하루 카운트 증가
       incrementDailyAddCount();
       
@@ -277,6 +286,9 @@ export function AddAlarmPage() {
       }
     } catch (error) {
       console.error('❌ 알람 추가 실패:', error);
+      logClick('add_alarm_fail', {
+        reason: error?.message ?? error?.code ?? (error != null ? String(error) : undefined),
+      });
       showErrorToast(error.message || '알람을 추가하지 못했어요');
     } finally {
       setIsSubmitting(false);

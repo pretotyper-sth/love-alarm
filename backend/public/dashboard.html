@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Love Alarm Analytics</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; }
+  .header { background: #fff; border-bottom: 1px solid #e5e5e7; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 700; }
+  .period-selector { display: flex; gap: 8px; }
+  .period-btn { padding: 6px 16px; border: 1px solid #d1d1d6; border-radius: 20px; background: #fff; cursor: pointer; font-size: 13px; transition: all .15s; }
+  .period-btn.active { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 16px; padding: 20px; }
+  .card-label { font-size: 13px; color: #86868b; margin-bottom: 4px; }
+  .card-value { font-size: 32px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: #86868b; margin-top: 4px; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-box { background: #fff; border-radius: 16px; padding: 20px; }
+  .chart-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .chart-box.full { grid-column: 1 / -1; }
+  .table-box { background: #fff; border-radius: 16px; padding: 20px; }
+  .table-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; color: #86868b; font-weight: 500; border-bottom: 1px solid #e5e5e7; }
+  td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+  tr:hover td { background: #f9f9fb; }
+  .type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .type-screen { background: #e8f5e9; color: #2e7d32; }
+  .type-click { background: #e3f2fd; color: #1565c0; }
+  .type-impression { background: #fff3e0; color: #e65100; }
+  .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-box { background: #fff; border-radius: 20px; padding: 40px; width: 340px; text-align: center; }
+  .login-box h2 { margin-bottom: 20px; font-size: 18px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; }
+  .login-box input:focus { border-color: #1d1d1f; }
+  .login-box button { width: 100%; padding: 12px; background: #1d1d1f; color: #fff; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; }
+  .funnel-config { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .funnel-config input { flex: 1; min-width: 300px; padding: 8px 12px; border: 1px solid #d1d1d6; border-radius: 8px; font-size: 13px; }
+  .funnel-config button { padding: 8px 16px; background: #1d1d1f; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .empty { text-align: center; padding: 40px; color: #86868b; }
+  @media (max-width: 768px) {
+    .charts { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>Analytics Dashboard</h2>
+    <input type="password" id="secretInput" placeholder="Dashboard Secret" autofocus>
+    <button onclick="doLogin()">Enter</button>
+  </div>
+</div>
+
+<div class="header">
+  <h1>Love Alarm Analytics</h1>
+  <div class="period-selector">
+    <button class="period-btn" data-days="1">Today</button>
+    <button class="period-btn active" data-days="7">7 Days</button>
+    <button class="period-btn" data-days="14">14 Days</button>
+    <button class="period-btn" data-days="30">30 Days</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Total Events</div>
+      <div class="card-value" id="totalEvents">-</div>
+      <div class="card-sub" id="totalEventsSub"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Unique Users</div>
+      <div class="card-value" id="uniqueUsers">-</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Top Event</div>
+      <div class="card-value" id="topEvent" style="font-size:18px;">-</div>
+      <div class="card-sub" id="topEventCount"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Avg Events/Day</div>
+      <div class="card-value" id="avgPerDay">-</div>
+    </div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-box">
+      <h3>Daily Events</h3>
+      <canvas id="dailyChart"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Event Distribution</h3>
+      <canvas id="pieChart"></canvas>
+    </div>
+    <div class="chart-box full">
+      <h3>Funnel Analysis</h3>
+      <div class="funnel-config">
+        <input id="funnelInput" value="alarm_list_screen,alarm_add_button_click,add_alarm_screen,add_alarm_ad_start,add_alarm_ad_complete,add_alarm_success" placeholder="step1,step2,step3,...">
+        <button onclick="loadFunnel()">Analyze</button>
+      </div>
+      <canvas id="funnelChart"></canvas>
+    </div>
+  </div>
+
+  <div class="table-box">
+    <h3>All Events</h3>
+    <table>
+      <thead><tr><th>Event Name</th><th>Type</th><th>Count</th><th>Share</th></tr></thead>
+      <tbody id="eventTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API = location.origin;
+let SECRET = localStorage.getItem('_dash_secret') || '';
+let DAYS = 7;
+let dailyChartInstance = null;
+let pieChartInstance = null;
+let funnelChartInstance = null;
+
+function headers() {
+  return { 'Authorization': 'Basic ' + btoa('admin:' + SECRET) };
+}
+
+async function apiFetch(path) {
+  const r = await fetch(`${API}${path}`, { headers: headers() });
+  if (r.status === 401) { showLogin(); throw new Error('Unauthorized'); }
+  return r.json();
+}
+
+function showLogin() { document.getElementById('loginOverlay').style.display = 'flex'; }
+function hideLogin() { document.getElementById('loginOverlay').style.display = 'none'; }
+
+function doLogin() {
+  SECRET = document.getElementById('secretInput').value;
+  localStorage.setItem('_dash_secret', SECRET);
+  hideLogin();
+  loadAll();
+}
+
+document.getElementById('secretInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    DAYS = parseInt(btn.dataset.days);
+    loadAll();
+  });
+});
+
+const COLORS = ['#007aff','#34c759','#ff9500','#ff3b30','#5856d6','#af52de','#ff2d55','#00c7be','#ff6482','#30b0c7'];
+
+async function loadSummary() {
+  const d = await apiFetch(`/api/events/summary?days=${DAYS}`);
+  document.getElementById('totalEvents').textContent = d.totalCount.toLocaleString();
+  document.getElementById('uniqueUsers').textContent = d.uniqueUsers.toLocaleString();
+  const avg = d.dailyCounts.length ? Math.round(d.totalCount / d.dailyCounts.length) : 0;
+  document.getElementById('avgPerDay').textContent = avg.toLocaleString();
+  if (d.topEvents.length) {
+    document.getElementById('topEvent').textContent = d.topEvents[0].name;
+    document.getElementById('topEventCount').textContent = d.topEvents[0].count.toLocaleString() + ' times';
+  }
+
+  if (dailyChartInstance) dailyChartInstance.destroy();
+  dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels: d.dailyCounts.map(r => r.date.slice(5, 10)),
+      datasets: [{ label: 'Events', data: d.dailyCounts.map(r => r.count), backgroundColor: '#007aff', borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  if (pieChartInstance) pieChartInstance.destroy();
+  const top8 = d.topEvents.slice(0, 8);
+  pieChartInstance = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+      labels: top8.map(e => e.name),
+      datasets: [{ data: top8.map(e => e.count), backgroundColor: COLORS }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'right', labels: { font: { size: 11 } } } } }
+  });
+}
+
+async function loadTop() {
+  const d = await apiFetch(`/api/events/top?days=${DAYS}&limit=50`);
+  const total = d.events.reduce((s, e) => s + e.count, 0);
+  const tbody = document.getElementById('eventTableBody');
+  tbody.innerHTML = d.events.map(e => `
+    <tr>
+      <td><strong>${e.name}</strong></td>
+      <td><span class="type-badge type-${e.type}">${e.type}</span></td>
+      <td>${e.count.toLocaleString()}</td>
+      <td>${(e.count / total * 100).toFixed(1)}%</td>
+    </tr>
+  `).join('');
+}
+
+async function loadFunnel() {
+  const steps = document.getElementById('funnelInput').value;
+  if (!steps) return;
+  const d = await apiFetch(`/api/events/funnel?steps=${encodeURIComponent(steps)}&days=${DAYS}`);
+  if (!d.steps || !d.steps.length) return;
+
+  const maxVal = d.steps[0].uniqueSessions || 1;
+  const labels = d.steps.map((s, i) => {
+    const pct = i === 0 ? '100%' : ((s.uniqueSessions / maxVal) * 100).toFixed(1) + '%';
+    return s.name + ' (' + pct + ')';
+  });
+
+  if (funnelChartInstance) funnelChartInstance.destroy();
+  funnelChartInstance = new Chart(document.getElementById('funnelChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Unique Sessions',
+        data: d.steps.map(s => s.uniqueSessions),
+        backgroundColor: d.steps.map((_, i) => COLORS[i % COLORS.length]),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+}
+
+async function loadAll() {
+  try {
+    await Promise.all([loadSummary(), loadTop(), loadFunnel()]);
+  } catch (e) {
+    if (e.message !== 'Unauthorized') console.error(e);
+  }
+}
+
+if (SECRET) { hideLogin(); loadAll(); }
+</script>
+</body>
+</html>

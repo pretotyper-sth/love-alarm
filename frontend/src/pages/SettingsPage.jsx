@@ -15,6 +15,7 @@ import {
   loadUnreadMessageBadgeEnabled,
   saveUnreadMessageBadgeEnabled,
 } from '../utils/messages';
+import { logScreen, logClick } from '../utils/analytics';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './SettingsPage.css';
 
@@ -27,6 +28,7 @@ const LIKE_COUNT_CHECKED_AT_KEY = 'love_alarm_like_count_checked_at';
 
 // 공유 기능 (getTossShareLink + OG 이미지)
 const handleShareApp = async () => {
+  logClick('settings_share_click');
   try {
     const { getTossShareLink, share } = await import('@apps-in-toss/web-framework');
     
@@ -107,6 +109,10 @@ export function SettingsPage() {
     syncSettings();
   }, []);
 
+  useEffect(() => {
+    logScreen('settings_screen');
+  }, []);
+
   const showSuccessToastMessage = (message) => {
     setSuccessToast({ show: true, message, isError: false });
     setTimeout(() => {
@@ -157,6 +163,7 @@ export function SettingsPage() {
       return;
     }
 
+    logClick('settings_auth_complete');
     localStorage.setItem(IG_VERIFIED_KEY, DEV_BYPASS_USERNAME);
     setVerifiedUsername(DEV_BYPASS_USERNAME);
     setShowAuthSheet(false);
@@ -174,6 +181,7 @@ export function SettingsPage() {
   };
 
   const handleInstagramAuthRowClick = () => {
+    logClick('settings_auth_click', { has_verified: !!verifiedUsername });
     if (verifiedUsername) {
       setAuthManageStep('menu');
       setShowAuthManageSheet(true);
@@ -226,6 +234,7 @@ export function SettingsPage() {
   };
 
   const handleSettingChange = async (field, value) => {
+    logClick('settings_toggle_change', { field, value });
     const setter = SETTING_SETTERS[field];
     if (!setter) return;
 
@@ -469,6 +478,7 @@ export function SettingsPage() {
           verticalPadding="large"
           horizontalPadding="medium"
           onClick={() => {
+            logClick('settings_feedback_click');
             navigate('/feedback');
           }}
         />
@@ -493,6 +503,7 @@ export function SettingsPage() {
         alreadyVerified={!!verifiedUsername}
         currentVerifiedUsername={verifiedUsername}
         onSuccess={(username) => {
+          logClick('settings_auth_complete');
           const isReauth = !!verifiedUsername;
           setVerifiedUsername(username);
           setShowAuthSheet(false);

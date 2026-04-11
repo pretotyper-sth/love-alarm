@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { PrismaClient } from '@prisma/client';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -13,9 +15,11 @@ import feedbackRoutes from './routes/feedback.js';
 import webhooksInstagramRoutes from './routes/webhooksInstagram.js';
 import verifyInstagramRoutes from './routes/verifyInstagram.js';
 import messagesRoutes from './routes/messages.js';
+import eventsRoutes from './routes/events.js';
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
@@ -82,8 +86,11 @@ app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/events', eventsRoutes);
 app.use('/api/verify/instagram', verifyInstagramRoutes);
 app.use('/webhook', webhooksInstagramRoutes);
+
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Health check
 app.get('/health', (req, res) => {

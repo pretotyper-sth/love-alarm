@@ -11,6 +11,7 @@ import {
   pruneReadReceivedMessageIds,
   pruneReportedReceivedMessageIds,
 } from '../utils/messages';
+import { logScreen, logClick } from '../utils/analytics';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './MessagesPage.css';
 
@@ -316,6 +317,7 @@ function InstagramAuthCta({ onVerify }) {
 export function MessagesPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('sent'); // 'sent' | 'received'
+  const initialActiveTabRef = useRef(activeTab);
   const cachedRef = useRef(getCachedMessages());
   const [sentMessages, setSentMessages] = useState(() => cachedRef.current?.sent ?? []);
   const [receivedMessages, setReceivedMessages] = useState(() => cachedRef.current?.received ?? []);
@@ -396,7 +398,18 @@ export function MessagesPage() {
     loadMessages();
   }, [loadMessages]);
 
+  useEffect(() => {
+    logScreen('messages_screen', { tab: initialActiveTabRef.current });
+  }, []);
+
+  const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
+    setActiveTab(newTab);
+    logClick('messages_tab_switch', { tab: newTab });
+  };
+
   const handleReact = async (alarmId, emoji) => {
+    logClick('message_reaction_click', { emoji });
     // optimistic update
     setReceivedMessages(prev =>
       prev.map(m =>
@@ -425,6 +438,7 @@ export function MessagesPage() {
   };
 
   const handleOpenReceivedMessage = (message) => {
+    logClick('message_detail_open', { type: 'received' });
     const nextReadIds = markReceivedMessageAsRead(message.id);
     setReadReceivedMessageIds(nextReadIds);
     setSelectedReceivedMsg(message);
@@ -449,6 +463,7 @@ export function MessagesPage() {
   const handleSubmitReport = async () => {
     if (!reportTargetMessage || !selectedReportReason || isSubmittingReport) return;
 
+    logClick('message_report_click', { reason: selectedReportReason });
     setIsSubmittingReport(true);
     try {
       if (!isMockId(reportTargetMessage.id)) {
@@ -504,7 +519,7 @@ export function MessagesPage() {
         <div className="messages-segmented" role="tablist" aria-label="메시지 탭">
           <button
             className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`}
-            onClick={() => setActiveTab('sent')}
+            onClick={() => handleTabChange('sent')}
             role="tab"
             aria-selected={activeTab === 'sent'}
             type="button"
@@ -513,7 +528,7 @@ export function MessagesPage() {
           </button>
           <button
             className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`}
-            onClick={() => setActiveTab('received')}
+            onClick={() => handleTabChange('received')}
             role="tab"
             aria-selected={activeTab === 'received'}
             type="button"
@@ -543,7 +558,10 @@ export function MessagesPage() {
               <div
                 key={msg.id}
                 className="message-row message-row-tappable"
-                onClick={() => setSelectedSentMsg(msg)}
+                onClick={() => {
+                  logClick('message_detail_open', { type: 'sent' });
+                  setSelectedSentMsg(msg);
+                }}
               >
                 <MessageIcon type="sent" />
                 <div className="message-row-body">
@@ -567,7 +585,12 @@ export function MessagesPage() {
       {activeTab === 'received' && (
         <div className="messages-content">
           {!isVerified ? (
-            <InstagramAuthCta onVerify={() => setShowAuthSheet(true)} />
+            <InstagramAuthCta
+              onVerify={() => {
+                logClick('instagram_auth_cta_click');
+                setShowAuthSheet(true);
+              }}
+            />
           ) : isLoading ? (
             <div className="messages-skeleton-wrap">
               <Skeleton custom={['listWithIcon']} repeatLastItemCount={Math.max(prevCountRef.current.received, 1)} />

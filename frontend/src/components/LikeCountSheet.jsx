@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { api } from '../utils/api';
+import { logScreen, logClick } from '../utils/analytics';
 import './LikeCountSheet.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
@@ -43,6 +44,11 @@ export function LikeCountSheet({ open, onClose, onResult }) {
       setSubmitMessage('');
       isAdLoadedRef.current = isAdFree();
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    logScreen('like_count_sheet_screen');
   }, [open]);
 
   useEffect(() => {
@@ -123,6 +129,8 @@ export function LikeCountSheet({ open, onClose, onResult }) {
       const count = IS_DEV
         ? Math.floor(Math.random() * 10) + 1
         : (await api.getLikeCount(trimmed)).count;
+
+      logClick('like_count_result', { count });
 
       localStorage.setItem('love_alarm_like_count_target', trimmed);
       localStorage.setItem('love_alarm_like_count_result', String(count));
@@ -261,10 +269,14 @@ async function showRewardedAd({ isAdLoadedRef }) {
         resolve({ rewarded });
       };
 
+      logClick('like_count_ad_start');
       const cleanup = GoogleAdMob.showAppsInTossAdMob({
         options: { adGroupId: REWARDED_AD_GROUP_ID },
         onEvent: (e) => {
-          if (e.type === 'userEarnedReward') rewarded = true;
+          if (e.type === 'userEarnedReward') {
+            rewarded = true;
+            logClick('like_count_ad_complete');
+          }
           if (e.type === 'dismissed') {
             dismissed = true;
             // 일부 환경에서는 rewarded 이벤트가 dismissed 직전/직후로 들어올 수 있어 한 틱 기다린다.

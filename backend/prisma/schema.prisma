@@ -92,6 +92,21 @@ model Feedback {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
+// 애널리틱스 이벤트
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String   // screen | click | impression
+  name      String   // alarm_list_screen, alarm_add_button_click 등
+  params    Json?
+  userId    String?
+  sessionId String?
+  createdAt DateTime @default(now())
+
+  @@index([name, createdAt])
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+}
+
 // Instagram DM 인증 세션
 model VerificationSession {
   id                String   @id @default(cuid())

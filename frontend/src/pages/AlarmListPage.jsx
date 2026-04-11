@@ -17,6 +17,7 @@ import {
 } from '../utils/messages';
 import { PaymentModal } from '../components/PaymentModal';
 import { LikeCountSheet } from '../components/LikeCountSheet';
+import { logScreen, logClick, logImpression } from '../utils/analytics';
 import './AlarmListPage.css';
 
 const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
@@ -183,6 +184,7 @@ export function AlarmListPage() {
   const addButtonRef = useRef(null); // 추가하기 버튼 ref
   const toastIdRef = useRef(0);
   const notificationSheetShownRef = useRef(false);
+  const alarmListScreenLoggedRef = useRef(false);
 
   // 토스트 제거 함수
   const removeToast = useCallback((id) => {
@@ -258,6 +260,12 @@ export function AlarmListPage() {
       loadAlarms();
     }
   }, [loadAlarms, user]);
+
+  useEffect(() => {
+    if (alarmListScreenLoggedRef.current || isLoading || !user) return;
+    alarmListScreenLoggedRef.current = true;
+    logScreen('alarm_list_screen', { alarm_count: alarms.length });
+  }, [isLoading, user, alarms.length]);
 
   // 포그라운드 복귀 시 12h 이내면 좋아하는 사람 수 조용한 재조회
   useEffect(() => {
@@ -427,8 +435,14 @@ export function AlarmListPage() {
     }
   }, [addToast, location.state]);
 
+  useEffect(() => {
+    if (!showNotificationSheet) return;
+    logImpression('notification_sheet_impression');
+  }, [showNotificationSheet]);
+
   // 알림 동의하기 클릭
   const handleNotificationAgree = async () => {
+    logClick('notification_sheet_allow_click');
     try {
       // 알림 설정 켜기 (API 호출)
       const updatedUser = await api.updateSettings({ 
@@ -448,6 +462,7 @@ export function AlarmListPage() {
   };
 
   const handleAddAlarm = () => {
+    logClick('alarm_add_button_click', { slot_used: alarms.length, slot_max: user?.maxSlots });
     // 최초 추가 시 비정상적 사용 방지 페이지 표시
     if (!hasConfirmedAbuseWarning()) {
       navigate('/abuse-warning');
@@ -481,6 +496,7 @@ export function AlarmListPage() {
   };
 
   const handleMatchedClick = (alarm) => {
+    logClick('alarm_matched_click', { alarm_id: alarm.id });
     navigate('/match-success', { 
       state: { 
         alarmId: alarm.id, 
@@ -495,7 +511,10 @@ export function AlarmListPage() {
     const alarmIndex = alarms.findIndex(alarm => alarm.id === id);
     const alarmToRemove = alarms[alarmIndex];
     const previousAlarms = [...alarms];
-    
+    if (alarmToRemove) {
+      logClick('alarm_remove_click', { alarm_id: alarmToRemove.id, status: alarmToRemove.status });
+    }
+
     // ✨ Optimistic UI: 서버 응답 전에 UI 먼저 업데이트
     setAlarms(prev => prev.filter(alarm => alarm.id !== id));
     
@@ -568,7 +587,10 @@ export function AlarmListPage() {
         <div className="alarm-list-msg-wrapper">
           <button
             className="alarm-list-msg-btn"
-            onClick={() => navigate('/messages')}
+            onClick={() => {
+              logClick('message_icon_click', { badge_count: msgBadgeCount });
+              navigate('/messages');
+            }}
             aria-label="메시지 확인"
           >
             <img
@@ -696,7 +718,10 @@ export function AlarmListPage() {
       )}
 
       {/* 좋아하는 사람 수 확인 고정 바 */}
-      <div className="like-count-bar" onClick={() => setShowLikeCountSheet(true)}>
+      <div className="like-count-bar" onClick={() => {
+        logClick('like_count_bar_click');
+        setShowLikeCountSheet(true);
+      }}>
         <span className="like-count-bar-text">
           지금{' '}
           <strong className="like-count-bar-highlight">
