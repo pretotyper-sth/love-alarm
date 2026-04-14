@@ -245,8 +245,8 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 ### 브랜치 운영 원칙
 
 - `main`은 항상 **현재 라이브 기준**으로 유지한다.
-- `review/x` 브랜치는 **검수 제출용 임시 브랜치**로만 사용한다.
-- 검수 요청은 `main`에서 분기한 `review/x`에서 진행하고, 통과 전 수정도 해당 브랜치에서만 반영한다.
+- `review/<feature-name>` 브랜치는 **검수 제출용 임시 브랜치**로만 사용한다. (예: `review/notification-logging`)
+- 검수 요청은 `main`에서 분기한 `review/<feature-name>`에서 진행하고, 통과 전 수정도 해당 브랜치에서만 반영한다.
 - 검수 통과 후에는 해당 브랜치의 승인 기준 커밋을 `main`에 반영한다.
 - 반영 직후 새 작업 기준은 다시 `main`으로 되돌린다.
 - 기존 `review/x` 브랜치는 즉시 삭제하지 않고, 단기 롤백/비교용으로 잠시 유지한 뒤 정리한다.
@@ -254,7 +254,7 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 ### 현재 운영 메모
 
 - `review/4` 검수 통과 완료 (2026-04-14). 승인 기준 커밋 `5b5e040`을 `main`에 Fast-forward 병합 완료.
-- `review/5` 브랜치 생성 완료 (Unit 9). 빌드 ID: `019d8bf0-7a91-7122-9b4a-960df8a3d7fe`.
+- `review/notification-logging` 브랜치 생성 완료 (Unit 9). 빌드 ID: `019d8bf0-7a91-7122-9b4a-960df8a3d7fe`.
 - `review/2`, `review/3`, `review/4` 브랜치는 롤백/비교용으로 당분간 유지.
 
 ---
