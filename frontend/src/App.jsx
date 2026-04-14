@@ -8,6 +8,7 @@ import { AddAlarmPage } from './pages/AddAlarmPage';
 import { AbuseWarningPage } from './pages/AbuseWarningPage';
 import { MatchSuccessPage } from './pages/MatchSuccessPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { NotificationSettingsPage } from './pages/NotificationSettingsPage';
 import { RewardsPage } from './pages/RewardsPage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { ErrorPage } from './pages/ErrorPage';
@@ -298,6 +299,10 @@ function AppRoutes() {
             <Route 
               path="/match-success" 
               element={hasVisited ? <MatchSuccessPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/notification-settings" 
+              element={hasVisited ? <NotificationSettingsPage /> : <Navigate to="/" replace />} 
             />
             <Route 
               path="/feedback" 
