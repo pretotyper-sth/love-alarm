@@ -444,10 +444,11 @@ export function AlarmListPage() {
   const handleNotificationAgree = async () => {
     logClick('notification_sheet_allow_click');
     try {
-      // 알림 설정 켜기 (API 호출)
       const updatedUser = await api.updateSettings({ 
         pushEnabled: true, 
-        tossAppEnabled: true 
+        tossAppEnabled: true,
+        messagePushEnabled: true,
+        messageTossAppEnabled: true,
       });
       setUser(updatedUser);
     } catch (error) {
@@ -761,7 +762,7 @@ export function AlarmListPage() {
         <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="bottom-sheet-header">
             <h3 className="bottom-sheet-title">알림 받기</h3>
-            <p className="bottom-sheet-description">알람이 추가됐어요.<br />상대 마음도 같다면 바로 알려드릴게요.</p>
+            <p className="bottom-sheet-description">알람이 추가됐어요.<br />연결 소식이나 메시지가 오면 바로 알려드릴게요.</p>
           </div>
           <div className="bottom-sheet-content">
             <img 
