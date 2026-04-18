@@ -53,7 +53,7 @@ router.get('/summary', requireDashAuth, async (req, res) => {
     const days = parseInt(req.query.days) || 7;
     const since = new Date(Date.now() - days * 86400000);
 
-    const [totalCount, uniqueUsers, dailyCounts, topEvents] = await Promise.all([
+    const [totalCount, uniqueUsers, dailyCounts, topEvents, firstEvent] = await Promise.all([
       req.prisma.analyticsEvent.count({ where: { createdAt: { gte: since } } }),
 
       req.prisma.analyticsEvent.groupBy({
@@ -76,6 +76,11 @@ router.get('/summary', requireDashAuth, async (req, res) => {
         orderBy: { _count: { name: 'desc' } },
         take: 20,
       }),
+
+      req.prisma.analyticsEvent.findFirst({
+        orderBy: { createdAt: 'asc' },
+        select: { createdAt: true },
+      }),
     ]);
 
     res.json({
@@ -84,6 +89,7 @@ router.get('/summary', requireDashAuth, async (req, res) => {
       uniqueUsers,
       dailyCounts,
       topEvents: topEvents.map(e => ({ name: e.name, count: e._count })),
+      firstEventAt: firstEvent?.createdAt ?? null,
     });
   } catch (err) {
     console.error('[events] summary error:', err);
