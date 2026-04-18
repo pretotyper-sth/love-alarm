@@ -4,7 +4,7 @@ import './BottomNav.css';
 
 const TABS = [
   { path: '/alarms', label: '홈', iconName: 'icon-home-mono' },
-  { path: '/ai-date', label: 'AI 소개팅', iconName: 'custom-ai-date' },
+  { path: '/ai-date', label: 'AI 클론', iconName: 'custom-ai-clone' },
   { path: '/rewards', label: '보상', iconName: 'icon-gift-mono' },
   { path: '/more', label: '더보기', iconName: 'custom-grid' },
 ];
@@ -27,28 +27,35 @@ function MoreGridIcon({ color }) {
   );
 }
 
-function AiDateIcon({ color }) {
+function AiCloneIcon({ color }) {
+  // 사람 실루엣 + 디지털 복제(클론) 표현: 원본(solid) + 클론(점선/투명)
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="bottom-nav-svg-icon">
-      {/* 왼쪽 캐릭터 */}
-      <circle cx="6" cy="5" r="2.2" fill={color} opacity="0.85" />
-      <rect x="4.2" y="8" width="3.6" height="4.5" rx="1.4" fill={color} opacity="0.85" />
-      {/* 오른쪽 캐릭터 */}
-      <circle cx="14" cy="5" r="2.2" fill={color} />
-      <rect x="12.2" y="8" width="3.6" height="4.5" rx="1.4" fill={color} />
-      {/* 하트 */}
-      <path d="M10 16 C9.5 15.2 7.5 13.5 7.5 12.2 C7.5 11.2 8.3 10.5 9.2 10.8 C9.6 11 9.9 11.3 10 11.6 C10.1 11.3 10.4 11 10.8 10.8 C11.7 10.5 12.5 11.2 12.5 12.2 C12.5 13.5 10.5 15.2 10 16Z" fill={color === '#3182f6' ? '#ff6b9d' : '#c8d6e0'} />
+      {/* 원본 캐릭터 (왼쪽 앞) */}
+      <circle cx="7.5" cy="5.5" r="2.8" fill={color} />
+      <path d="M3,15 Q3,10.5 7.5,10.5 Q12,10.5 12,15" fill={color} />
+      {/* 클론 (오른쪽 뒤, 페이드) */}
+      <circle cx="12" cy="6.5" r="2.4" fill={color} opacity="0.35" />
+      <path d="M7.5,16.5 Q7.5,12 12,12 Q16.5,12 16.5,16.5" fill={color} opacity="0.35" />
+      {/* 연결 스파크 (AI 표시) */}
+      <circle cx="10" cy="9" r="0.8" fill={color} opacity="0.7" />
+      <line x1="9" y1="9" x2="8" y2="8.2" stroke={color} strokeWidth="0.8" opacity="0.6" />
+      <line x1="11" y1="9" x2="12" y2="8.2" stroke={color} strokeWidth="0.8" opacity="0.6" />
     </svg>
   );
+}
+
+function AiDateIcon({ color }) {
+  return <AiCloneIcon color={color} />;
 }
 
 function BottomNavIcon({ iconName, active }) {
   const color = active ? '#3182f6' : '#8b95a1';
 
-  if (iconName === 'custom-ai-date') {
+  if (iconName === 'custom-ai-date' || iconName === 'custom-ai-clone') {
     return (
       <span className="bottom-nav-icon-wrap" aria-hidden="true">
-        <AiDateIcon color={color} />
+        <AiCloneIcon color={color} />
       </span>
     );
   }
