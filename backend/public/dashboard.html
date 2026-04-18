@@ -29,7 +29,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif
 .header{background:var(--la-surface);border-bottom:1px solid var(--la-border);padding:0;position:sticky;top:0;z-index:50}
 .header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 20px}
 .header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
-.header-since{font-size:12px;color:var(--la-text-tertiary);margin-left:6px;font-weight:400}
+.header-title-wrap{display:flex;flex-direction:column;gap:2px}
+.header-since{font-size:12px;color:var(--la-text-tertiary);font-weight:400}
 .header-logo{width:32px;height:32px;border-radius:8px;object-fit:cover}
 .period-selector{display:flex;gap:6px}
 .period-btn{padding:6px 14px;border:1px solid var(--la-border);border-radius:20px;background:var(--la-surface);cursor:pointer;font-size:13px;color:var(--la-text-secondary);transition:all .15s}
@@ -113,7 +114,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif
 
 <div class="header">
   <div class="header-inner">
-    <h1><img src="/logo.png" class="header-logo" alt="Love Alarm">Love Alarm Analytics<span class="header-since" id="headerSince"></span></h1>
+    <h1><img src="/logo.png" class="header-logo" alt="Love Alarm"><div class="header-title-wrap"><span>Love Alarm Analytics</span><span class="header-since" id="headerSince"></span></div></h1>
     <div class="period-selector">
       <button class="period-btn" data-days="1">오늘</button>
       <button class="period-btn active" data-days="7">7일</button>
