@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 const router = Router();
 
-const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'love-alarm-dash-2026';
+const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'LA100%';
 
 function requireDashAuth(req, res, next) {
   const auth = req.headers.authorization;
