@@ -255,6 +255,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif
         <thead><tr><th>이벤트명</th><th>타입</th><th>횟수</th><th>비율</th></tr></thead>
         <tbody id="eventTableBody"></tbody>
       </table>
+      <div id="eventTablePagination"></div>
     </div>
   </div>
 
@@ -559,17 +560,68 @@ async function loadSection7() {
 // --- All events table ---
 let cachedEvents = [];
 let currentSort = 'count-desc';
+let tablePage = 0;
+const TABLE_PAGE_SIZE = 15;
+
+// 코드에 심어진 전체 이벤트 목록 (정적 정의)
+const ALL_EVENTS = [
+  { name: 'alarm_list_screen',           type: 'screen' },
+  { name: 'add_alarm_screen',            type: 'screen' },
+  { name: 'messages_screen',             type: 'screen' },
+  { name: 'settings_screen',             type: 'screen' },
+  { name: 'notification_settings_screen',type: 'screen' },
+  { name: 'like_count_sheet_screen',     type: 'screen' },
+  { name: 'rewards_screen',              type: 'screen' },
+  { name: 'alarm_add_button_click',      type: 'click'  },
+  { name: 'alarm_matched_click',         type: 'click'  },
+  { name: 'alarm_remove_click',          type: 'click'  },
+  { name: 'add_alarm_ad_start',          type: 'click'  },
+  { name: 'add_alarm_ad_complete',       type: 'click'  },
+  { name: 'add_alarm_success',           type: 'click'  },
+  { name: 'add_alarm_fail',              type: 'click'  },
+  { name: 'like_count_bar_click',        type: 'click'  },
+  { name: 'like_count_result',           type: 'click'  },
+  { name: 'like_count_ad_start',         type: 'click'  },
+  { name: 'like_count_ad_complete',      type: 'click'  },
+  { name: 'message_icon_click',          type: 'click'  },
+  { name: 'messages_tab_switch',         type: 'click'  },
+  { name: 'message_reaction_click',      type: 'click'  },
+  { name: 'message_detail_open',         type: 'click'  },
+  { name: 'message_report_click',        type: 'click'  },
+  { name: 'instagram_auth_cta_click',    type: 'click'  },
+  { name: 'settings_share_click',        type: 'click'  },
+  { name: 'settings_auth_click',         type: 'click'  },
+  { name: 'settings_auth_complete',      type: 'click'  },
+  { name: 'settings_notification_click', type: 'click'  },
+  { name: 'settings_feedback_click',     type: 'click'  },
+  { name: 'notification_toggle_change',  type: 'click'  },
+  { name: 'notification_sheet_allow_click', type: 'click' },
+  { name: 'rewards_checkin_click',       type: 'click'  },
+  { name: 'rewards_claim_adfree',        type: 'click'  },
+  { name: 'rewards_claim_slot',          type: 'click'  },
+  { name: 'notification_sheet_impression', type: 'impression' },
+];
 
 async function loadEventTable() {
-  const d = await apiFetch(`/api/events/top?days=${DAYS}&limit=50`);
-  cachedEvents = d.events;
+  const d = await apiFetch(`/api/events/top?days=${DAYS}&limit=200`);
+  // 실제 수집 데이터와 정적 목록 merge
+  const countMap = {};
+  d.events.forEach(e => { countMap[e.name] = e.count; });
+  cachedEvents = ALL_EVENTS.map(e => ({ ...e, count: countMap[e.name] || 0 }));
+  // 수집됐지만 목록에 없는 이벤트도 추가
+  d.events.forEach(e => {
+    if (!cachedEvents.find(c => c.name === e.name)) {
+      cachedEvents.push({ name: e.name, type: e.type || 'click', count: e.count });
+    }
+  });
+  tablePage = 0;
   renderTable();
-  renderEventChips(d.events);
-  renderSelectedChips();
+  renderEventChips();
 }
 
 function sortTable(key) {
   currentSort = key;
+  tablePage = 0;
   document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.key === key));
   renderTable();
 }
@@ -579,19 +631,36 @@ function renderTable() {
   switch (currentSort) {
     case 'count-desc': sorted.sort((a, b) => b.count - a.count); break;
     case 'count-asc': sorted.sort((a, b) => a.count - b.count); break;
-    case 'name-asc': sorted.sort((a, b) => label(a.name).localeCompare(label(b.name), 'ko')); break;
+    case 'name-asc': sorted.sort((a, b) => a.name.localeCompare(b.name)); break;
     case 'type': sorted.sort((a, b) => a.type.localeCompare(b.type) || b.count - a.count); break;
   }
   const total = sorted.reduce((s, e) => s + e.count, 0) || 1;
-  document.getElementById('eventTableBody').innerHTML = sorted.map(e => `
+  const totalPages = Math.ceil(sorted.length / TABLE_PAGE_SIZE);
+  const page = sorted.slice(tablePage * TABLE_PAGE_SIZE, (tablePage + 1) * TABLE_PAGE_SIZE);
+
+  document.getElementById('eventTableBody').innerHTML = page.map(e => `
     <tr>
       <td><strong>${label(e.name)}</strong><div style="font-size:11px;color:var(--la-text-tertiary)">${e.name}</div></td>
       <td><span class="type-badge type-${e.type}">${e.type}</span></td>
-      <td>${e.count.toLocaleString()}</td>
-      <td>${(e.count/total*100).toFixed(1)}%</td>
+      <td>${e.count > 0 ? e.count.toLocaleString() : '<span style="color:var(--la-text-tertiary)">-</span>'}</td>
+      <td>${e.count > 0 ? (e.count/total*100).toFixed(1)+'%' : '<span style="color:var(--la-text-tertiary)">-</span>'}</td>
     </tr>
   `).join('');
+
+  // 페이지네이션
+  const paginationEl = document.getElementById('eventTablePagination');
+  if (totalPages <= 1) { paginationEl.innerHTML = ''; return; }
+  const btns = [];
+  for (let i = 0; i < totalPages; i++) {
+    btns.push(`<button onclick="goTablePage(${i})" style="padding:4px 10px;font-size:12px;border:1px solid var(--la-border);border-radius:8px;cursor:pointer;background:${i===tablePage?'var(--la-primary)':'var(--la-surface)'};color:${i===tablePage?'#fff':'var(--la-text-secondary)'}">${i+1}</button>`);
+  }
+  paginationEl.innerHTML = `<div style="display:flex;gap:6px;align-items:center;margin-top:12px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--la-text-tertiary)">${sorted.length}개 이벤트 · ${tablePage+1}/${totalPages} 페이지</span>
+    ${btns.join('')}
+  </div>`;
 }
+
+function goTablePage(p) { tablePage = p; renderTable(); }
 
 // --- Custom funnel (click-to-build) ---
 let selectedSteps = [];
@@ -632,25 +701,29 @@ async function runCustomFunnel() {
   renderFunnelBars('customFunnelContainer', d.steps);
 }
 
-function renderEventChips(events) {
-  availableEvents = events;
+function renderEventChips() {
   const container = document.getElementById('eventChips');
-  const grouped = {};
-  events.forEach(e => {
-    const prefix = e.name.split('_')[0];
-    const group = {alarm:'알람',add:'알람',message:'메시지',messages:'메시지',like:'좋아요',rewards:'보상',settings:'설정'}[prefix] || '기타';
-    if (!grouped[group]) grouped[group] = [];
-    grouped[group].push(e);
-  });
-  const colors = {알람:'#e8f3ff',메시지:'#fff0f6',좋아요:'#fff3e0',보상:'#f0fdf4',설정:'#f2f4f6',기타:'#f2f4f6'};
+  const groups = {
+    '화면':     ALL_EVENTS.filter(e => e.type === 'screen'),
+    '알람':     ALL_EVENTS.filter(e => e.name.startsWith('alarm') || e.name.startsWith('add_alarm')),
+    '메시지':   ALL_EVENTS.filter(e => e.name.startsWith('message')),
+    '좋아요':   ALL_EVENTS.filter(e => e.name.startsWith('like')),
+    '보상':     ALL_EVENTS.filter(e => e.name.startsWith('rewards')),
+    '설정/알림':ALL_EVENTS.filter(e => e.name.startsWith('settings') || e.name.startsWith('notification')),
+    '기타':     ALL_EVENTS.filter(e => !['screen','alarm','add_alarm','message','like','rewards','settings','notification'].some(p => e.name.startsWith(p))),
+  };
+  const colors = {'화면':'#f2f4f6','알람':'#e8f3ff','메시지':'#fff0f6','좋아요':'#fff3e0','보상':'#f0fdf4','설정/알림':'#f2f4f6','기타':'#f2f4f6'};
   let html = '';
-  for (const [group, items] of Object.entries(grouped)) {
-    html += `<span style="font-size:11px;color:var(--la-text-tertiary);width:100%;margin-top:4px;font-weight:500">${group}</span>`;
+  for (const [group, items] of Object.entries(groups)) {
+    if (!items.length) continue;
+    html += `<span style="font-size:11px;color:var(--la-text-tertiary);width:100%;margin-top:8px;font-weight:600;display:block">${group}</span>`;
     items.forEach(e => {
-      html += `<span onclick="addStep('${e.name}')" style="padding:4px 10px;background:${colors[group]||'#f5f5f5'};border-radius:14px;font-size:12px;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${label(e.name)}</span>`;
+      const hasData = e.count > 0;
+      html += `<span onclick="addStep('${e.name}')" title="${e.name}" style="padding:4px 10px;background:${colors[group]||'#f5f5f5'};border-radius:14px;font-size:12px;cursor:pointer;opacity:${hasData?1:.45};transition:opacity .15s;border:1px solid ${hasData?'transparent':'var(--la-border)'}" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='${hasData?1:.45}'">${label(e.name)}</span>`;
     });
   }
   container.innerHTML = html;
+  renderSelectedChips();
 }
 
 
