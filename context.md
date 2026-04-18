@@ -232,7 +232,7 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
   - Prisma: MessageReaction 모델 추가
   - 백엔드 API: GET /api/messages/sent, GET /api/messages/received, POST /api/messages/:id/reaction, POST /api/messages/:id/report
 
-### 검수 5 — 알림 + 이벤트 로깅 + 설정 UI 개선
+### 검수 5 — 알림 + 이벤트 로깅 + 설정 UI 개선 ✅ 승인 완료 (2026-04-14)
 > Unit 9. 메시지 수신 알림 + 이벤트 로깅 인프라 + 더보기 UI 개선.
 
 - [ ] **Unit 9**: 알림 · 로깅 · 설정 개선
@@ -254,7 +254,8 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 ### 현재 운영 메모
 
 - `review/4` 검수 통과 완료 (2026-04-14). 승인 기준 커밋 `5b5e040`을 `main`에 Fast-forward 병합 완료.
-- `review/notification-logging` 브랜치 생성 완료 (Unit 9). 빌드 ID: `019d8bf0-7a91-7122-9b4a-960df8a3d7fe`.
+- `review/notification-logging` 검수 통과 완료 (2026-04-14). 승인 기준 커밋 `b575210`을 `main`에 Fast-forward 병합 완료.
+- `review/2`, `review/3`, `review/4`, `review/notification-logging` 브랜치는 롤백/비교용으로 당분간 유지.
 - `review/2`, `review/3`, `review/4` 브랜치는 롤백/비교용으로 당분간 유지.
 
 ---
