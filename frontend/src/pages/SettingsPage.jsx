@@ -216,7 +216,7 @@ export function SettingsPage() {
 
       <Spacing size={24} />
 
-      {/* 인스타그램 인증 섹션 */}
+      {/* 메뉴 섹션 - 각 row 별도 List + 균일한 Spacing */}
       <List>
         <ListRow
           contents={
@@ -253,9 +253,8 @@ export function SettingsPage() {
         />
       </List>
 
-      <Spacing size={8} />
+      <Spacing size={12} />
 
-      {/* 메뉴 섹션 */}
       <List>
         <ListRow
           contents={
@@ -277,6 +276,11 @@ export function SettingsPage() {
             navigate('/notification-settings');
           }}
         />
+      </List>
+
+      <Spacing size={12} />
+
+      <List>
         <ListRow
           contents={
             <Text color="#4e5968" typography="t5" fontWeight="semibold">
@@ -297,6 +301,11 @@ export function SettingsPage() {
             navigate('/feedback');
           }}
         />
+      </List>
+
+      <Spacing size={12} />
+
+      <List>
         <ListRow
           contents={
             <Text color="#4e5968" typography="t5" fontWeight="semibold">

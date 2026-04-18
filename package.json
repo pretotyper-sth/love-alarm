@@ -6,19 +6,21 @@
   "scripts": {
     "dev": "granite dev",
     "build": "ait build",
+    "build:staging": "cross-env VITE_MODE=staging ait build",
     "lint": "cd frontend && eslint .",
     "preview": "cd frontend && vite preview",
     "deploy": "ait deploy",
     "frontend:dev": "cd frontend && vite --host",
     "frontend:build": "cd frontend && vite build",
+    "frontend:build:staging": "cd frontend && vite build --mode staging",
     "vite:dev": "cd frontend && vite --host",
-    "vite:build": "cd frontend && vite build"
+    "vite:build": "cd frontend && vite build --mode ${VITE_MODE:-production}"
   },
   "dependencies": {
-    "@apps-in-toss/web-framework": "^2.1.1",
+    "@apps-in-toss/web-framework": "^2.4.7",
     "@emotion/react": "^11.14.0",
     "@toss/tds-mobile": "^2.2.0",
-    "@toss/tds-mobile-ait": "^2.2.0",
+    "@toss/tds-mobile-ait": "^2.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.10.1",
@@ -29,6 +31,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

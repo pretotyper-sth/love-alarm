@@ -60,17 +60,16 @@ body {
   position: absolute;
   bottom: 0;
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease-out, visibility 0.3s ease-out, transform 0.3s ease-out;
+  transition: opacity 0.25s ease-out, visibility 0.25s ease-out;
   pointer-events: auto;
 }
 
 .custom-toast.show {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
 }
 
 /* 단독 Toast 스타일 (스택 외부) */
@@ -78,17 +77,18 @@ body {
   position: fixed;
   bottom: 120px;
   left: 50%;
-  transform: translateX(-50%) translateY(20px);
+  transform: translateX(-50%);
   z-index: 9999;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease-out, visibility 0.3s ease-out, transform 0.3s ease-out;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out, visibility 0.25s ease-out;
 }
 
 .single-toast.show {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
 }
 
 .custom-toast-content {

@@ -8,8 +8,11 @@ import {
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 import { logScreen, logClick } from '../utils/analytics';
 import './RewardsPage.css';
+
+const IS_DEV = import.meta.env.DEV;
 
 // ─── localStorage 키 ───────────────────────────────────────
 const VISIT_DATES_KEY = 'love_alarm_visit_dates';
@@ -43,6 +46,7 @@ function getConsecutiveStreak(dates) {
 
 // ─── 컴포넌트 ───────────────────────────────────────────────
 export function RewardsPage() {
+  const { setUser } = useAuth();
   const appendedTodayRef = useRef(false);
   const [visitDates] = useState(() => {
     const dates = loadVisitDates();
@@ -82,7 +86,7 @@ export function RewardsPage() {
   // ─── 토스트 ─────────────────────────────────────────────
   const showToast = (message) => {
     setToast({ show: true, message });
-    setTimeout(() => setToast({ show: false, message: '' }), 3000);
+    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
   };
 
   // ─── 수령 핸들러 ─────────────────────────────────────────
@@ -106,11 +110,41 @@ export function RewardsPage() {
     localStorage.setItem(CHECKIN10_CYCLES_KEY, String(next));
     setClaimed10Cycles(next);
     try {
-      await api.purchaseSlot();
-      showToast('알람 슬롯 1개를 추가했어요');
+      const data = await api.purchaseSlot();
+      // AuthContext + 캐시 즉시 동기화 → AlarmListPage 초기값이 새 값으로 뜸
+      if (data?.user) {
+        setUser(data.user);
+        localStorage.setItem('love_alarm_cached_maxSlots', String(data.user.maxSlots));
+      }
+      showToast('알람 슬롯 1개를 받았어요');
     } catch {
-      showToast('알람 슬롯 1개를 추가했어요');
+      showToast('알람 슬롯 1개를 받았어요');
     }
+  };
+
+  // ─── DEV bypass ─────────────────────────────────────────
+  const devResetSlotClaim = () => {
+    localStorage.setItem(CHECKIN10_CYCLES_KEY, '0');
+    localStorage.setItem(VISIT_DATES_KEY, JSON.stringify(
+      Array.from({ length: 10 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+      })
+    ));
+    window.location.reload();
+  };
+
+  const devResetAdFree = () => {
+    localStorage.removeItem(CHECKIN30_CLAIMED_KEY);
+    localStorage.setItem(VISIT_DATES_KEY, JSON.stringify(
+      Array.from({ length: 30 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        return d.toISOString().split('T')[0];
+      })
+    ));
+    window.location.reload();
   };
 
   return (
@@ -205,6 +239,19 @@ export function RewardsPage() {
           <span className="custom-toast-text">{toast.message}</span>
         </div>
       </div>
+
+      {/* DEV: 보상 bypass 버튼 */}
+      {IS_DEV && (
+        <div className="dev-bypass">
+          <p className="dev-bypass-label">DEV bypass</p>
+          <button className="dev-bypass-btn" onClick={devResetSlotClaim}>
+            🎯 10일 달성 상태로 리셋 (슬롯 받기 테스트)
+          </button>
+          <button className="dev-bypass-btn" onClick={devResetAdFree}>
+            🎯 30일 달성 상태로 리셋 (광고 제거 테스트)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

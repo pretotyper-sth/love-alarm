@@ -55,3 +55,36 @@
   font-weight: 500;
   color: #6b7684;
 }
+
+/* ─── DEV bypass ─── */
+.dev-bypass {
+  margin: 40px 20px 20px;
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px dashed #f0a500;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dev-bypass-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b6914;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dev-bypass-btn {
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #f0a500;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4e3a00;
+  cursor: pointer;
+  text-align: left;
+}
