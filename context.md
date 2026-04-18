@@ -242,6 +242,13 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
   - 커스텀 애널리틱스 대시보드 (백엔드 전용, 검수 무관)
   - 더보기 페이지: 알림 설정을 별도 페이지로 분리, 구분선 제거, 메뉴 순서 조정
 
+### 배포 자동화
+
+- **Railway (백엔드)**: `main` 브랜치 push → 자동 배포. 수동 배포 불필요.
+- **Vercel (정적 페이지)**: `main` 브랜치 push → 자동 배포. 수동 배포 불필요.
+- **Apps-in-Toss (프론트엔드 앱)**: 자동 배포 없음. `granite build` 후 `.ait` 파일을 개발자센터에 수동 업로드 → 검수 요청 → 통과 후 출시.
+- **결론**: 백엔드/정적 파일은 `main`에 push하는 것 자체가 배포 완료. 별도 Redeploy 작업 불필요.
+
 ### 브랜치 운영 원칙
 
 - `main`은 항상 **현재 라이브 기준**으로 유지한다.
@@ -256,7 +263,6 @@ INSTAGRAM_BUSINESS_ACCOUNT_ID="17841439221705541"
 - `review/4` 검수 통과 완료 (2026-04-14). 승인 기준 커밋 `5b5e040`을 `main`에 Fast-forward 병합 완료.
 - `review/notification-logging` 검수 통과 완료 (2026-04-14). 승인 기준 커밋 `b575210`을 `main`에 Fast-forward 병합 완료.
 - `review/2`, `review/3`, `review/4`, `review/notification-logging` 브랜치는 롤백/비교용으로 당분간 유지.
-- `review/2`, `review/3`, `review/4` 브랜치는 롤백/비교용으로 당분간 유지.
 
 ---
 
