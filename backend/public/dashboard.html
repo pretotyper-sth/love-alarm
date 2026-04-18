@@ -6,149 +6,300 @@
 <title>Love Alarm Analytics</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; color: #1d1d1f; }
-  .header { background: #fff; border-bottom: 1px solid #e5e5e7; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
-  .header h1 { font-size: 22px; font-weight: 700; }
-  .period-selector { display: flex; gap: 8px; }
-  .period-btn { padding: 6px 16px; border: 1px solid #d1d1d6; border-radius: 20px; background: #fff; cursor: pointer; font-size: 13px; transition: all .15s; }
-  .period-btn.active { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
-  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .card { background: #fff; border-radius: 16px; padding: 20px; }
-  .card-label { font-size: 13px; color: #86868b; margin-bottom: 4px; }
-  .card-value { font-size: 32px; font-weight: 700; }
-  .card-sub { font-size: 12px; color: #86868b; margin-top: 4px; }
-  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-  .chart-box { background: #fff; border-radius: 16px; padding: 20px; }
-  .chart-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-  .chart-box.full { grid-column: 1 / -1; }
-  .table-box { background: #fff; border-radius: 16px; padding: 20px; }
-  .table-box h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 8px 12px; color: #86868b; font-weight: 500; border-bottom: 1px solid #e5e5e7; }
-  td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
-  tr:hover td { background: #f9f9fb; }
-  .type-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
-  .type-screen { background: #e8f5e9; color: #2e7d32; }
-  .type-click { background: #e3f2fd; color: #1565c0; }
-  .type-impression { background: #fff3e0; color: #e65100; }
-  .login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .login-box { background: #fff; border-radius: 20px; padding: 40px; width: 340px; text-align: center; }
-  .login-box h2 { margin-bottom: 20px; font-size: 18px; }
-  .login-box input { width: 100%; padding: 12px 16px; border: 1px solid #d1d1d6; border-radius: 12px; font-size: 14px; margin-bottom: 12px; outline: none; }
-  .login-box input:focus { border-color: #1d1d1f; }
-  .login-box button { width: 100%; padding: 12px; background: #1d1d1f; color: #fff; border: none; border-radius: 12px; font-size: 14px; cursor: pointer; }
-  .funnel-config { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-  .funnel-config input { flex: 1; min-width: 300px; padding: 8px 12px; border: 1px solid #d1d1d6; border-radius: 8px; font-size: 13px; }
-  .funnel-config button { padding: 8px 16px; background: #1d1d1f; color: #fff; border: none; border-radius: 8px; font-size: 13px; cursor: pointer; }
-  .empty { text-align: center; padding: 40px; color: #86868b; }
-  @media (max-width: 768px) {
-    .charts { grid-template-columns: 1fr; }
-    .header { flex-direction: column; gap: 12px; }
-  }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --la-primary:#3182f6;
+  --la-primary-dark:#1b64da;
+  --la-red:#f04452;
+  --la-red-soft:#fff2f4;
+  --la-pink:#fff0f6;
+  --la-pink-accent:#e05ca3;
+  --la-bg:#f9fafb;
+  --la-surface:#ffffff;
+  --la-text:#191f28;
+  --la-text-secondary:#4e5968;
+  --la-text-tertiary:#8b95a1;
+  --la-border:#e5e8eb;
+  --la-border-light:#f2f4f6;
+  --la-success:#22c55e;
+  --la-warning:#fbbf24;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto',sans-serif;background:var(--la-bg);color:var(--la-text)}
+.header{background:var(--la-surface);border-bottom:1px solid var(--la-border);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+.header h1::before{content:'';display:inline-block;width:24px;height:24px;background:var(--la-red);border-radius:50%;box-shadow:0 0 0 4px var(--la-red-soft)}
+.period-selector{display:flex;gap:6px}
+.period-btn{padding:6px 14px;border:1px solid var(--la-border);border-radius:20px;background:var(--la-surface);cursor:pointer;font-size:13px;color:var(--la-text-secondary);transition:all .15s}
+.period-btn:hover{border-color:var(--la-primary);color:var(--la-primary)}
+.period-btn.active{background:var(--la-primary);color:#fff;border-color:var(--la-primary)}
+.container{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+.section{margin-bottom:32px}
+.section-q{font-size:19px;font-weight:700;margin-bottom:6px;padding-left:2px;color:var(--la-text)}
+.section-desc{font-size:13px;color:var(--la-text-tertiary);margin-bottom:16px;padding-left:2px;line-height:1.5}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+.card{background:var(--la-surface);border-radius:16px;padding:18px;border:1px solid var(--la-border-light);transition:box-shadow .2s}
+.card:hover{box-shadow:0 2px 12px rgba(49,130,246,.08)}
+.card-label{font-size:12px;color:var(--la-text-tertiary);margin-bottom:4px}
+.card-value{font-size:28px;font-weight:700;color:var(--la-primary)}
+.card-sub{font-size:11px;color:var(--la-text-tertiary);margin-top:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.box{background:var(--la-surface);border-radius:16px;padding:18px;border:1px solid var(--la-border-light)}
+.box.full{grid-column:1/-1}
+.box h4{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--la-text)}
+.mini-table{width:100%;border-collapse:collapse;font-size:13px}
+.mini-table th{text-align:left;padding:8px 10px;color:var(--la-text-tertiary);font-weight:500;border-bottom:1px solid var(--la-border);font-size:12px}
+.mini-table td{padding:8px 10px;border-bottom:1px solid var(--la-border-light)}
+.mini-table tr:hover td{background:var(--la-pink)}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-row .label{font-size:13px;min-width:120px;text-align:right;color:var(--la-text-secondary)}
+.bar-row .bar{height:24px;border-radius:8px;min-width:2px;transition:width .3s}
+.bar-row .val{font-size:12px;color:var(--la-text-tertiary);min-width:40px}
+.type-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.type-screen{background:#e8f5e9;color:#2e7d32}
+.type-click{background:#e8f3ff;color:#1b64da}
+.type-impression{background:#fff3e0;color:#e65100}
+.funnel-row{display:flex;gap:8px;margin-top:8px}
+.funnel-row input{flex:1;padding:8px 12px;border:1px solid var(--la-border);border-radius:10px;font-size:13px;outline:none;transition:border-color .15s}
+.funnel-row input:focus{border-color:var(--la-primary)}
+.funnel-row button{padding:8px 16px;background:var(--la-primary);color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;transition:background .15s}
+.funnel-row button:hover{background:var(--la-primary-dark)}
+.login-overlay{position:fixed;inset:0;background:rgba(25,31,40,.5);display:flex;align-items:center;justify-content:center;z-index:100}
+.login-box{background:var(--la-surface);border-radius:24px;padding:40px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.login-box h2{margin-bottom:8px;font-size:20px;font-weight:700}
+.login-box::before{content:'';display:block;width:48px;height:48px;background:var(--la-red);border-radius:50%;margin:0 auto 16px;box-shadow:0 0 0 8px var(--la-red-soft),0 4px 20px rgba(240,68,82,.3)}
+.login-box input{width:100%;padding:12px 16px;border:1px solid var(--la-border);border-radius:12px;font-size:14px;margin-bottom:12px;outline:none;margin-top:16px;transition:border-color .15s}
+.login-box input:focus{border-color:var(--la-primary)}
+.login-box button{width:100%;padding:12px;background:var(--la-primary);color:#fff;border:none;border-radius:12px;font-size:14px;cursor:pointer;font-weight:600;transition:background .15s}
+.login-box button:hover{background:var(--la-primary-dark)}
+.divider{border:none;border-top:1px solid var(--la-border);margin:32px 0}
+.drop-label{font-size:11px;color:var(--la-red);margin:4px 0 4px 130px;font-weight:500}
+.insight-box{background:var(--la-red-soft);border:1px solid #fecdd3;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;line-height:1.5;color:#9f1239}
+.sort-btn{padding:4px 10px;font-size:11px;border:1px solid var(--la-border);background:var(--la-surface);border-radius:8px;cursor:pointer;color:var(--la-text-tertiary);transition:all .15s}
+.sort-btn:hover{border-color:var(--la-primary);color:var(--la-primary)}
+.sort-btn.active{background:var(--la-primary);color:#fff;border-color:var(--la-primary)}
+.sql-area{width:100%;min-height:100px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;padding:14px;border:1px solid var(--la-border);border-radius:12px;resize:vertical;outline:none;background:var(--la-bg);line-height:1.6;transition:all .15s}
+.sql-area:focus{border-color:var(--la-primary);background:var(--la-surface);box-shadow:0 0 0 3px rgba(49,130,246,.1)}
+.sql-result{margin-top:12px;overflow-x:auto}
+.sql-result table{width:100%;font-size:12px;border-collapse:collapse}
+.sql-result th{background:var(--la-bg);padding:8px 10px;text-align:left;border-bottom:1px solid var(--la-border);font-weight:600;white-space:nowrap;color:var(--la-text-secondary)}
+.sql-result td{padding:8px 10px;border-bottom:1px solid var(--la-border-light);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.sql-result tr:hover td{background:var(--la-pink)}
+.sql-meta{display:flex;gap:16px;font-size:12px;color:var(--la-text-tertiary);margin-top:8px}
+.sql-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.sql-preset{padding:5px 12px;background:#e8f3ff;color:var(--la-primary);border-radius:14px;font-size:12px;cursor:pointer;border:none;font-weight:500;transition:all .15s}
+.sql-preset:hover{background:var(--la-primary);color:#fff}
+@media(max-width:768px){
+  .grid2{grid-template-columns:1fr}
+  .header{flex-direction:column;gap:10px;padding:16px 20px}
+  .section-q{font-size:17px}
+  .bar-row .label{min-width:90px;font-size:12px}
+  .drop-label{margin-left:100px}
+}
 </style>
 </head>
 <body>
 
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <h2>Analytics Dashboard</h2>
-    <input type="password" id="secretInput" placeholder="Dashboard Secret" autofocus>
-    <button onclick="doLogin()">Enter</button>
+    <h2>Love Alarm Analytics</h2>
+    <input type="password" id="secretInput" placeholder="비밀번호 입력" autofocus>
+    <button onclick="doLogin()">들어가기</button>
   </div>
 </div>
 
 <div class="header">
   <h1>Love Alarm Analytics</h1>
   <div class="period-selector">
-    <button class="period-btn" data-days="1">Today</button>
-    <button class="period-btn active" data-days="7">7 Days</button>
-    <button class="period-btn" data-days="14">14 Days</button>
-    <button class="period-btn" data-days="30">30 Days</button>
+    <button class="period-btn" data-days="1">오늘</button>
+    <button class="period-btn active" data-days="7">7일</button>
+    <button class="period-btn" data-days="14">14일</button>
+    <button class="period-btn" data-days="30">30일</button>
   </div>
 </div>
 
 <div class="container">
-  <div class="cards">
-    <div class="card">
-      <div class="card-label">Total Events</div>
-      <div class="card-value" id="totalEvents">-</div>
-      <div class="card-sub" id="totalEventsSub"></div>
+
+  <!-- Section 1: 서비스 상태 -->
+  <div class="section">
+    <div class="section-q">오늘 우리 서비스 상태는?</div>
+    <div class="section-desc">전체 트래픽과 사용자 규모를 한눈에 봅니다.</div>
+    <div class="cards">
+      <div class="card"><div class="card-label">방문자 수 (유니크)</div><div class="card-value" id="s1Users">-</div><div class="card-sub">로그인 유저 기준</div></div>
+      <div class="card"><div class="card-label">총 세션</div><div class="card-value" id="s1Sessions">-</div><div class="card-sub">브라우저 세션 기준</div></div>
+      <div class="card"><div class="card-label">총 이벤트</div><div class="card-value" id="s1Events">-</div></div>
+      <div class="card"><div class="card-label">가장 많은 행동</div><div class="card-value" id="s1Top" style="font-size:15px">-</div><div class="card-sub" id="s1TopCnt"></div></div>
     </div>
-    <div class="card">
-      <div class="card-label">Unique Users</div>
-      <div class="card-value" id="uniqueUsers">-</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Top Event</div>
-      <div class="card-value" id="topEvent" style="font-size:18px;">-</div>
-      <div class="card-sub" id="topEventCount"></div>
-    </div>
-    <div class="card">
-      <div class="card-label">Avg Events/Day</div>
-      <div class="card-value" id="avgPerDay">-</div>
+    <div class="grid2">
+      <div class="box"><h4>일별 이벤트 추이</h4><canvas id="s1DailyChart"></canvas></div>
+      <div class="box"><h4>행동 유형 분포</h4><canvas id="s1PieChart"></canvas></div>
     </div>
   </div>
 
-  <div class="charts">
-    <div class="chart-box">
-      <h3>Daily Events</h3>
-      <canvas id="dailyChart"></canvas>
+  <hr class="divider">
+
+  <!-- Section 2: 리텐션 (NEW) -->
+  <div class="section">
+    <div class="section-q">사람들이 다시 오고 있어?</div>
+    <div class="section-desc">서비스 성장의 핵심입니다. 일별 유니크 방문자가 늘고 있는지, 줄고 있는지 확인합니다.<br>MAU 80% 감소 → 이 차트가 우상향하지 않으면 다른 어떤 최적화도 의미 없습니다.</div>
+    <div class="cards">
+      <div class="card"><div class="card-label">일 평균 유니크 유저</div><div class="card-value" id="s2AvgUsers">-</div><div class="card-sub">로그인 유저</div></div>
+      <div class="card"><div class="card-label">일 평균 세션</div><div class="card-value" id="s2AvgSessions">-</div></div>
+      <div class="card"><div class="card-label">유저당 평균 세션</div><div class="card-value" id="s2SessionPerUser">-</div><div class="card-sub">1 이상이면 재방문 발생</div></div>
     </div>
-    <div class="chart-box">
-      <h3>Event Distribution</h3>
-      <canvas id="pieChart"></canvas>
+    <div class="grid2">
+      <div class="box full"><h4>일별 유니크 유저 추이</h4><canvas id="s2DailyUsersChart"></canvas></div>
     </div>
-    <div class="chart-box full">
-      <h3>Funnel Analysis</h3>
-      <div class="funnel-config">
-        <input id="funnelInput" value="alarm_list_screen,alarm_add_button_click,add_alarm_screen,add_alarm_ad_start,add_alarm_ad_complete,add_alarm_success" placeholder="step1,step2,step3,...">
-        <button onclick="loadFunnel()">Analyze</button>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 3: 알람 추가 퍼널 -->
+  <div class="section">
+    <div class="section-q">사람들이 알람을 잘 추가하고 있어?</div>
+    <div class="section-desc">핵심 전환입니다. 홈 화면에서 시작해서 알람 추가까지 완료하는 비율을 보고, 어디서 이탈하는지 찾습니다.</div>
+    <div class="grid2">
+      <div class="box full"><h4>알람 추가 퍼널</h4><div id="s3FunnelContainer"></div></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 4: 메시지 -->
+  <div class="section">
+    <div class="section-q">메시지 기능을 쓰고 있어?</div>
+    <div class="section-desc">양방향 상호작용이 생기면 리텐션이 올라갑니다. 메시지함 진입부터 반응까지의 흐름을 봅니다.</div>
+    <div class="grid2">
+      <div class="box"><h4>메시지 참여 퍼널</h4><div id="s4MsgFunnelContainer"></div></div>
+      <div class="box"><h4>이모지 반응 분포</h4><canvas id="s4EmojiChart"></canvas><div id="s4EmojiEmpty" style="display:none;padding:20px;text-align:center;color:var(--la-text-tertiary);font-size:13px">아직 반응 데이터가 없습니다</div></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 5: 좋아하는 사람 수 -->
+  <div class="section">
+    <div class="section-q">좋아하는 사람 수 조회를 많이 해?</div>
+    <div class="section-desc">호기심 기반 재방문 트리거입니다. 조회 퍼널이 건강하면 리텐션이 따라옵니다.</div>
+    <div class="grid2">
+      <div class="box full"><h4>좋아하는 사람 수 조회 퍼널</h4><div id="s5LikeFunnelContainer"></div></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 6: 보상 & 체크인 -->
+  <div class="section">
+    <div class="section-q">보상이 리텐션에 도움되고 있어?</div>
+    <div class="section-desc">10일/30일 체크인 보상이 재방문 루프를 만들고 있는지 확인합니다. 보상 페이지 방문 → 체크인 → 보상 수령 흐름을 봅니다.</div>
+    <div class="grid2">
+      <div class="box full"><h4>보상 퍼널</h4><div id="s6RewardsFunnelContainer"></div></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Section 7: 설정 -->
+  <div class="section">
+    <div class="section-q">설정에서 뭘 많이 건드려?</div>
+    <div class="section-desc">알림 토글, 공유, 인스타 인증, 피드백 등 사용자 행동 패턴입니다.</div>
+    <div class="grid2">
+      <div class="box"><h4>주요 설정 행동</h4><div id="s7BarsContainer"></div></div>
+      <div class="box"><h4>인스타 인증 전환</h4><canvas id="s7AuthChart"></canvas></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Custom funnel -->
+  <div class="section">
+    <div class="section-q">직접 퍼널 만들어 보기</div>
+    <div class="section-desc">아래 이벤트를 순서대로 클릭하면 퍼널이 만들어집니다. 클릭한 순서가 퍼널 단계가 됩니다.</div>
+    <div class="grid2">
+      <div class="box full">
+        <div style="margin-bottom:12px">
+          <div style="font-size:12px;color:var(--la-text-tertiary);margin-bottom:8px">선택한 퍼널 단계 (클릭해서 제거):</div>
+          <div id="selectedChips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px;padding:8px;background:var(--la-bg);border-radius:10px"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button onclick="runCustomFunnel()" style="padding:8px 20px;background:var(--la-primary);color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-weight:500">퍼널 분석</button>
+          <button onclick="clearCustomFunnel()" style="padding:8px 16px;background:var(--la-surface);color:var(--la-text);border:1px solid var(--la-border);border-radius:10px;font-size:13px;cursor:pointer">초기화</button>
+        </div>
+        <div style="font-size:12px;color:var(--la-text-tertiary);margin-bottom:8px">이벤트 목록 (클릭해서 추가):</div>
+        <div id="eventChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+        <div id="customFunnelContainer"></div>
       </div>
-      <canvas id="funnelChart"></canvas>
     </div>
   </div>
 
-  <div class="table-box">
-    <h3>All Events</h3>
-    <table>
-      <thead><tr><th>Event Name</th><th>Type</th><th>Count</th><th>Share</th></tr></thead>
-      <tbody id="eventTableBody"></tbody>
-    </table>
+  <hr class="divider">
+
+  <!-- All events table -->
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="section-q" style="margin:0">전체 이벤트 목록</div>
+      <div id="sortBtns" style="display:flex;gap:4px">
+        <button class="sort-btn active" data-key="count-desc" onclick="sortTable('count-desc')">횟수 ↓</button>
+        <button class="sort-btn" data-key="count-asc" onclick="sortTable('count-asc')">횟수 ↑</button>
+        <button class="sort-btn" data-key="name-asc" onclick="sortTable('name-asc')">이름순</button>
+        <button class="sort-btn" data-key="type" onclick="sortTable('type')">타입별</button>
+      </div>
+    </div>
+    <div class="box" style="margin-top:12px">
+      <table class="mini-table">
+        <thead><tr><th>이벤트명</th><th>타입</th><th>횟수</th><th>비율</th></tr></thead>
+        <tbody id="eventTableBody"></tbody>
+      </table>
+    </div>
   </div>
+
+  <hr class="divider">
+
+  <!-- SQL Query -->
+  <div class="section">
+    <div class="section-q">SQL 직접 조회</div>
+    <div class="section-desc">AnalyticsEvent 테이블에 SELECT 쿼리를 직접 실행합니다. 결과는 최대 500행까지 표시됩니다.</div>
+    <div class="box" style="margin-top:12px">
+      <div style="font-size:12px;color:var(--la-text-tertiary);margin-bottom:8px">자주 쓰는 쿼리:</div>
+      <div class="sql-presets">
+        <button class="sql-preset" onclick="sqlPreset('recent')">최근 이벤트 50개</button>
+        <button class="sql-preset" onclick="sqlPreset('daily')">일별 이벤트 수</button>
+        <button class="sql-preset" onclick="sqlPreset('users')">유저별 이벤트 수</button>
+        <button class="sql-preset" onclick="sqlPreset('sessions')">세션별 여정</button>
+        <button class="sql-preset" onclick="sqlPreset('hourly')">시간대별 분포</button>
+        <button class="sql-preset" onclick="sqlPreset('retention')">재방문 유저</button>
+      </div>
+      <textarea id="sqlInput" class="sql-area" placeholder="SELECT * FROM &quot;AnalyticsEvent&quot; LIMIT 10"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <button onclick="runSQL()" style="padding:8px 20px;background:var(--la-primary);color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-weight:500">실행 (⌘+Enter)</button>
+        <span id="sqlStatus" style="font-size:12px;color:var(--la-text-tertiary)"></span>
+      </div>
+      <div id="sqlResult" class="sql-result"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
 const API = location.origin;
 let SECRET = localStorage.getItem('_dash_secret') || '';
 let DAYS = 7;
-let dailyChartInstance = null;
-let pieChartInstance = null;
-let funnelChartInstance = null;
+const charts = {};
 
-function headers() {
-  return { 'Authorization': 'Basic ' + btoa('admin:' + SECRET) };
-}
-
+function headers() { return { 'Authorization': 'Basic ' + btoa('admin:' + SECRET) }; }
 async function apiFetch(path) {
   const r = await fetch(`${API}${path}`, { headers: headers() });
   if (r.status === 401) { showLogin(); throw new Error('Unauthorized'); }
   return r.json();
 }
-
 function showLogin() { document.getElementById('loginOverlay').style.display = 'flex'; }
 function hideLogin() { document.getElementById('loginOverlay').style.display = 'none'; }
-
 function doLogin() {
   SECRET = document.getElementById('secretInput').value;
   localStorage.setItem('_dash_secret', SECRET);
   hideLogin();
   loadAll();
 }
-
 document.getElementById('secretInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
 document.querySelectorAll('.period-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
@@ -158,91 +309,397 @@ document.querySelectorAll('.period-btn').forEach(btn => {
   });
 });
 
-const COLORS = ['#007aff','#34c759','#ff9500','#ff3b30','#5856d6','#af52de','#ff2d55','#00c7be','#ff6482','#30b0c7'];
+const C = ['#3182f6','#f04452','#22c55e','#fbbf24','#e05ca3','#64a8ff','#a78bfa','#f97316','#06b6d4','#6b7684'];
 
-async function loadSummary() {
+function makeChart(id, cfg) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+
+const EVENT_LABELS = {
+  alarm_list_screen: '홈 화면',
+  alarm_add_button_click: '추가 버튼 탭',
+  add_alarm_screen: '추가 화면 진입',
+  add_alarm_ad_start: '광고 시작',
+  add_alarm_ad_complete: '광고 완료',
+  add_alarm_success: '알람 추가 성공',
+  message_icon_click: '메시지 아이콘 탭',
+  messages_screen: '메시지 화면 진입',
+  message_detail_open: '메시지 상세 열람',
+  message_reaction_click: '이모지 반응',
+  like_count_bar_click: '좋아요 수 바 탭',
+  like_count_sheet_screen: '좋아요 수 시트',
+  like_count_ad_start: '광고 시작',
+  like_count_ad_complete: '광고 완료',
+  like_count_result: '조회 결과 확인',
+  rewards_screen: '보상 페이지 방문',
+  rewards_checkin_click: '체크인 탭',
+  rewards_claim_click: '보상 수령 탭',
+  settings_screen: '설정 화면',
+  settings_toggle_change: '알림 토글 변경',
+  settings_share_click: '공유하기',
+  settings_auth_click: '인스타 인증 시작',
+  settings_auth_complete: '인스타 인증 완료',
+  settings_feedback_click: '피드백/건의',
+};
+
+function label(name) { return EVENT_LABELS[name] || name; }
+
+function renderFunnelBars(containerId, steps) {
+  if (!steps || !steps.length) return;
+  const max = steps[0].uniqueSessions || 1;
+  const container = document.getElementById(containerId);
+  let html = '';
+  steps.forEach((s, i) => {
+    const pct = ((s.uniqueSessions / max) * 100).toFixed(1);
+    const color = pct >= 60 ? '#22c55e' : pct >= 30 ? '#fbbf24' : '#f04452';
+    const width = Math.max((s.uniqueSessions / max) * 100, 2);
+    html += `<div class="bar-row">
+      <div class="label">${label(s.name)}</div>
+      <div class="bar" style="width:${width}%;background:${color}"></div>
+      <div class="val">${s.uniqueSessions}명 (${pct}%)</div>
+    </div>`;
+    if (i > 0 && i < steps.length) {
+      const prev = steps[i - 1].uniqueSessions || 1;
+      const dropPct = (((prev - s.uniqueSessions) / prev) * 100).toFixed(0);
+      if (dropPct > 0) {
+        html = html.replace(/<\/div>\s*$/, `</div>`);
+      }
+    }
+    if (i < steps.length - 1) {
+      const next = steps[i + 1];
+      const dropPct = (((s.uniqueSessions - next.uniqueSessions) / (s.uniqueSessions || 1)) * 100).toFixed(0);
+      if (dropPct > 0) {
+        html += `<div class="drop-label">↓ 여기서 ${dropPct}% 이탈</div>`;
+      }
+    }
+  });
+  container.innerHTML = html;
+}
+
+// --- Section 1 ---
+async function loadSection1() {
   const d = await apiFetch(`/api/events/summary?days=${DAYS}`);
-  document.getElementById('totalEvents').textContent = d.totalCount.toLocaleString();
-  document.getElementById('uniqueUsers').textContent = d.uniqueUsers.toLocaleString();
-  const avg = d.dailyCounts.length ? Math.round(d.totalCount / d.dailyCounts.length) : 0;
-  document.getElementById('avgPerDay').textContent = avg.toLocaleString();
-  if (d.topEvents.length) {
-    document.getElementById('topEvent').textContent = d.topEvents[0].name;
-    document.getElementById('topEventCount').textContent = d.topEvents[0].count.toLocaleString() + ' times';
-  }
+  document.getElementById('s1Users').textContent = d.uniqueUsers.toLocaleString();
+  document.getElementById('s1Events').textContent = d.totalCount.toLocaleString();
 
-  if (dailyChartInstance) dailyChartInstance.destroy();
-  dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
-    type: 'bar',
+  const du = await apiFetch(`/api/events/daily-users?days=${DAYS}`);
+  const totalSessions = du.data.reduce((s, r) => s + r.sessions, 0);
+  document.getElementById('s1Sessions').textContent = totalSessions.toLocaleString();
+
+  if (d.topEvents.length) {
+    document.getElementById('s1Top').textContent = label(d.topEvents[0].name);
+    document.getElementById('s1TopCnt').textContent = d.topEvents[0].count.toLocaleString() + '회';
+  }
+  makeChart('s1DailyChart', {
+    type: 'line',
     data: {
       labels: d.dailyCounts.map(r => r.date.slice(5, 10)),
-      datasets: [{ label: 'Events', data: d.dailyCounts.map(r => r.count), backgroundColor: '#007aff', borderRadius: 6 }]
+      datasets: [{ label: '이벤트', data: d.dailyCounts.map(r => r.count), borderColor: '#3182f6', backgroundColor: 'rgba(49,130,246,.08)', fill: true, tension: .3, pointRadius: 3 }]
     },
     options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
-
-  if (pieChartInstance) pieChartInstance.destroy();
   const top8 = d.topEvents.slice(0, 8);
-  pieChartInstance = new Chart(document.getElementById('pieChart'), {
+  makeChart('s1PieChart', {
     type: 'doughnut',
-    data: {
-      labels: top8.map(e => e.name),
-      datasets: [{ data: top8.map(e => e.count), backgroundColor: COLORS }]
-    },
+    data: { labels: top8.map(e => label(e.name)), datasets: [{ data: top8.map(e => e.count), backgroundColor: C }] },
     options: { responsive: true, plugins: { legend: { position: 'right', labels: { font: { size: 11 } } } } }
   });
 }
 
-async function loadTop() {
-  const d = await apiFetch(`/api/events/top?days=${DAYS}&limit=50`);
-  const total = d.events.reduce((s, e) => s + e.count, 0);
-  const tbody = document.getElementById('eventTableBody');
-  tbody.innerHTML = d.events.map(e => `
-    <tr>
-      <td><strong>${e.name}</strong></td>
-      <td><span class="type-badge type-${e.type}">${e.type}</span></td>
-      <td>${e.count.toLocaleString()}</td>
-      <td>${(e.count / total * 100).toFixed(1)}%</td>
-    </tr>
-  `).join('');
+// --- Section 2: 리텐션 ---
+async function loadSection2() {
+  const du = await apiFetch(`/api/events/daily-users?days=${DAYS}`);
+  const data = du.data;
+  if (!data.length) return;
+
+  const avgUsers = Math.round(data.reduce((s, r) => s + r.users, 0) / data.length);
+  const avgSessions = Math.round(data.reduce((s, r) => s + r.sessions, 0) / data.length);
+  const totalUsers = data.reduce((s, r) => s + r.users, 0) || 1;
+  const totalSessions = data.reduce((s, r) => s + r.sessions, 0);
+  const sessionPerUser = (totalSessions / totalUsers).toFixed(1);
+
+  document.getElementById('s2AvgUsers').textContent = avgUsers.toLocaleString();
+  document.getElementById('s2AvgSessions').textContent = avgSessions.toLocaleString();
+  document.getElementById('s2SessionPerUser').textContent = sessionPerUser;
+
+  makeChart('s2DailyUsersChart', {
+    type: 'line',
+    data: {
+      labels: data.map(r => r.date.slice(5, 10)),
+      datasets: [
+        { label: '유니크 유저', data: data.map(r => r.users), borderColor: '#3182f6', backgroundColor: 'rgba(49,130,246,.08)', fill: true, tension: .3, pointRadius: 4 },
+        { label: '세션', data: data.map(r => r.sessions), borderColor: '#34c759', backgroundColor: 'rgba(52,199,89,.08)', fill: false, tension: .3, pointRadius: 3, borderDash: [5,3] }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top', labels: { font: { size: 12 } } } }, scales: { y: { beginAtZero: true } } }
+  });
 }
 
-async function loadFunnel() {
-  const steps = document.getElementById('funnelInput').value;
-  if (!steps) return;
+// --- Section 3: 알람 퍼널 ---
+async function loadSection3() {
+  const steps = 'alarm_list_screen,alarm_add_button_click,add_alarm_screen,add_alarm_ad_start,add_alarm_ad_complete,add_alarm_success';
   const d = await apiFetch(`/api/events/funnel?steps=${encodeURIComponent(steps)}&days=${DAYS}`);
-  if (!d.steps || !d.steps.length) return;
+  renderFunnelBars('s3FunnelContainer', d.steps);
+}
 
-  const maxVal = d.steps[0].uniqueSessions || 1;
-  const labels = d.steps.map((s, i) => {
-    const pct = i === 0 ? '100%' : ((s.uniqueSessions / maxVal) * 100).toFixed(1) + '%';
-    return s.name + ' (' + pct + ')';
+// --- Section 4: 메시지 ---
+async function loadSection4() {
+  const steps = 'message_icon_click,messages_screen,message_detail_open,message_reaction_click';
+  const d = await apiFetch(`/api/events/funnel?steps=${encodeURIComponent(steps)}&days=${DAYS}`);
+  renderFunnelBars('s4MsgFunnelContainer', d.steps);
+
+  try {
+    const emojiData = await apiFetch(`/api/events/param-distribution?name=message_reaction_click&key=emoji&days=${DAYS}`);
+    if (emojiData.distribution && emojiData.distribution.length) {
+      document.getElementById('s4EmojiEmpty').style.display = 'none';
+      document.getElementById('s4EmojiChart').style.display = 'block';
+      makeChart('s4EmojiChart', {
+        type: 'doughnut',
+        data: {
+          labels: emojiData.distribution.map(d => d.value),
+          datasets: [{ data: emojiData.distribution.map(d => d.count), backgroundColor: C }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 14 } } } } }
+      });
+    } else {
+      document.getElementById('s4EmojiChart').style.display = 'none';
+      document.getElementById('s4EmojiEmpty').style.display = 'block';
+    }
+  } catch {
+    document.getElementById('s4EmojiChart').style.display = 'none';
+    document.getElementById('s4EmojiEmpty').style.display = 'block';
+  }
+}
+
+// --- Section 5: 좋아하는 사람 수 ---
+async function loadSection5() {
+  const steps = 'like_count_bar_click,like_count_sheet_screen,like_count_ad_start,like_count_ad_complete,like_count_result';
+  const d = await apiFetch(`/api/events/funnel?steps=${encodeURIComponent(steps)}&days=${DAYS}`);
+  renderFunnelBars('s5LikeFunnelContainer', d.steps);
+}
+
+// --- Section 6: 보상 ---
+async function loadSection6() {
+  const steps = 'rewards_screen,rewards_checkin_click,rewards_claim_click';
+  const d = await apiFetch(`/api/events/funnel?steps=${encodeURIComponent(steps)}&days=${DAYS}`);
+  renderFunnelBars('s6RewardsFunnelContainer', d.steps);
+}
+
+// --- Section 7: 설정 ---
+async function loadSection7() {
+  const names = ['settings_toggle_change','settings_share_click','settings_auth_click','settings_auth_complete','settings_feedback_click'];
+  const labels_ = ['알림 토글 변경','공유하기','인스타 인증 시작','인스타 인증 완료','피드백/건의'];
+  const d = await apiFetch(`/api/events/top?days=${DAYS}&limit=100`);
+  const counts = names.map(n => {
+    const found = d.events.find(e => e.name === n);
+    return found ? found.count : 0;
   });
+  const maxCount = Math.max(...counts, 1);
+  const container = document.getElementById('s7BarsContainer');
+  container.innerHTML = counts.map((c, i) =>
+    `<div class="bar-row">
+      <div class="label">${labels_[i]}</div>
+      <div class="bar" style="width:${(c/maxCount*100).toFixed(0)}%;background:${C[i]}"></div>
+      <div class="val">${c}</div>
+    </div>`
+  ).join('');
 
-  if (funnelChartInstance) funnelChartInstance.destroy();
-  funnelChartInstance = new Chart(document.getElementById('funnelChart'), {
+  const authStart = counts[2];
+  const authComplete = counts[3];
+  makeChart('s7AuthChart', {
     type: 'bar',
     data: {
-      labels,
+      labels: ['인증 시작', '인증 완료'],
       datasets: [{
-        label: 'Unique Sessions',
-        data: d.steps.map(s => s.uniqueSessions),
-        backgroundColor: d.steps.map((_, i) => COLORS[i % COLORS.length]),
-        borderRadius: 6
+        data: [authStart, authComplete],
+        backgroundColor: ['#3182f6', '#22c55e'],
+        borderRadius: 8
       }]
     },
     options: {
-      indexAxis: 'y',
       responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } }
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataIndex === 1 && authStart > 0) {
+                return `${authComplete}명 (전환율 ${((authComplete/authStart)*100).toFixed(1)}%)`;
+              }
+              return `${ctx.raw}명`;
+            }
+          }
+        }
+      },
+      scales: { y: { beginAtZero: true } }
     }
   });
 }
 
+// --- All events table ---
+let cachedEvents = [];
+let currentSort = 'count-desc';
+
+async function loadEventTable() {
+  const d = await apiFetch(`/api/events/top?days=${DAYS}&limit=50`);
+  cachedEvents = d.events;
+  renderTable();
+  renderEventChips(d.events);
+  renderSelectedChips();
+}
+
+function sortTable(key) {
+  currentSort = key;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.key === key));
+  renderTable();
+}
+
+function renderTable() {
+  const sorted = [...cachedEvents];
+  switch (currentSort) {
+    case 'count-desc': sorted.sort((a, b) => b.count - a.count); break;
+    case 'count-asc': sorted.sort((a, b) => a.count - b.count); break;
+    case 'name-asc': sorted.sort((a, b) => label(a.name).localeCompare(label(b.name), 'ko')); break;
+    case 'type': sorted.sort((a, b) => a.type.localeCompare(b.type) || b.count - a.count); break;
+  }
+  const total = sorted.reduce((s, e) => s + e.count, 0) || 1;
+  document.getElementById('eventTableBody').innerHTML = sorted.map(e => `
+    <tr>
+      <td><strong>${label(e.name)}</strong><div style="font-size:11px;color:var(--la-text-tertiary)">${e.name}</div></td>
+      <td><span class="type-badge type-${e.type}">${e.type}</span></td>
+      <td>${e.count.toLocaleString()}</td>
+      <td>${(e.count/total*100).toFixed(1)}%</td>
+    </tr>
+  `).join('');
+}
+
+// --- Custom funnel (click-to-build) ---
+let selectedSteps = [];
+let availableEvents = [];
+
+function renderSelectedChips() {
+  const container = document.getElementById('selectedChips');
+  if (!selectedSteps.length) {
+    container.innerHTML = '<span style="color:var(--la-text-tertiary);font-size:12px">아래 이벤트를 클릭해서 추가하세요</span>';
+    return;
+  }
+  container.innerHTML = selectedSteps.map((name, i) =>
+    `<span onclick="removeStep(${i})" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:var(--la-primary);color:#fff;border-radius:14px;font-size:12px;cursor:pointer">
+      <span style="opacity:.6">${i+1}.</span> ${label(name)} <span style="opacity:.6">✕</span>
+    </span>`
+  ).join('');
+}
+
+function removeStep(i) {
+  selectedSteps.splice(i, 1);
+  renderSelectedChips();
+}
+
+function addStep(name) {
+  selectedSteps.push(name);
+  renderSelectedChips();
+}
+
+function clearCustomFunnel() {
+  selectedSteps = [];
+  renderSelectedChips();
+  document.getElementById('customFunnelContainer').innerHTML = '';
+}
+
+async function runCustomFunnel() {
+  if (selectedSteps.length < 2) return alert('2개 이상의 이벤트를 선택해주세요');
+  const d = await apiFetch(`/api/events/funnel?steps=${encodeURIComponent(selectedSteps.join(','))}&days=${DAYS}`);
+  renderFunnelBars('customFunnelContainer', d.steps);
+}
+
+function renderEventChips(events) {
+  availableEvents = events;
+  const container = document.getElementById('eventChips');
+  const grouped = {};
+  events.forEach(e => {
+    const prefix = e.name.split('_')[0];
+    const group = {alarm:'알람',add:'알람',message:'메시지',messages:'메시지',like:'좋아요',rewards:'보상',settings:'설정'}[prefix] || '기타';
+    if (!grouped[group]) grouped[group] = [];
+    grouped[group].push(e);
+  });
+  const colors = {알람:'#e8f3ff',메시지:'#fff0f6',좋아요:'#fff3e0',보상:'#f0fdf4',설정:'#f2f4f6',기타:'#f2f4f6'};
+  let html = '';
+  for (const [group, items] of Object.entries(grouped)) {
+    html += `<span style="font-size:11px;color:var(--la-text-tertiary);width:100%;margin-top:4px;font-weight:500">${group}</span>`;
+    items.forEach(e => {
+      html += `<span onclick="addStep('${e.name}')" style="padding:4px 10px;background:${colors[group]||'#f5f5f5'};border-radius:14px;font-size:12px;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">${label(e.name)}</span>`;
+    });
+  }
+  container.innerHTML = html;
+}
+
+
+// --- SQL query ---
+const SQL_PRESETS = {
+  recent: `SELECT "createdAt", "type", "name", "params", "userId", "sessionId"\nFROM "AnalyticsEvent"\nORDER BY "createdAt" DESC\nLIMIT 50`,
+  daily: `SELECT DATE("createdAt") as date, COUNT(*)::int as count\nFROM "AnalyticsEvent"\nGROUP BY DATE("createdAt")\nORDER BY date DESC`,
+  users: `SELECT "userId", COUNT(*)::int as events,\n  COUNT(DISTINCT "name")::int as unique_events\nFROM "AnalyticsEvent"\nWHERE "userId" IS NOT NULL\nGROUP BY "userId"\nORDER BY events DESC\nLIMIT 30`,
+  sessions: `SELECT "sessionId",\n  MIN("createdAt") as start,\n  MAX("createdAt") as end,\n  COUNT(*)::int as events,\n  ARRAY_AGG("name" ORDER BY "createdAt") as journey\nFROM "AnalyticsEvent"\nWHERE "sessionId" IS NOT NULL\nGROUP BY "sessionId"\nORDER BY start DESC\nLIMIT 20`,
+  hourly: `SELECT EXTRACT(HOUR FROM "createdAt")::int as hour,\n  COUNT(*)::int as count\nFROM "AnalyticsEvent"\nGROUP BY hour\nORDER BY hour`,
+  retention: `SELECT "userId", COUNT(DISTINCT DATE("createdAt"))::int as active_days,\n  MIN(DATE("createdAt")) as first_seen,\n  MAX(DATE("createdAt")) as last_seen\nFROM "AnalyticsEvent"\nWHERE "userId" IS NOT NULL\nGROUP BY "userId"\nHAVING COUNT(DISTINCT DATE("createdAt")) > 1\nORDER BY active_days DESC\nLIMIT 30`,
+};
+
+function sqlPreset(key) {
+  document.getElementById('sqlInput').value = SQL_PRESETS[key] || '';
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && document.activeElement.id === 'sqlInput') {
+    e.preventDefault();
+    runSQL();
+  }
+});
+
+async function runSQL() {
+  const sql = document.getElementById('sqlInput').value.trim();
+  if (!sql) return;
+  const status = document.getElementById('sqlStatus');
+  const result = document.getElementById('sqlResult');
+  status.textContent = '실행 중...';
+  result.innerHTML = '';
+  try {
+    const r = await fetch(`${API}/api/events/query`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sql }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      status.textContent = '';
+      result.innerHTML = `<div style="color:var(--la-red);padding:12px;background:var(--la-red-soft);border-radius:10px;font-size:13px">${d.error}</div>`;
+      return;
+    }
+    status.textContent = `${d.rowCount}행 · ${d.elapsed}ms${d.truncated ? ' (500행까지 표시)' : ''}`;
+    if (!d.rows.length) {
+      result.innerHTML = '<div style="color:var(--la-text-tertiary);padding:12px;font-size:13px">결과 없음</div>';
+      return;
+    }
+    const cols = Object.keys(d.rows[0]);
+    const th = cols.map(c => `<th>${c}</th>`).join('');
+    const rows = d.rows.map(row =>
+      '<tr>' + cols.map(c => {
+        let v = row[c];
+        if (v === null) return '<td style="color:var(--la-text-tertiary);font-style:italic">NULL</td>';
+        if (typeof v === 'object') v = JSON.stringify(v);
+        return `<td title="${String(v).replace(/"/g,'&quot;')}">${String(v)}</td>`;
+      }).join('') + '</tr>'
+    ).join('');
+    result.innerHTML = `<table><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table>`;
+  } catch (err) {
+    status.textContent = '';
+    result.innerHTML = `<div style="color:var(--la-red);padding:12px;background:var(--la-red-soft);border-radius:10px;font-size:13px">${err.message}</div>`;
+  }
+}
+
 async function loadAll() {
   try {
-    await Promise.all([loadSummary(), loadTop(), loadFunnel()]);
+    await Promise.all([loadSection1(), loadSection2(), loadSection3(), loadSection4(), loadSection5(), loadSection6(), loadSection7(), loadEventTable()]);
   } catch (e) {
     if (e.message !== 'Unauthorized') console.error(e);
   }
