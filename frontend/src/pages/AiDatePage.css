@@ -1,0 +1,176 @@
+.ai-date-page {
+  min-height: 100vh;
+  background: #f9f5ff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 0;
+  box-sizing: border-box;
+}
+
+/* 헤더 */
+.ai-date-header {
+  width: 100%;
+  text-align: center;
+  padding-bottom: 4px;
+}
+
+/* 씬 카드 */
+.ai-date-scene-card {
+  width: 100%;
+  max-width: 360px;
+  background: linear-gradient(160deg, #f0e8ff 0%, #fce8f3 100%);
+  border-radius: 20px;
+  padding: 12px 8px 16px;
+  box-shadow: 0 4px 20px rgba(140, 80, 200, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.ai-date-scene-svg {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+}
+
+/* 진행 도트 */
+.ai-date-dots {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.ai-date-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #d0c0ee;
+  transition: background 0.3s, transform 0.3s;
+}
+
+.ai-date-dot.active {
+  background: #9b6dff;
+  transform: scale(1.2);
+}
+
+/* 대화 상태 */
+.ai-date-status {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.ai-date-status-match {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 컨트롤 버튼 */
+.ai-date-controls {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.ai-date-btn {
+  flex: 1;
+  padding: 14px 0;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.12s;
+}
+
+.ai-date-btn:active {
+  transform: scale(0.96);
+}
+
+.ai-date-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-date-btn-primary {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+}
+
+.ai-date-btn-secondary {
+  background: white;
+  color: #6b7684;
+  border: 1.5px solid #e0d8f0;
+}
+
+.ai-date-btn-secondary.active {
+  border-color: #a855f7;
+  color: #a855f7;
+}
+
+/* 안내 배너 */
+.ai-date-info-banner {
+  width: 100%;
+  max-width: 360px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: center;
+  border: 1px solid #ede8fb;
+}
+
+/* ── 캐릭터 애니메이션 ── */
+.char-speaking {
+  animation: char-bob 0.5s ease-in-out;
+}
+
+@keyframes char-bob {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-4px); }
+  60%  { transform: translateY(1px); }
+  100% { transform: translateY(0); }
+}
+
+/* ── 말풍선 팝 애니메이션 ── */
+.speech-bubble-anim {
+  animation: bubble-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
+}
+
+@keyframes bubble-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── 하트 파티클 ── */
+.heart-particle {
+  animation: heart-fly 1.8s ease-in-out infinite;
+  opacity: 0;
+}
+
+.heart-particle-0 { animation-delay: 0s; }
+.heart-particle-1 { animation-delay: 0.3s; }
+.heart-particle-2 { animation-delay: 0.6s; }
+.heart-particle-3 { animation-delay: 0.9s; }
+
+@keyframes heart-fly {
+  0%   { transform: translateY(0) scale(0.5); opacity: 0; }
+  20%  { opacity: 1; transform: translateY(-10px) scale(1); }
+  80%  { opacity: 0.6; transform: translateY(-50px) scale(1.2); }
+  100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
+}
+
+/* ── 연결 팝인 ── */
+@keyframes pop-in {
+  0%   { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
