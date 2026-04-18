@@ -15,6 +15,7 @@ import { ErrorPage } from './pages/ErrorPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { CloneManagePage } from './pages/CloneManagePage';
 import { CloneConversationsPage } from './pages/CloneConversationsPage';
+import { AiDatePage } from './pages/AiDatePage';
 import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import './App.css';
@@ -122,7 +123,7 @@ function setupHistoryGuard() {
   window.history.pushState({ index: 1 }, '');
 }
 
-const TAB_PATHS = ['/alarms', '/rewards', '/more'];
+const TAB_PATHS = ['/alarms', '/ai-date', '/rewards', '/more'];
 
 // 네비게이션 추적 컴포넌트 (히스토리 가드 설정)
 function NavigationTracker() {
@@ -281,6 +282,10 @@ function AppRoutes() {
             <Route 
               path="/rewards" 
               element={hasVisited ? <RewardsPage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/ai-date" 
+              element={hasVisited ? <AiDatePage /> : <Navigate to="/" replace />} 
             />
             <Route 
               path="/more" 
