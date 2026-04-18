@@ -12,41 +12,41 @@ const TABS = [
 function MoreGridIcon({ color }) {
   return (
     <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
       className="bottom-nav-svg-icon"
     >
-      <rect x="2.5" y="2.5" width="6.2" height="6.2" rx="1.7" fill={color} />
-      <rect x="11.3" y="2.5" width="6.2" height="6.2" rx="1.7" fill={color} />
-      <rect x="2.5" y="11.3" width="6.2" height="6.2" rx="1.7" fill={color} />
-      <rect x="11.3" y="11.3" width="6.2" height="6.2" rx="1.7" fill={color} />
+      <rect x="3" y="3" width="7" height="7" rx="2" fill={color} />
+      <rect x="14" y="3" width="7" height="7" rx="2" fill={color} />
+      <rect x="3" y="14" width="7" height="7" rx="2" fill={color} />
+      <rect x="14" y="14" width="7" height="7" rx="2" fill={color} />
     </svg>
   );
 }
 
 function AiCloneIcon({ color }) {
-  // 사람 실루엣 + 디지털 복제(클론) 표현: 원본(solid) + 클론(점선/투명)
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="bottom-nav-svg-icon">
-      {/* 원본 캐릭터 (왼쪽 앞) */}
-      <circle cx="7.5" cy="5.5" r="2.8" fill={color} />
-      <path d="M3,15 Q3,10.5 7.5,10.5 Q12,10.5 12,15" fill={color} />
-      {/* 클론 (오른쪽 뒤, 페이드) */}
-      <circle cx="12" cy="6.5" r="2.4" fill={color} opacity="0.35" />
-      <path d="M7.5,16.5 Q7.5,12 12,12 Q16.5,12 16.5,16.5" fill={color} opacity="0.35" />
-      {/* 연결 스파크 (AI 표시) */}
-      <circle cx="10" cy="9" r="0.8" fill={color} opacity="0.7" />
-      <line x1="9" y1="9" x2="8" y2="8.2" stroke={color} strokeWidth="0.8" opacity="0.6" />
-      <line x1="11" y1="9" x2="12" y2="8.2" stroke={color} strokeWidth="0.8" opacity="0.6" />
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className="bottom-nav-svg-icon"
+    >
+      {/* 원본 사람 (왼쪽) */}
+      <circle cx="8.5" cy="7" r="3.2" fill={color} />
+      <path d="M3 18.5C3 14.9 5.5 12.5 8.5 12.5C11.5 12.5 14 14.9 14 18.5" fill={color} />
+      {/* 클론 사람 (오른쪽, 페이드) */}
+      <circle cx="15.5" cy="8" r="2.8" fill={color} opacity="0.3" />
+      <path d="M10 20C10 16.7 12.2 14.5 15.5 14.5C18.8 14.5 21 16.7 21 20" fill={color} opacity="0.3" />
+      {/* AI 스파크 */}
+      <path d="M13 5.5L13.6 7L15 7.6L13.6 8.2L13 9.7L12.4 8.2L11 7.6L12.4 7L13 5.5Z" fill={color} />
     </svg>
   );
-}
-
-function AiDateIcon({ color }) {
-  return <AiCloneIcon color={color} />;
 }
 
 function BottomNavIcon({ iconName, active }) {
@@ -71,7 +71,7 @@ function BottomNavIcon({ iconName, active }) {
   return (
     <span className="bottom-nav-icon-wrap" aria-hidden="true">
       <Asset.Icon
-        frameShape={Asset.frameShape.CleanW20}
+        frameShape={Asset.frameShape.CleanW24}
         backgroundColor="transparent"
         name={iconName}
         color={color}
