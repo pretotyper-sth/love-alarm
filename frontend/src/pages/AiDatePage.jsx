@@ -6,39 +6,77 @@ import { logScreen } from '../utils/analytics';
 import './AiDatePage.css';
 
 const CONVERSATION_LINES = [
-  { side: 'left', text: '전시 보러 다니는 걸 좋아해요.' },
-  { side: 'right', text: '저도요. 요즘은 어떤 전시가 좋았어요?' },
-  { side: 'left', text: '조용한 공간에서 천천히 보는 전시를 좋아해요.' },
-  { side: 'right', text: '분위기 취향이 비슷하네요. 카페도 좋아하세요?' },
-  { side: 'left', text: '네, 주말엔 카페 가서 책 읽는 편이에요.' },
-  { side: 'right', text: '대화가 잘 통할 것 같아요.' },
+  { scene: 'gallery', side: 'left', text: '전시 보는 걸 좋아해요.', delay: 2400 },
+  { scene: 'gallery', side: 'right', text: '저도요. 조용한 전시가 좋더라고요.', delay: 2800 },
+  { scene: 'gallery', side: 'left', text: '맞아요. 오래 보고 있어도 안 지루해요.', delay: 2900 },
+  { scene: 'gallery', side: 'right', text: '보고 나서 카페 가는 코스도 좋아하세요?', delay: 3000 },
+  { scene: 'gallery', side: 'left', text: '좋아해요. 그때 얘기가 제일 길어져요.', delay: 3000 },
+  { scene: 'gallery', side: 'right', text: '그럼 저희 대화도 잘 통할 것 같아요.', delay: 7600, showHeart: true, heartDuration: 6600, heartAnimationMs: 6600 },
+  { scene: 'gallery', side: 'left', text: '저도요. 벌써 편한 느낌이에요.', delay: 2800 },
+  { scene: 'gallery', side: 'right', text: '실제로 만나도 안 어색하겠네요.', delay: 2900 },
+  { scene: 'weekend', side: 'right', text: '주말엔 산책하고 커피 마시는 걸 좋아해요.', delay: 3200 },
+  { scene: 'weekend', side: 'left', text: '저도요. 천천히 걷는 시간이 좋죠.', delay: 3000 },
+  { scene: 'weekend', side: 'right', text: '걷다가 마음에 드는 곳 들르는 것도요.', delay: 3100 },
+  { scene: 'weekend', side: 'left', text: '맞아요. 그러면 하루가 길게 남아요.', delay: 3000 },
+  { scene: 'weekend', side: 'right', text: '취향이 꽤 비슷하네요.', delay: 2800 },
+  { scene: 'weekend', side: 'left', text: '같이 있으면 편할 것 같아요.', delay: 3000 },
+  { scene: 'weekend', side: 'right', text: '그럼 우리 잘 맞을 것 같아요.', delay: 8000, showHeart: true, heartDuration: 7000, heartAnimationMs: 7000 },
+  { scene: 'weekend', side: 'left', text: '맞아요. 더 얘기해보고 싶어요.', delay: 2900 },
+  { scene: 'weekend', side: 'right', text: '저도요. 오래 대화하고 싶어요.', delay: 3100 },
 ];
 
 export function AiDatePage() {
   const navigate = useNavigate();
+  const [isMethodOpen, setIsMethodOpen] = useState(false);
   const [chatState, setChatState] = useState({
     currentIdx: 0,
     previousIdx: null,
   });
+  const [hiddenHeartIdx, setHiddenHeartIdx] = useState(null);
 
   useEffect(() => {
     logScreen('ai_clone_landing_screen');
   }, []);
 
   useEffect(() => {
-    const t = setInterval(() => {
+    const currentConversation = CONVERSATION_LINES[chatState.currentIdx];
+    const t = setTimeout(() => {
       setChatState(prev => ({
-        previousIdx: prev.currentIdx,
         currentIdx: (prev.currentIdx + 1) % CONVERSATION_LINES.length,
+        previousIdx: (() => {
+          const nextIdx = (prev.currentIdx + 1) % CONVERSATION_LINES.length;
+          const previousConversation = CONVERSATION_LINES[prev.currentIdx];
+          const nextConversation = CONVERSATION_LINES[nextIdx];
+
+          if (nextIdx === 0 || previousConversation.scene !== nextConversation.scene) {
+            return null;
+          }
+
+          return prev.currentIdx;
+        })(),
       }));
-    }, 5600);
-    return () => clearInterval(t);
-  }, []);
+    }, currentConversation?.delay ?? 2800);
+    return () => clearTimeout(t);
+  }, [chatState.currentIdx]);
+
+  useEffect(() => {
+    const currentConversation = CONVERSATION_LINES[chatState.currentIdx];
+    if (!currentConversation?.showHeart) {
+      return undefined;
+    }
+
+    const t = setTimeout(() => {
+      setHiddenHeartIdx(chatState.currentIdx);
+    }, currentConversation.heartDuration ?? 3600);
+
+    return () => clearTimeout(t);
+  }, [chatState.currentIdx]);
 
   const currentLine = CONVERSATION_LINES[chatState.currentIdx];
   const previousLine = chatState.previousIdx === null
     ? null
     : CONVERSATION_LINES[chatState.previousIdx];
+  const isHeartVisible = Boolean(currentLine.showHeart) && hiddenHeartIdx !== chatState.currentIdx;
 
   return (
     <div className="ai-page">
@@ -53,7 +91,9 @@ export function AiDatePage() {
           }
         />
         <p className="ai-page-subtitle">
-          AI 클론이 먼저 대화해보고, 잘 맞는 상대를 보여드려요.
+          내 취향을 닮은 AI 클론을 만들고 대화를 지켜봐요.
+          <br />
+          상대와의 케미를 먼저 살펴볼 수 있어요.
         </p>
       </div>
 
@@ -98,6 +138,19 @@ export function AiDatePage() {
                 <span className="chair-label other">상대</span>
               </div>
             </div>
+            {isHeartVisible ? (
+              <div
+                className="chemistry-heart"
+                style={{ '--heart-duration': `${currentLine.heartAnimationMs ?? currentLine.heartDuration ?? 5200}ms` }}
+                aria-hidden
+              >
+                <img
+                  src="https://static.toss.im/3d-emojis/u2764-apng.png"
+                  alt="❤️"
+                  className="chemistry-heart-badge"
+                />
+              </div>
+            ) : null}
           </div>
 
           <div className="seat-preview-cta">
@@ -115,6 +168,44 @@ export function AiDatePage() {
               <span className="seat-preview-cta-copy-muted">현재는 미리보기 상태예요.</span>
               <span className="seat-preview-cta-copy-strong">잘 맞는 상대가 궁금하다면, 지금 만들어보세요.</span>
             </p>
+            <button
+              type="button"
+              className={`ai-method-trigger seat-preview-method-trigger ${isMethodOpen ? 'active' : ''}`}
+              onClick={() => setIsMethodOpen(prev => !prev)}
+              aria-expanded={isMethodOpen}
+            >
+              AI 클론이 뭔가요?
+            </button>
+            {isMethodOpen ? (
+              <div className="ai-method-section">
+                <div className="ai-method-panel">
+                  <div className="ai-method-card">
+                    <strong className="ai-method-card-title">AI 클론이란</strong>
+                    <p className="ai-method-card-text">
+                      공개된 정보를 바탕으로 나를 닮은 대화 스타일을 먼저 보여주는 프로필이에요.
+                    </p>
+                  </div>
+                  <div className="ai-method-card">
+                    <strong className="ai-method-card-title">어떻게 만들어요?</strong>
+                    <p className="ai-method-card-text">
+                      인스타그램 ID를 인증하면 공개된 프로필과 게시물을 바탕으로 취향, 말투, 대화 분위기를 반영해 AI 클론을 만들어요.
+                    </p>
+                  </div>
+                  <div className="ai-method-card">
+                    <strong className="ai-method-card-title">무엇을 보나요</strong>
+                    <p className="ai-method-card-text">
+                      상대와 먼저 대화를 나눠보며 흐름과 케미를 미리 살펴봐요.
+                    </p>
+                  </div>
+                  <div className="ai-method-card">
+                    <strong className="ai-method-card-title">알아둘 점</strong>
+                    <p className="ai-method-card-text">
+                      비공개 계정은 공개 정보가 없어 AI 클론을 만들 수 없어요.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

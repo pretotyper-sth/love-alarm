@@ -4,7 +4,7 @@
   flex-direction: column;
   min-height: 100dvh;
   background: #fff;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 .ai-top-section {
@@ -21,13 +21,27 @@
   word-break: keep-all;
 }
 
+.ai-method-trigger {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3182f6;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.ai-method-trigger.active {
+  color: #1b64da;
+}
+
 .ai-scene-wrap {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
-  align-items: center;
   justify-content: center;
-  min-height: calc(100dvh - 132px);
-  padding: 0 20px 84px;
+  width: 100%;
+  padding: clamp(20px, 6vh, 48px) 20px 84px;
 }
 
 .ai-scene-stack {
@@ -39,13 +53,15 @@
 }
 
 .chairs-scene {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 44px;
   width: 100%;
-  height: 196px;
-  transform: translateY(-26px);
+  min-height: 292px;
+  padding-top: 96px;
+  box-sizing: border-box;
 }
 
 .chair-slot {
@@ -81,13 +97,13 @@
   top: 18px;
   left: 50%;
   z-index: -1;
-  width: 118px;
-  height: 118px;
+  width: 108px;
+  height: 108px;
   border-radius: 999px;
   transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(49, 130, 246, 0.34) 0%, rgba(49, 130, 246, 0.18) 38%, rgba(49, 130, 246, 0.06) 58%, rgba(49, 130, 246, 0) 76%);
+  background: radial-gradient(circle, rgba(49, 130, 246, 0.28) 0%, rgba(49, 130, 246, 0.14) 38%, rgba(49, 130, 246, 0.05) 58%, rgba(49, 130, 246, 0) 74%);
   filter: blur(2px);
-  animation: chairCtaPulse 1.8s ease-in-out infinite;
+  animation: chairCtaPulse 2.1s ease-in-out infinite;
 }
 
 .chair-body-button::after {
@@ -96,13 +112,13 @@
   top: 12px;
   left: 50%;
   z-index: -2;
-  width: 138px;
-  height: 138px;
+  width: 126px;
+  height: 126px;
   border-radius: 999px;
   transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(80, 164, 255, 0.22) 0%, rgba(80, 164, 255, 0.08) 42%, rgba(80, 164, 255, 0) 74%);
-  filter: blur(10px);
-  animation: chairCtaHalo 1.8s ease-out infinite;
+  background: radial-gradient(circle, rgba(80, 164, 255, 0.16) 0%, rgba(80, 164, 255, 0.06) 42%, rgba(80, 164, 255, 0) 72%);
+  filter: blur(8px);
+  animation: chairCtaHalo 2.1s ease-out infinite;
 }
 
 .chair-body-button:focus-visible {
@@ -112,6 +128,10 @@
 
 .chair-body-button:active {
   transform: translateY(-10px) scale(0.99);
+}
+
+.chair-body-button .chair-img {
+  animation: chairInviteGlow 2.1s ease-in-out infinite;
 }
 
 .chair-slot-left {
@@ -194,6 +214,73 @@
   white-space: nowrap;
 }
 
+.seat-preview-method-trigger {
+  width: 100%;
+  max-width: 284px;
+  margin-top: 8px;
+  margin-right: 10px;
+  text-align: left;
+}
+
+.ai-method-section {
+  width: 100%;
+  max-width: 284px;
+  margin-top: 22px;
+  margin-right: 10px;
+}
+
+.ai-method-panel {
+  width: 100%;
+  margin: 0;
+  padding: 0 0 36px;
+}
+
+.ai-method-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+}
+
+.ai-method-card + .ai-method-card {
+  margin-top: 10px;
+}
+
+.ai-method-card-title {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.ai-method-card-text {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4e5968;
+  word-break: keep-all;
+}
+
+.chemistry-heart {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  z-index: 4;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: chemistryHeartPop var(--heart-duration, 5.2s) ease both;
+}
+
+.chemistry-heart-badge {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 16px rgba(255, 92, 143, 0.28));
+  transform: translateZ(0);
+}
+
 .bubble {
   position: absolute;
   display: inline-flex;
@@ -263,7 +350,7 @@
 }
 
 .bubble-previous {
-  bottom: calc(100% + 62px);
+  bottom: calc(100% + 66px);
   border-color: #d1d6db;
   color: #6b7684;
   animation: bubbleRisePrevious 1.6s cubic-bezier(0.18, 0.88, 0.22, 1) both;
@@ -319,36 +406,69 @@
 @keyframes chairCtaPulse {
   0%,
   100% {
-    opacity: 0.72;
-    transform: translateX(-50%) scale(0.96);
+    opacity: 0.64;
+    transform: translateX(-50%) scale(0.97);
   }
   50% {
-    opacity: 1;
-    transform: translateX(-50%) scale(1.12);
+    opacity: 0.9;
+    transform: translateX(-50%) scale(1.08);
   }
 }
 
 @keyframes chairCtaHalo {
   0% {
-    opacity: 0.18;
-    transform: translateX(-50%) scale(0.92);
+    opacity: 0.12;
+    transform: translateX(-50%) scale(0.95);
   }
   55% {
-    opacity: 0.42;
-    transform: translateX(-50%) scale(1.08);
+    opacity: 0.26;
+    transform: translateX(-50%) scale(1.04);
   }
   100% {
-    opacity: 0.14;
-    transform: translateX(-50%) scale(1.18);
+    opacity: 0.1;
+    transform: translateX(-50%) scale(1.12);
+  }
+}
+
+@keyframes chairInviteGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.13)) drop-shadow(0 0 0 rgba(49, 130, 246, 0.08));
+  }
+  50% {
+    filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.13)) drop-shadow(0 0 10px rgba(49, 130, 246, 0.16));
+  }
+}
+
+@keyframes chemistryHeartPop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px) scale(0.78);
+  }
+  16% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(2px) scale(1.06);
+  }
+  82% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-12px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-22px) scale(0.94);
   }
 }
 
 @media (max-width: 360px) {
+  .ai-method-trigger {
+    font-size: 12px;
+  }
+
   .chairs-scene {
     gap: 28px;
     max-width: 280px;
-    height: 184px;
-    transform: translateY(-20px);
+    min-height: 256px;
+    padding-top: 78px;
   }
 
   .chair-slot {
@@ -362,14 +482,14 @@
 
   .chair-body-button::before {
     top: 20px;
-    width: 106px;
-    height: 106px;
+    width: 98px;
+    height: 98px;
   }
 
   .chair-body-button::after {
     top: 16px;
-    width: 124px;
-    height: 124px;
+    width: 114px;
+    height: 114px;
   }
 
   .chair-body-button:active {
@@ -435,13 +555,44 @@
     font-size: 13px;
   }
 
-  .bubble-previous {
-    bottom: calc(100% + 56px);
+  .seat-preview-method-trigger {
+    max-width: 252px;
+    margin-top: 8px;
+    margin-right: 4px;
   }
-}
 
-@media (max-width: 390px) and (max-height: 740px) {
-  .ai-scene-stack {
-    transform: translateY(56px);
+  .ai-method-section {
+    max-width: 252px;
+    margin-top: 18px;
+    margin-right: 4px;
+  }
+
+  .ai-method-panel {
+    padding: 0 0 32px;
+  }
+
+  .ai-method-card {
+    padding: 13px 14px;
+  }
+
+  .ai-method-card-title {
+    font-size: 13px;
+  }
+
+  .ai-method-card-text {
+    font-size: 12px;
+  }
+
+  .bubble-previous {
+    bottom: calc(100% + 58px);
+  }
+
+  .chemistry-heart {
+    bottom: 48px;
+  }
+
+  .chemistry-heart-badge {
+    width: 38px;
+    height: 38px;
   }
 }
