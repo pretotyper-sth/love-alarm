@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Top, Spacing } from '@toss/tds-mobile';
+import { useNavigate } from 'react-router-dom';
+import { Top, Spacing, Asset } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { logScreen } from '../utils/analytics';
 import './AiDatePage.css';
@@ -14,6 +15,7 @@ const CONVERSATION_LINES = [
 ];
 
 export function AiDatePage() {
+  const navigate = useNavigate();
   const [chatState, setChatState] = useState({
     currentIdx: 0,
     previousIdx: null,
@@ -56,39 +58,63 @@ export function AiDatePage() {
       </div>
 
       <div className="ai-scene-wrap">
-        <div className="chairs-scene">
-          <div className="chair-slot chair-slot-left">
-            {previousLine?.side === 'left' ? (
-              <div className="bubble bubble-left bubble-previous">
-                {previousLine.text}
+        <div className="ai-scene-stack">
+          <div className="chairs-scene">
+            <div className="chair-slot chair-slot-left">
+              {previousLine?.side === 'left' ? (
+                <div className="bubble bubble-left bubble-previous">
+                  {previousLine.text}
+                </div>
+              ) : null}
+              {currentLine.side === 'left' ? (
+                <div className="bubble bubble-left bubble-current">
+                  {currentLine.text}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="chair-body chair-body-button"
+                onClick={() => navigate('/clone')}
+                aria-label="나 의자 선택하고 AI 클론 만들기"
+              >
+                <img src="/chair.png" alt="내 의자" className="chair-img" />
+                <span className="chair-label me">나</span>
+              </button>
+            </div>
+
+            <div className="chair-slot chair-slot-right">
+              {previousLine?.side === 'right' ? (
+                <div className="bubble bubble-right bubble-previous">
+                  {previousLine.text}
+                </div>
+              ) : null}
+              {currentLine.side === 'right' ? (
+                <div className="bubble bubble-right bubble-current">
+                  {currentLine.text}
+                </div>
+              ) : null}
+              <div className="chair-body">
+                <img src="/chair.png" alt="상대 의자" className="chair-img chair-mirror" />
+                <span className="chair-label other">상대</span>
               </div>
-            ) : null}
-            {currentLine.side === 'left' ? (
-              <div className="bubble bubble-left bubble-current">
-                {currentLine.text}
-              </div>
-            ) : null}
-            <div className="chair-body">
-              <img src="/chair.png" alt="내 의자" className="chair-img" />
-              <span className="chair-label me">나</span>
             </div>
           </div>
 
-          <div className="chair-slot chair-slot-right">
-            {previousLine?.side === 'right' ? (
-              <div className="bubble bubble-right bubble-previous">
-                {previousLine.text}
-              </div>
-            ) : null}
-            {currentLine.side === 'right' ? (
-              <div className="bubble bubble-right bubble-current">
-                {currentLine.text}
-              </div>
-            ) : null}
-            <div className="chair-body">
-              <img src="/chair.png" alt="상대 의자" className="chair-img chair-mirror" />
-              <span className="chair-label other">상대</span>
-            </div>
+          <div className="seat-preview-cta">
+            <span className="seat-preview-cta-arrow" aria-hidden>
+              <Asset.Icon
+                frameShape={Asset.frameShape.CleanW24}
+                backgroundColor="transparent"
+                name="icon-arrow-down-mono"
+                color="#3182f6"
+                ratio="1/1"
+                aria-hidden
+              />
+            </span>
+            <p className="seat-preview-cta-copy">
+              <span className="seat-preview-cta-copy-muted">현재는 미리보기 상태예요.</span>
+              <span className="seat-preview-cta-copy-strong">잘 맞는 상대가 궁금하다면, 지금 만들어보세요.</span>
+            </p>
           </div>
         </div>
       </div>
