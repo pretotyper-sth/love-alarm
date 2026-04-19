@@ -116,42 +116,42 @@
 }
 
 .bubble::before {
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 10px solid transparent;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 9px solid transparent;
 }
 
 .bubble::after {
   margin-top: -1px;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  border-top: 8px solid #fff;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid #fff;
 }
 
 .bubble-left {
-  left: 0;
+  left: 16px;
   transform-origin: bottom left;
 }
 
 .bubble-left::after {
-  left: 48px;
+  left: 28px;
 }
 
 .bubble-left::before {
-  left: 47px;
+  left: 27px;
 }
 
 .bubble-right {
-  right: 0;
+  right: 16px;
   transform-origin: bottom right;
 }
 
 .bubble-right::after {
-  right: 48px;
+  right: 28px;
 }
 
 .bubble-right::before {
-  right: 47px;
+  right: 27px;
 }
 
 .bubble-previous {
@@ -225,6 +225,30 @@
 
   .bubble {
     font-size: 12px;
+  }
+
+  .bubble-left {
+    left: 10px;
+  }
+
+  .bubble-right {
+    right: 10px;
+  }
+
+  .bubble-left::after {
+    left: 24px;
+  }
+
+  .bubble-left::before {
+    left: 23px;
+  }
+
+  .bubble-right::after {
+    right: 24px;
+  }
+
+  .bubble-right::before {
+    right: 23px;
   }
 
   .bubble-previous {
