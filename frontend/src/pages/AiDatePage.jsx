@@ -1,82 +1,185 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Top, Spacing, Asset } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { logScreen } from '../utils/analytics';
 import './AiDatePage.css';
 
-const CONVERSATION_LINES = [
-  { scene: 'gallery', side: 'left', text: '전시 보는 걸 좋아해요.', delay: 2400 },
-  { scene: 'gallery', side: 'right', text: '저도요. 조용한 전시가 좋더라고요.', delay: 2800 },
-  { scene: 'gallery', side: 'left', text: '맞아요. 오래 보고 있어도 안 지루해요.', delay: 2900 },
-  { scene: 'gallery', side: 'right', text: '보고 나서 카페 가는 코스도 좋아하세요?', delay: 3000 },
-  { scene: 'gallery', side: 'left', text: '좋아해요. 그때 얘기가 제일 길어져요.', delay: 3000 },
-  { scene: 'gallery', side: 'right', text: '그럼 저희 대화도 잘 통할 것 같아요.', delay: 7600, showHeart: true, heartDuration: 6600, heartAnimationMs: 6600 },
-  { scene: 'gallery', side: 'left', text: '저도요. 벌써 편한 느낌이에요.', delay: 2800 },
-  { scene: 'gallery', side: 'right', text: '실제로 만나도 안 어색하겠네요.', delay: 2900 },
-  { scene: 'weekend', side: 'right', text: '주말엔 산책하고 커피 마시는 걸 좋아해요.', delay: 3200 },
-  { scene: 'weekend', side: 'left', text: '저도요. 천천히 걷는 시간이 좋죠.', delay: 3000 },
-  { scene: 'weekend', side: 'right', text: '걷다가 마음에 드는 곳 들르는 것도요.', delay: 3100 },
-  { scene: 'weekend', side: 'left', text: '맞아요. 그러면 하루가 길게 남아요.', delay: 3000 },
-  { scene: 'weekend', side: 'right', text: '취향이 꽤 비슷하네요.', delay: 2800 },
-  { scene: 'weekend', side: 'left', text: '같이 있으면 편할 것 같아요.', delay: 3000 },
-  { scene: 'weekend', side: 'right', text: '그럼 우리 잘 맞을 것 같아요.', delay: 8000, showHeart: true, heartDuration: 7000, heartAnimationMs: 7000 },
-  { scene: 'weekend', side: 'left', text: '맞아요. 더 얘기해보고 싶어요.', delay: 2900 },
-  { scene: 'weekend', side: 'right', text: '저도요. 오래 대화하고 싶어요.', delay: 3100 },
+const CONVERSATION_SCENARIOS = [
+  {
+    id: 'gallery-date',
+    outcome: 'success',
+    outcomeDuration: 6800,
+    outcomeAnimationMs: 6800,
+    lines: [
+      { side: 'left', text: '전시 보는 거 좋아해요.', delay: 4600 },
+      { side: 'right', text: '저도요. 조용한 전시를 더 좋아해요.', delay: 4800 },
+      { side: 'left', text: '맞아요. 오래 보고 있어도 안 질리더라고요.', delay: 4900 },
+      { side: 'right', text: '저는 설명 읽고 다시 보면 더 재밌어요.', delay: 5000 },
+      { side: 'left', text: '보고 나서 카페 가서 얘기하는 것도 좋고요.', delay: 5000 },
+      { side: 'right', text: '그 시간이 제일 기억에 남죠.', delay: 5000 },
+      { side: 'left', text: '뭔가 저랑 잘 맞는 것 같아요.', delay: 5000 },
+    ],
+  },
+  {
+    id: 'weekend-routine',
+    outcome: 'success',
+    outcomeDuration: 7000,
+    outcomeAnimationMs: 7000,
+    lines: [
+      { side: 'right', text: '주말엔 보통 뭐 하세요?', delay: 4600 },
+      { side: 'left', text: '산책하고 커피 마시는 걸 좋아해요.', delay: 4800 },
+      { side: 'right', text: '저도요. 그냥 천천히 걷는 시간이 좋더라고요.', delay: 5000 },
+      { side: 'left', text: '걷다가 예쁜 가게 보이면 들어가고요.', delay: 4900 },
+      { side: 'right', text: '그런 날은 하루가 길게 남는 느낌이에요.', delay: 5100 },
+      { side: 'left', text: '이런 건 잘 맞을 것 같네요.', delay: 5000 },
+      { side: 'right', text: '같이 있으면 편할 것 같아요.', delay: 5000 },
+    ],
+  },
+  {
+    id: 'travel-style',
+    outcome: 'fail',
+    outcomeDuration: 6800,
+    outcomeAnimationMs: 6800,
+    lines: [
+      { side: 'left', text: '여행 가면 일정을 꽤 꼼꼼히 짜는 편이에요.', delay: 4900 },
+      { side: 'right', text: '저는 반대예요. 좀 즉흥적으로 다니는 걸 좋아해요.', delay: 5100 },
+      { side: 'left', text: '저는 예약이 없으면 조금 불안하거든요.', delay: 5000 },
+      { side: 'right', text: '저는 오히려 비어 있어야 마음이 편해요.', delay: 5100 },
+      { side: 'left', text: '같이 가면 제가 자꾸 재촉할 수도 있겠네요.', delay: 5100 },
+      { side: 'right', text: '그러면 저는 조금 지칠 것 같아요. 이건 좀 다르네요.', delay: 5300 },
+    ],
+  },
 ];
+
+const SCENARIO_TRANSITION_DELAY = 650;
+const OUTCOME_FADE_OUT_DELAY = 520;
+const BUBBLE_FADE_OUT_LEAD = 310;
 
 export function AiDatePage() {
   const navigate = useNavigate();
+  const methodSectionRef = useRef(null);
   const [isMethodOpen, setIsMethodOpen] = useState(false);
-  const [chatState, setChatState] = useState({
-    currentIdx: 0,
-    previousIdx: null,
+  const [conversationState, setConversationState] = useState({
+    scenarioIdx: 0,
+    lineIdx: 0,
+    previousLineIdx: null,
+    isShowingOutcome: false,
+    isClosingBubbles: false,
+    isClosingOutcome: false,
+    isTransitioning: false,
   });
-  const [hiddenHeartIdx, setHiddenHeartIdx] = useState(null);
 
   useEffect(() => {
     logScreen('ai_clone_landing_screen');
   }, []);
 
   useEffect(() => {
-    const currentConversation = CONVERSATION_LINES[chatState.currentIdx];
-    const t = setTimeout(() => {
-      setChatState(prev => ({
-        currentIdx: (prev.currentIdx + 1) % CONVERSATION_LINES.length,
-        previousIdx: (() => {
-          const nextIdx = (prev.currentIdx + 1) % CONVERSATION_LINES.length;
-          const previousConversation = CONVERSATION_LINES[prev.currentIdx];
-          const nextConversation = CONVERSATION_LINES[nextIdx];
-
-          if (nextIdx === 0 || previousConversation.scene !== nextConversation.scene) {
-            return null;
-          }
-
-          return prev.currentIdx;
-        })(),
-      }));
-    }, currentConversation?.delay ?? 2800);
-    return () => clearTimeout(t);
-  }, [chatState.currentIdx]);
-
-  useEffect(() => {
-    const currentConversation = CONVERSATION_LINES[chatState.currentIdx];
-    if (!currentConversation?.showHeart) {
+    if (!isMethodOpen) {
       return undefined;
     }
 
     const t = setTimeout(() => {
-      setHiddenHeartIdx(chatState.currentIdx);
-    }, currentConversation.heartDuration ?? 3600);
+      methodSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 120);
 
     return () => clearTimeout(t);
-  }, [chatState.currentIdx]);
+  }, [isMethodOpen]);
 
-  const currentLine = CONVERSATION_LINES[chatState.currentIdx];
-  const previousLine = chatState.previousIdx === null
+  useEffect(() => {
+    const currentScenario = CONVERSATION_SCENARIOS[conversationState.scenarioIdx];
+
+    if (conversationState.isShowingOutcome) {
+      const bubbleFadeStartAt = Math.max(
+        currentScenario.outcomeDuration - OUTCOME_FADE_OUT_DELAY - BUBBLE_FADE_OUT_LEAD,
+        0
+      );
+      const outcomeFadeStartAt = Math.max(currentScenario.outcomeDuration - OUTCOME_FADE_OUT_DELAY, 0);
+
+      const bubbleFadeTimer = setTimeout(() => {
+        setConversationState((prev) => ({
+          ...prev,
+          isClosingBubbles: true,
+        }));
+      }, bubbleFadeStartAt);
+
+      const outcomeFadeTimer = setTimeout(() => {
+        setConversationState((prev) => ({
+          ...prev,
+          isClosingOutcome: true,
+        }));
+      }, outcomeFadeStartAt);
+
+      const t = setTimeout(() => {
+        setConversationState((prev) => ({
+          scenarioIdx: (prev.scenarioIdx + 1) % CONVERSATION_SCENARIOS.length,
+          lineIdx: 0,
+          previousLineIdx: null,
+          isShowingOutcome: false,
+          isClosingBubbles: false,
+          isClosingOutcome: false,
+          isTransitioning: true,
+        }));
+      }, currentScenario.outcomeDuration);
+
+      return () => {
+        clearTimeout(bubbleFadeTimer);
+        clearTimeout(outcomeFadeTimer);
+        clearTimeout(t);
+      };
+    }
+
+    if (conversationState.isTransitioning) {
+      const t = setTimeout(() => {
+        setConversationState((prev) => ({
+          ...prev,
+          isTransitioning: false,
+        }));
+      }, SCENARIO_TRANSITION_DELAY);
+
+      return () => clearTimeout(t);
+    }
+
+    const currentLine = currentScenario.lines[conversationState.lineIdx];
+    const t = setTimeout(() => {
+      setConversationState((prev) => {
+        const activeScenario = CONVERSATION_SCENARIOS[prev.scenarioIdx];
+        const isLastLine = prev.lineIdx === activeScenario.lines.length - 1;
+
+        if (isLastLine) {
+          return {
+            ...prev,
+            isShowingOutcome: true,
+            isClosingBubbles: false,
+            isClosingOutcome: false,
+          };
+        }
+
+        return {
+          ...prev,
+          lineIdx: prev.lineIdx + 1,
+          previousLineIdx: prev.lineIdx,
+        };
+      });
+    }, currentLine?.delay ?? 2800);
+
+    return () => clearTimeout(t);
+  }, [
+    conversationState.scenarioIdx,
+    conversationState.lineIdx,
+    conversationState.isShowingOutcome,
+    conversationState.isTransitioning,
+  ]);
+
+  const currentScenario = CONVERSATION_SCENARIOS[conversationState.scenarioIdx];
+  const currentLine = currentScenario.lines[conversationState.lineIdx];
+  const previousLine = conversationState.previousLineIdx === null
     ? null
-    : CONVERSATION_LINES[chatState.previousIdx];
-  const isHeartVisible = Boolean(currentLine.showHeart) && hiddenHeartIdx !== chatState.currentIdx;
+    : currentScenario.lines[conversationState.previousLineIdx];
+  const isSuccessOutcome = currentScenario.outcome === 'success';
 
   return (
     <div className="ai-page">
@@ -101,13 +204,19 @@ export function AiDatePage() {
         <div className="ai-scene-stack">
           <div className="chairs-scene">
             <div className="chair-slot chair-slot-left">
-              {previousLine?.side === 'left' ? (
-                <div className="bubble bubble-left bubble-previous">
+              {!conversationState.isTransitioning && previousLine?.side === 'left' ? (
+                <div
+                  key={`${currentScenario.id}-prev-left-${conversationState.previousLineIdx}-${conversationState.isClosingBubbles ? 'closing' : 'open'}`}
+                  className={`bubble bubble-left bubble-previous${conversationState.isClosingBubbles ? ' is-closing' : ''}`}
+                >
                   {previousLine.text}
                 </div>
               ) : null}
-              {currentLine.side === 'left' ? (
-                <div className="bubble bubble-left bubble-current">
+              {!conversationState.isTransitioning && currentLine.side === 'left' ? (
+                <div
+                  key={`${currentScenario.id}-current-left-${conversationState.lineIdx}-${conversationState.isClosingBubbles ? 'closing' : 'open'}`}
+                  className={`bubble bubble-left bubble-current${conversationState.isClosingBubbles ? ' is-closing' : ''}`}
+                >
                   {currentLine.text}
                 </div>
               ) : null}
@@ -123,13 +232,19 @@ export function AiDatePage() {
             </div>
 
             <div className="chair-slot chair-slot-right">
-              {previousLine?.side === 'right' ? (
-                <div className="bubble bubble-right bubble-previous">
+              {!conversationState.isTransitioning && previousLine?.side === 'right' ? (
+                <div
+                  key={`${currentScenario.id}-prev-right-${conversationState.previousLineIdx}-${conversationState.isClosingBubbles ? 'closing' : 'open'}`}
+                  className={`bubble bubble-right bubble-previous${conversationState.isClosingBubbles ? ' is-closing' : ''}`}
+                >
                   {previousLine.text}
                 </div>
               ) : null}
-              {currentLine.side === 'right' ? (
-                <div className="bubble bubble-right bubble-current">
+              {!conversationState.isTransitioning && currentLine.side === 'right' ? (
+                <div
+                  key={`${currentScenario.id}-current-right-${conversationState.lineIdx}-${conversationState.isClosingBubbles ? 'closing' : 'open'}`}
+                  className={`bubble bubble-right bubble-current${conversationState.isClosingBubbles ? ' is-closing' : ''}`}
+                >
                   {currentLine.text}
                 </div>
               ) : null}
@@ -138,17 +253,23 @@ export function AiDatePage() {
                 <span className="chair-label other">상대</span>
               </div>
             </div>
-            {isHeartVisible ? (
+            {conversationState.isShowingOutcome ? (
               <div
-                className="chemistry-heart"
-                style={{ '--heart-duration': `${currentLine.heartAnimationMs ?? currentLine.heartDuration ?? 5200}ms` }}
+                className={`chemistry-heart${isSuccessOutcome ? '' : ' is-soft-fail'}${conversationState.isClosingOutcome ? ' is-closing' : ''}`}
+                style={{ '--heart-duration': `${currentScenario.outcomeAnimationMs ?? 5200}ms` }}
                 aria-hidden
               >
-                <img
-                  src="https://static.toss.im/3d-emojis/u2764-apng.png"
-                  alt="❤️"
-                  className="chemistry-heart-badge"
-                />
+                {isSuccessOutcome ? (
+                  <img
+                    src="https://static.toss.im/3d-emojis/u2764-apng.png"
+                    alt="❤️"
+                    className="chemistry-heart-badge"
+                  />
+                ) : (
+                  <span className="chemistry-soft-fail-badge" aria-hidden>
+                    🤔
+                  </span>
+                )}
               </div>
             ) : null}
           </div>
@@ -177,7 +298,7 @@ export function AiDatePage() {
               AI 클론이 뭔가요?
             </button>
             {isMethodOpen ? (
-              <div className="ai-method-section">
+              <div className="ai-method-section" ref={methodSectionRef}>
                 <div className="ai-method-panel">
                   <div className="ai-method-card">
                     <strong className="ai-method-card-title">AI 클론이란</strong>

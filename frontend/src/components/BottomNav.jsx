@@ -4,7 +4,7 @@ import './BottomNav.css';
 
 const TABS = [
   { path: '/alarms', label: '홈', iconName: 'icon-home-mono' },
-  { path: '/ai-date', label: 'AI 클론', iconName: 'custom-twinkle' },
+  { path: '/ai-clone', label: 'AI 클론', iconName: 'custom-twinkle' },
   { path: '/rewards', label: '보상', iconName: 'icon-gift-mono' },
   { path: '/more', label: '더보기', iconName: 'custom-grid' },
 ];

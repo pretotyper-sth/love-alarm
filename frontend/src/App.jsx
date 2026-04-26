@@ -123,7 +123,7 @@ function setupHistoryGuard() {
   window.history.pushState({ index: 1 }, '');
 }
 
-const TAB_PATHS = ['/alarms', '/ai-date', '/rewards', '/more'];
+const TAB_PATHS = ['/alarms', '/ai-clone', '/rewards', '/more'];
 
 // 네비게이션 추적 컴포넌트 (히스토리 가드 설정)
 function NavigationTracker() {
@@ -284,8 +284,12 @@ function AppRoutes() {
               element={hasVisited ? <RewardsPage /> : <Navigate to="/" replace />} 
             />
             <Route 
-              path="/ai-date" 
+              path="/ai-clone" 
               element={hasVisited ? <AiDatePage /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/ai-date" 
+              element={<Navigate to="/ai-clone" replace />} 
             />
             <Route 
               path="/more" 

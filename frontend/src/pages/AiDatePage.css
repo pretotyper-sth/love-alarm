@@ -270,6 +270,7 @@
   transform: translateX(-50%);
   pointer-events: none;
   animation: chemistryHeartPop var(--heart-duration, 5.2s) ease both;
+  transition: opacity 520ms ease;
 }
 
 .chemistry-heart-badge {
@@ -279,6 +280,26 @@
   object-fit: contain;
   filter: drop-shadow(0 10px 16px rgba(255, 92, 143, 0.28));
   transform: translateZ(0);
+}
+
+.chemistry-soft-fail-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 8px 14px rgba(107, 118, 132, 0.22));
+  transform: translateZ(0);
+}
+
+.chemistry-heart.is-soft-fail {
+  opacity: 0.92;
+}
+
+.chemistry-heart.is-closing {
+  opacity: 0;
 }
 
 .bubble {
@@ -299,6 +320,11 @@
   pointer-events: none;
   will-change: transform, opacity;
   backface-visibility: hidden;
+  transition: opacity 520ms ease;
+}
+
+.bubble.is-closing {
+  opacity: 0;
 }
 
 .bubble::before,
@@ -356,6 +382,10 @@
   animation: bubbleRisePrevious 1.6s cubic-bezier(0.18, 0.88, 0.22, 1) both;
 }
 
+.bubble-previous.is-closing {
+  animation: bubbleFadeOut 520ms ease forwards;
+}
+
 .bubble-previous::before {
   border-top-color: #d1d6db;
 }
@@ -365,6 +395,10 @@
   border-color: #3182f6;
   color: #191f28;
   animation: bubbleRiseCurrent 1.6s cubic-bezier(0.18, 0.88, 0.22, 1) both;
+}
+
+.bubble-current.is-closing {
+  animation: bubbleFadeOut 520ms ease forwards;
 }
 
 .bubble-current::before {
@@ -390,6 +424,17 @@
   100% {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes bubbleFadeOut {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0);
   }
 }
 
@@ -594,5 +639,11 @@
   .chemistry-heart-badge {
     width: 38px;
     height: 38px;
+  }
+
+  .chemistry-soft-fail-badge {
+    width: 38px;
+    height: 38px;
+    font-size: 27px;
   }
 }
