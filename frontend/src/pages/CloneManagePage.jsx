@@ -1,387 +1,535 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
+  Asset,
   Text,
   Top,
-  Button,
-  Spacing,
   TextField,
+  Spacing,
+  Button,
+  List,
+  ListRow,
+  Switch,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { logScreen, logClick } from '../utils/analytics';
-import { CLONE_COPY } from '../constants/cloneCopy';
+import { AlarmPreviewSheet } from '../components/AlarmPreviewSheet';
+import './AddAlarmPage.css';
 import './CloneManagePage.css';
 
+// 최초 알람 등록 여부 키
+const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
+
+// 하루 추가 제한 키
+const DAILY_ADD_COUNT_KEY = 'love_alarm_daily_add_count';
+const DAILY_ADD_DATE_KEY  = 'love_alarm_daily_add_date';
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getDailyAddCount() {
+  const savedDate = localStorage.getItem(DAILY_ADD_DATE_KEY);
+  const today = getTodayStr();
+  if (savedDate !== today) {
+    localStorage.setItem(DAILY_ADD_DATE_KEY, today);
+    localStorage.setItem(DAILY_ADD_COUNT_KEY, '0');
+    return 0;
+  }
+  return parseInt(localStorage.getItem(DAILY_ADD_COUNT_KEY) || '0', 10);
+}
+
+function incrementDailyAddCount() {
+  const count = getDailyAddCount();
+  localStorage.setItem(DAILY_ADD_COUNT_KEY, String(count + 1));
+}
+
+// 리워드 광고 그룹 ID (콘솔에서 발급)
+const REWARDED_AD_GROUP_ID = 'ait.v2.live.a0fa3947ad744201';
+const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
+const MESSAGE_MAX_LENGTH = 100;
+
+function isAdFree() {
+  // localStorage 플래그 (즉시 반영) 또는 서버에서 받은 user 데이터의 adFree 필드
+  if (localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true') return true;
+  try {
+    const user = JSON.parse(localStorage.getItem('love_alarm_user') || '{}');
+    return user.adFree === true;
+  } catch {
+    return false;
+  }
+}
 
 export function CloneManagePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [clone, setClone] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState(null);
-
-  // 생성 폼
+  const [myId, setMyId] = useState('');
+  const [targetId, setTargetId] = useState('');
   const [gender, setGender] = useState('');
-  const [interestedIn, setInterestedIn] = useState('');
   const [allowMatching, setAllowMatching] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorToast, setErrorToast] = useState({ show: false, message: '' });
+  const [isAdLoaded, setIsAdLoaded] = useState(false);
+  const [showPreviewSheet, setShowPreviewSheet] = useState(false);
+  const [previewChecked, setPreviewChecked] = useState(false);
+  const adCleanupRef = useRef(null);
 
+  // 인증된 Instagram 계정 여부
   const verifiedUsername = localStorage.getItem(IG_VERIFIED_KEY) || '';
   const isVerified = !!verifiedUsername;
-  const copy = CLONE_COPY.cloneManagement;
+
+  // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
+  useEffect(() => {
+    if (isVerified) {
+      setMyId(verifiedUsername);
+    } else {
+      const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
+      if (savedMyId) setMyId(savedMyId);
+    }
+  }, [isVerified, verifiedUsername]);
 
   useEffect(() => {
-    logScreen('clone_manage_screen');
-    loadClone();
+    logScreen('add_alarm_screen');
   }, []);
 
-  const loadClone = async () => {
-    try {
-      const data = await api.getClone();
-      setClone(data.clone);
-    } catch {
-      // 클론 없음
-    } finally {
-      setLoading(false);
-    }
+  // 페이지 진입 시 광고 사전 로드 (Preload) - 검수 필수 요건
+  useEffect(() => {
+    const preloadAd = async () => {
+      try {
+        const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
+        
+        if (GoogleAdMob.loadAppsInTossAdMob.isSupported() !== true) {
+          setIsAdLoaded(true); // SDK 미지원 시 로드 완료로 처리
+          return;
+        }
+        
+        adCleanupRef.current = GoogleAdMob.loadAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (event) => {
+            if (event.type === 'loaded') {
+              setIsAdLoaded(true);
+              adCleanupRef.current?.();
+            }
+          },
+          onError: () => {
+            setIsAdLoaded(true); // 로드 실패해도 진행 가능하도록
+            adCleanupRef.current?.();
+          },
+        });
+      } catch {
+        setIsAdLoaded(true); // 오류 시 로드 완료로 처리
+      }
+    };
+    
+    preloadAd();
+    
+    return () => {
+      adCleanupRef.current?.();
+    };
+  }, []);
+
+  const showErrorToast = (message) => {
+    setErrorToast({ show: true, message });
+    setTimeout(() => {
+      setErrorToast((prev) => ({ ...prev, show: false }));
+    }, 3000);
   };
 
-  const handleCreate = async () => {
-    if (!isVerified) {
-      setError('인스타그램 인증이 필요해요. 더보기 > 인스타그램 인증에서 먼저 인증해 주세요.');
-      return;
+  const handleSubmit = async () => {
+    // AI 미리보기 가능 여부 체크 (아직 안 했으면)
+    if (!previewChecked && targetId.trim()) {
+      try {
+        const { available } = await api.checkAlarmPreview(targetId.trim().toLowerCase());
+        setPreviewChecked(true);
+        if (available) {
+          logClick('alarm_preview_available');
+          setShowPreviewSheet(true);
+          return;
+        }
+      } catch {
+        // 체크 실패 시 그냥 진행
+      }
     }
+    await addAlarm();
+  };
 
-    if (!gender) {
-      setError('성별을 선택해 주세요.');
-      return;
+  // 리워드 광고 표시 함수 (문서: https://developers-apps-in-toss.toss.im/ads/develop.html)
+  const showRewardedAd = async () => {
+    // 30일 체크인 보상 수령 시 광고 면제
+    if (isAdFree()) {
+      return { rewarded: true, skipped: true };
     }
-
-    setCreating(true);
-    setError(null);
-    logClick('clone_create_start');
 
     try {
-      const data = await api.createClone(verifiedUsername, {
-        gender,
-        interestedIn: interestedIn || 'all',
-        allowMatching,
+      const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
+      
+      // SDK 지원 여부 확인
+      if (GoogleAdMob.showAppsInTossAdMob.isSupported() !== true) {
+        // SDK 미지원 환경 (로컬 개발 등)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return { rewarded: true, skipped: true };
+      }
+      
+      // 사전 로드가 안 됐으면 다시 로드 시도
+      if (!isAdLoaded) {
+        await new Promise((resolve, reject) => {
+          const cleanup = GoogleAdMob.loadAppsInTossAdMob({
+            options: { adGroupId: REWARDED_AD_GROUP_ID },
+            onEvent: (event) => {
+              if (event.type === 'loaded') {
+                cleanup?.();
+                resolve();
+              }
+            },
+            onError: (error) => {
+              cleanup?.();
+              reject(error);
+            },
+          });
+        });
+      }
+      
+      // 광고 표시 및 보상 확인
+      const result = await new Promise((resolve, reject) => {
+        let rewarded = false;
+        
+        logClick('add_alarm_ad_start');
+        const cleanup = GoogleAdMob.showAppsInTossAdMob({
+          options: { adGroupId: REWARDED_AD_GROUP_ID },
+          onEvent: (event) => {
+            if (event.type === 'userEarnedReward') {
+              rewarded = true;
+              logClick('add_alarm_ad_complete');
+            }
+            if (event.type === 'dismissed') {
+              cleanup?.();
+              resolve({ rewarded });
+            }
+          },
+          onError: (error) => {
+            cleanup?.();
+            reject(error);
+          },
+        });
       });
+      
+      // 광고 표시 후 다음 광고 미리 로드 (load → show → 다음 load)
+      setIsAdLoaded(false);
+      
+      return result;
+      
+    } catch (error) {
+      // 광고 로드 실패 시에도 알람 추가는 진행
+      if (error?.code === 'AD_NOT_READY' || error?.code === 'AD_LOAD_FAILED') {
+        return { rewarded: true, skipped: true };
+      }
+      
+      // 사용자가 광고를 닫은 경우
+      if (error?.code === 'USER_CANCELLED' || error?.message?.includes('cancel')) {
+        return { rewarded: false, cancelled: true };
+      }
+      
+      // SDK 미지원 환경 또는 기타 오류
+      return { rewarded: true, skipped: true };
+    }
+  };
 
-      logClick('clone_create_success');
-      setClone(data.clone);
-    } catch (err) {
-      setError(err.message);
-      logClick('clone_create_fail', { reason: err.message });
+  const addAlarm = async () => {
+    // ① 하루 추가 제한 체크 (광고 노출 전)
+    const dailyLimit = (user?.maxSlots ?? 2) * 2;
+    const dailyCount = getDailyAddCount();
+    if (dailyCount >= dailyLimit) {
+      showErrorToast(`하루 최대 ${dailyLimit}번까지 추가할 수 있어요.`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // 2. 리워드 광고 표시
+      const adResult = await showRewardedAd();
+      
+      // 광고를 끝까지 보지 않으면 알람 추가 안 함
+      if (!adResult.rewarded) {
+        if (adResult.cancelled) {
+          showErrorToast('광고를 끝까지 봐 주세요');
+        }
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const myIdTrimmed = myId.trim().toLowerCase();
+      const targetIdTrimmed = targetId.trim().toLowerCase();
+      const messageTrimmed = message.trim() || undefined;
+
+      // 3. localStorage에 본인 ID 저장 (다음 알람 추가 시 기본값으로)
+      localStorage.setItem('love_alarm_my_instagram_id', myIdTrimmed);
+
+      // 4. API로 알람 생성 (fromInstagramId + message 포함)
+      const result = await api.createAlarm(myIdTrimmed, targetIdTrimmed, messageTrimmed);
+
+      logClick('add_alarm_success', { has_message: !!message });
+
+      // 5. 성공 시 하루 카운트 증가
+      incrementDailyAddCount();
+      
+      // 6. 최초 알람 등록인지 확인 (알림 팝업 표시 여부)
+      const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
+      const pushEnabled = user?.pushEnabled ?? false;
+      const tossAppEnabled = user?.tossAppEnabled ?? false;
+      const shouldShowNotificationSheet = isFirstAlarm && !pushEnabled && !tossAppEnabled;
+      
+      // 최초 등록 완료 표시
+      if (isFirstAlarm) {
+        localStorage.setItem(FIRST_ALARM_REGISTERED_KEY, 'true');
+      }
+      
+      // 7. 완료 후 페이지 이동 (replace: true로 히스토리 중복 방지)
+      if (result.matched) {
+        navigate('/match-success', { 
+          replace: true,
+          state: { 
+            alarmId: result.alarm.id, 
+            fromInstagramId: myIdTrimmed,
+            targetInstagramId: targetIdTrimmed,
+          } 
+        });
+      } else {
+        navigate('/alarms', { 
+          replace: true,
+          state: { 
+            showAddedToast: true,
+            showNotificationSheet: shouldShowNotificationSheet 
+          } 
+        });
+      }
+    } catch (error) {
+      console.error('❌ 알람 추가 실패:', error);
+      logClick('add_alarm_fail', {
+        reason: error?.message ?? error?.code ?? (error != null ? String(error) : undefined),
+      });
+      showErrorToast(error.message || '알람을 추가하지 못했어요');
     } finally {
-      setCreating(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleToggleMatching = async () => {
-    try {
-      const data = await api.updateClone({ allowMatching: !clone.allowMatching });
-      setClone(data.clone);
-      logClick('clone_toggle_matching', { enabled: !clone.allowMatching });
-    } catch (err) {
-      setError(err.message);
-    }
+  const handleClearMyId = () => {
+    setMyId('');
   };
 
-  const handleToggleStatus = async () => {
-    const newStatus = clone.status === 'active' ? 'paused' : 'active';
-    try {
-      const data = await api.updateClone({ status: newStatus });
-      setClone(data.clone);
-      logClick('clone_toggle_status', { status: newStatus });
-    } catch (err) {
-      setError(err.message);
-    }
+  const handleClearTargetId = () => {
+    setTargetId('');
+    setPreviewChecked(false);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm(copy.deleteConfirm)) return;
-
-    try {
-      await api.deleteClone();
-      logClick('clone_delete');
-      setClone(null);
-    } catch (err) {
-      setError(err.message);
-    }
+  // 인스타그램 ID 유효성 검사
+  // - 영문 소문자(a-z), 숫자(0-9), 마침표(.), 밑줄(_) 만 허용
+  // - 1~30자
+  // - 대문자 입력 시 소문자로 취급 (인스타그램 정책)
+  const isInvalidInstagramId = (text) => {
+    const trimmed = text.trim().toLowerCase();
+    if (!trimmed) return false;
+    if (trimmed.length > 30) return true;
+    return !/^[a-z0-9._]+$/.test(trimmed);
   };
 
-  if (loading) {
-    return (
-      <div className="clone-manage-page">
-        <div className="clone-manage-loading">
-          <Text color={adaptive.grey500} typography="t7">불러오는 중...</Text>
-        </div>
-      </div>
-    );
-  }
+  // 본인 ID와 상대 ID가 같은지 확인 (대소문자 무시)
+  const isSameId = myId.trim() && targetId.trim() && 
+    myId.trim().toLowerCase() === targetId.trim().toLowerCase();
 
-  // 클론이 없으면 생성 UI
-  if (!clone) {
-    return (
-      <div className="clone-manage-page">
+  const myIdHasError = isInvalidInstagramId(myId);
+  const targetIdHasError = isInvalidInstagramId(targetId) || isSameId;
+
+  // 에러 메시지
+  const getMyIdErrorMessage = () => {
+    if (isInvalidInstagramId(myId)) {
+      return '인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요';
+    }
+    return null;
+  };
+
+  const getTargetIdErrorMessage = () => {
+    if (isInvalidInstagramId(targetId)) {
+      return '인스타그램 ID 형식에 맞춰 정확하게 입력해 주세요';
+    }
+    if (isSameId) {
+      return '상대 ID는 본인 ID와 같을 수 없어요';
+    }
+    return null;
+  };
+
+  return (
+    <div className="add-alarm-page-container">
+      <div className="add-alarm-form-content">
+      <Spacing size={14} />
+
+      <div className="add-alarm-top-section">
         <Top
           title={
-            <Top.TitleParagraph size={22} color={adaptive.grey900} fontWeight="bold">
-              {copy.createTitle}
+            <Top.TitleParagraph 
+              size={22} 
+              color={adaptive.grey900}
+              fontWeight="bold"
+              style={{ fontSize: '22px' }}
+            >
+              AI 클론 만들기
             </Top.TitleParagraph>
           }
-          left={<Top.BackButton onClick={() => navigate(-1)} />}
           subtitleBottom={
-            <Text color={adaptive.grey600} typography="t7" style={{ whiteSpace: 'pre-line' }}>
-              {copy.createDescription}
-            </Text>
+            <div className="add-alarm-subtitle">
+              <Text 
+                color={adaptive.grey700} 
+                typography="t7"
+                style={{ 
+                  fontSize: '17px', 
+                  fontWeight: 500,
+                  color: adaptive.grey700 
+                }}
+              >
+                나를 닮은 AI가 대신 케미를 확인해줘요.
+              </Text>
+            </div>
           }
         />
+      </div>
 
-        <Spacing size={24} />
+      <Spacing size={16} />
 
-        <div className="clone-manage-content">
-          {!isVerified && (
-            <div className="clone-manage-warning">
-              <Text typography="t7" color="#FF6B6B">
-                인스타그램 인증이 필요해요
-              </Text>
-              <Spacing size={8} />
-              <Button
-                size="medium"
-                variant="weak"
-                onClick={() => navigate('/more')}
-              >
-                인증하러 가기
-              </Button>
-            </div>
-          )}
-
-          {isVerified && (
-            <>
+      <div className="add-alarm-content">
+          {isVerified ? (
+            /* 인증된 경우: TDS TextField 동일 스타일, 읽기 전용 */
+            <div className="add-alarm-verified-field">
               <TextField
                 variant="big"
-                label="인스타그램 ID"
+                label="본인 인스타그램 ID"
                 labelOption="sustain"
                 value={verifiedUsername}
                 disabled
                 onChange={() => {}}
-                help="인증된 계정이 자동으로 적용돼요."
+                help="인증된 계정으로 적용됐어요. (변경은 '더보기' 메뉴에서)"
               />
-
-              <Spacing size={16} />
-
-              <div className="clone-manage-field">
-                <Text typography="t7" fontWeight="bold" color={adaptive.grey800}>
-                  {copy.genderLabel}
-                </Text>
-                <Spacing size={8} />
-                <div className="clone-manage-options">
-                  {copy.genderOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={`clone-manage-option ${gender === opt.value ? 'selected' : ''}`}
-                      onClick={() => setGender(opt.value)}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <Spacing size={16} />
-
-              <div className="clone-manage-field">
-                <Text typography="t7" fontWeight="bold" color={adaptive.grey800}>
-                  {copy.interestedInLabel}
-                </Text>
-                <Spacing size={8} />
-                <div className="clone-manage-options">
-                  {copy.interestedInOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={`clone-manage-option ${interestedIn === opt.value ? 'selected' : ''}`}
-                      onClick={() => setInterestedIn(opt.value)}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <Spacing size={16} />
-
-              <div className="clone-manage-field">
-                <div className="clone-manage-toggle-row">
-                  <div>
-                    <Text typography="t7" fontWeight="bold" color={adaptive.grey800}>
-                      {copy.allowMatchingLabel}
-                    </Text>
-                    <Spacing size={4} />
-                    <Text typography="t8" color={adaptive.grey500} style={{ whiteSpace: 'pre-line' }}>
-                      {copy.allowMatchingDescription}
-                    </Text>
-                  </div>
-                  <label className="clone-manage-switch">
-                    <input
-                      type="checkbox"
-                      checked={allowMatching}
-                      onChange={(e) => setAllowMatching(e.target.checked)}
+            </div>
+          ) : (
+            <TextField
+              variant="big"
+              hasError={myIdHasError}
+              label="본인 인스타그램 ID"
+              labelOption="sustain"
+              help={getMyIdErrorMessage()}
+              value={myId}
+              onChange={(e) => setMyId(e.target.value)}
+              placeholder="예: abcd1234"
+              right={
+                myId ? (
+                  <button
+                    onClick={handleClearMyId}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                    aria-label="지우기"
+                  >
+                    <Asset.Icon
+                      frameShape={Asset.frameShape.CleanW20}
+                      backgroundColor="transparent"
+                      name="icon-x-mono"
+                      color={adaptive.greyOpacity600}
+                      aria-hidden={true}
+                      ratio="1/1"
                     />
-                    <span className="clone-manage-slider" />
-                  </label>
-                </div>
-              </div>
-
-              {error && (
-                <>
-                  <Spacing size={12} />
-                  <Text typography="t8" color="#FF4444">{error}</Text>
-                </>
-              )}
-
-              <Spacing size={32} />
-
-              <Button
-                size="xlarge"
-                display="block"
-                onClick={handleCreate}
-                loading={creating}
-                disabled={creating || !gender}
-              >
-                {CLONE_COPY.intro.cta}
-              </Button>
-            </>
+                  </button>
+                ) : null
+              }
+            />
           )}
-        </div>
-      </div>
-    );
-  }
-
-  // 클론이 있으면 관리 UI
-  return (
-    <div className="clone-manage-page">
-      <Top
-        title={
-          <Top.TitleParagraph size={22} color={adaptive.grey900} fontWeight="bold">
-            AI 클론 관리
-          </Top.TitleParagraph>
-        }
-        left={<Top.BackButton onClick={() => navigate(-1)} />}
-      />
-
-      <Spacing size={16} />
-
-      <div className="clone-manage-content">
-        <div className="clone-manage-status-card">
-          <div className="clone-manage-status-header">
-            <Text typography="t6" fontWeight="bold" color={adaptive.grey900}>
-              @{clone.instagramId}
-            </Text>
-            <span className={`clone-manage-badge ${clone.status}`}>
-              {clone.status === 'active' ? copy.statusActive : copy.statusPaused}
-            </span>
-          </div>
-
-          <Spacing size={12} />
-
-          <div className="clone-manage-info-row">
-            <Text typography="t8" color={adaptive.grey500}>성별</Text>
-            <Text typography="t8" color={adaptive.grey700}>
-              {copy.genderOptions.find((o) => o.value === clone.gender)?.label || '미설정'}
-            </Text>
-          </div>
-
-          <div className="clone-manage-info-row">
-            <Text typography="t8" color={adaptive.grey500}>관심 성별</Text>
-            <Text typography="t8" color={adaptive.grey700}>
-              {copy.interestedInOptions.find((o) => o.value === clone.interestedIn)?.label || '모두'}
-            </Text>
-          </div>
-
-          <div className="clone-manage-info-row">
-            <Text typography="t8" color={adaptive.grey500}>생성일</Text>
-            <Text typography="t8" color={adaptive.grey700}>
-              {new Date(clone.createdAt).toLocaleDateString('ko-KR')}
-            </Text>
-          </div>
-        </div>
-
-        <Spacing size={20} />
-
-        <div className="clone-manage-field">
-          <div className="clone-manage-toggle-row">
-            <div>
-              <Text typography="t7" fontWeight="bold" color={adaptive.grey800}>
-                {copy.allowMatchingLabel}
-              </Text>
-              <Spacing size={4} />
-              <Text typography="t8" color={adaptive.grey500} style={{ whiteSpace: 'pre-line' }}>
-                {copy.allowMatchingDescription}
-              </Text>
-            </div>
-            <label className="clone-manage-switch">
-              <input
-                type="checkbox"
-                checked={clone.allowMatching}
-                onChange={handleToggleMatching}
-              />
-              <span className="clone-manage-slider" />
-            </label>
-          </div>
-        </div>
-
-        <Spacing size={16} />
-
-        <div className="clone-manage-field">
-          <div className="clone-manage-toggle-row">
-            <div>
-              <Text typography="t7" fontWeight="bold" color={adaptive.grey800}>
-                클론 활성화
-              </Text>
-              <Spacing size={4} />
-              <Text typography="t8" color={adaptive.grey500}>
-                비활성화하면 대화 매칭이 일시정지돼요.
-              </Text>
-            </div>
-            <label className="clone-manage-switch">
-              <input
-                type="checkbox"
-                checked={clone.status === 'active'}
-                onChange={handleToggleStatus}
-              />
-              <span className="clone-manage-slider" />
-            </label>
-          </div>
-        </div>
-
-        {error && (
-          <>
-            <Spacing size={12} />
-            <Text typography="t8" color="#FF4444">{error}</Text>
-          </>
-        )}
-
-        <Spacing size={32} />
-
-        <Button
-          size="large"
-          display="block"
-          onClick={() => navigate('/clone-conversations')}
-        >
-          AI 대화 기록 보기
-        </Button>
 
         <Spacing size={12} />
 
-        <button className="clone-manage-delete-btn" onClick={handleDelete}>
-          <Text typography="t8" color="#FF4444">클론 삭제하기</Text>
-        </button>
+          <div className="clone-manage-create-field">
+            <label className="clone-manage-create-label">본인 성별</label>
+            <div className="clone-manage-options">
+              {['남성', '여성'].map((option) => (
+                <button
+                  key={option}
+                  className={`clone-manage-option${gender === option ? ' selected' : ''}`}
+                  onClick={() => setGender(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+            <p className="clone-manage-create-hint">클론 소개와 말투 톤을 맞추는 데 사용돼요.</p>
+          </div>
       </div>
+
+      <Spacing size={12} />
+
+      <List>
+        <ListRow
+          contents={
+            <div>
+              <Text color="#4e5968" typography="t5" fontWeight="semibold">
+                AI 클론 대화 동의
+              </Text>
+              <Text color="#8b95a1" typography="t7" style={{ marginTop: 2 }}>
+                다른 사람의 클론이 내 클론과 대화할 수 있어요
+              </Text>
+            </div>
+          }
+          right={
+            <Switch
+              checked={allowMatching}
+              onChange={() => setAllowMatching((prev) => !prev)}
+            />
+          }
+          verticalPadding="large"
+          horizontalPadding="medium"
+        />
+      </List>
+      </div>
+
+      <div className="add-alarm-cta-section">
+        <Button
+          size="xlarge"
+          display="block"
+          onClick={handleSubmit}
+          disabled={!myId.trim() || !gender || isSubmitting || myIdHasError}
+          loading={isSubmitting}
+        >
+          내 클론 만들기
+        </Button>
+      </div>
+
+      {/* AI 미리보기 시트 */}
+      {showPreviewSheet && (
+        <AlarmPreviewSheet
+          targetInstagramId={targetId.trim().toLowerCase()}
+          onClose={() => {
+            setShowPreviewSheet(false);
+          }}
+          onSkip={() => {
+            setShowPreviewSheet(false);
+            addAlarm();
+          }}
+        />
+      )}
+
+      {/* 에러 Toast */}
+      <div className={`single-toast ${errorToast.show ? 'show' : ''}`}>
+        <div className="custom-toast-content">
+          <span className="custom-toast-error-icon">!</span>
+          <span className="custom-toast-text">{errorToast.message}</span>
+        </div>
+      </div>
+
     </div>
   );
 }
