@@ -16,6 +16,8 @@ import { MessagesPage } from './pages/MessagesPage';
 import { CloneManagePage } from './pages/CloneManagePage';
 import { CloneConversationsPage } from './pages/CloneConversationsPage';
 import { AiDatePage } from './pages/AiDatePage';
+import { OtherCloneEntryPage } from './pages/OtherCloneEntryPage';
+import { OtherCloneSelectPage } from './pages/OtherCloneSelectPage';
 import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import './App.css';
@@ -123,9 +125,11 @@ function setupHistoryGuard() {
   window.history.pushState({ index: 1 }, '');
 }
 
+
 const TAB_PATHS = ['/alarms', '/ai-clone', '/rewards', '/more'];
 
 // 네비게이션 추적 컴포넌트 (히스토리 가드 설정)
+
 function NavigationTracker() {
   const isFirstRender = useRef(true);
 
@@ -285,7 +289,7 @@ function AppRoutes() {
             />
             <Route 
               path="/ai-clone" 
-              element={hasVisited ? <AiDatePage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <AiDatePage /> : <Navigate to="/" replace />}
             />
             <Route 
               path="/ai-date" 
@@ -321,15 +325,23 @@ function AppRoutes() {
             />
             <Route 
               path="/messages" 
-              element={hasVisited ? <MessagesPage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <MessagesPage /> : <Navigate to="/" replace />}
             />
             <Route 
               path="/clone" 
-              element={hasVisited ? <CloneManagePage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <CloneManagePage /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/other-clone"
+              element={hasVisited ? <OtherCloneEntryPage /> : <Navigate to="/" replace />}
+            />
+            <Route
+              path="/other-clone/specific"
+              element={hasVisited ? <OtherCloneSelectPage /> : <Navigate to="/" replace />}
             />
             <Route 
               path="/clone-conversations" 
-              element={hasVisited ? <CloneConversationsPage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <CloneConversationsPage /> : <Navigate to="/" replace />}
             />
             <Route path="/error" element={<ErrorPage />} />
           </Routes>

@@ -1,0 +1,141 @@
+.other-clone-page {
+  background: #fff;
+}
+
+.other-clone-subtitle {
+  margin: 0;
+  padding: 2px 24px 0;
+  color: #6b7684;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.other-clone-field {
+  gap: 12px;
+}
+
+.other-clone-input {
+  padding: 0 !important;
+}
+
+.other-clone-alarm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.other-clone-alarm-chips button {
+  padding: 8px 11px;
+  border: 1px solid #e5e8eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #4e5968;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.other-clone-alarm-chips button.selected {
+  border-color: #3182f6;
+  background: #f0f6ff;
+  color: #1b64da;
+}
+
+.other-clone-method-options {
+  margin-top: 0;
+}
+
+.other-clone-method-option {
+  min-height: 84px;
+  padding: 16px;
+  line-height: 1.4;
+}
+
+.other-clone-method-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.other-clone-method-copy strong {
+  color: #191f28;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.other-clone-method-copy small {
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+.other-clone-method-option.selected .other-clone-method-copy strong {
+  color: #1b64da;
+}
+
+.other-clone-method-check.hidden {
+  opacity: 0;
+}
+
+.other-clone-section {
+  padding: 0 20px;
+}
+
+.other-clone-option-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.other-clone-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1px solid #e5e8eb;
+  border-radius: 20px;
+  background: #fff;
+  text-align: left;
+}
+
+.other-clone-option strong {
+  display: block;
+  color: #191f28;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.other-clone-option small {
+  display: block;
+  margin-top: 4px;
+  color: #6b7684;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.other-clone-option-arrow {
+  flex: 0 0 auto;
+  color: #b0b8c1;
+  font-size: 24px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.other-clone-info-box {
+  margin-top: 22px;
+}
+
+.other-clone-cta-section {
+  padding-top: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 18%, #fff 100%);
+}
