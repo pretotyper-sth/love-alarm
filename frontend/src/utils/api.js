@@ -2,7 +2,7 @@
 import { io } from 'socket.io-client';
 
 // AppsInToss 빌드는 VITE_API_URL이 비어 있을 수 있어 현재 프로덕션 서버를 fallback으로 둔다.
-const DEFAULT_API_URL = 'https://love-alarm-production.up.railway.app';
+const DEFAULT_API_URL = 'https://love-alarm-server.onrender.com';
 const API_BASE_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL) + '/api';
 const SOCKET_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 

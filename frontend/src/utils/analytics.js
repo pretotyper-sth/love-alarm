@@ -1,7 +1,7 @@
 import { Analytics } from '@apps-in-toss/web-framework';
 
 const IS_DEV = import.meta.env.DEV;
-const API_URL = import.meta.env.VITE_API_URL || 'https://love-alarm-production.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL || 'https://love-alarm-server.onrender.com';
 
 let eventBuffer = [];
 let flushTimer = null;
