@@ -17,8 +17,7 @@ permissions:
 
 env:
   TOKEN_ISSUED_AT: '2026-06-19'
-  FIRST_REMINDER_DAYS: '45'
-  URGENT_REMINDER_DAYS: '55'
+  REMINDER_DAYS: '55'
   EXPIRY_DAYS: '60'
 
 jobs:
@@ -33,8 +32,7 @@ jobs:
             const label = 'instagram-token';
             const issuedAtInput = core.getInput('token_issued_at').trim();
             const issuedAt = issuedAtInput || process.env.TOKEN_ISSUED_AT;
-            const firstReminderDays = Number(process.env.FIRST_REMINDER_DAYS);
-            const urgentReminderDays = Number(process.env.URGENT_REMINDER_DAYS);
+            const reminderDays = Number(process.env.REMINDER_DAYS);
             const expiryDays = Number(process.env.EXPIRY_DAYS);
 
             if (!/^\d{4}-\d{2}-\d{2}$/.test(issuedAt)) {
@@ -46,7 +44,7 @@ jobs:
             const elapsedDays = Math.floor((Date.now() - issuedAtMs) / 86_400_000);
             const remainingDays = expiryDays - elapsedDays;
 
-            if (elapsedDays < firstReminderDays) {
+            if (elapsedDays < reminderDays) {
               core.notice(`Instagram token is ${elapsedDays} days old. No reminder needed yet.`);
               return;
             }
@@ -73,15 +71,11 @@ jobs:
             const state =
               elapsedDays >= expiryDays
                 ? 'expired'
-                : elapsedDays >= urgentReminderDays
-                  ? 'urgent'
-                  : 'reminder';
+                : 'reminder';
             const titlePrefix =
               state === 'expired'
                 ? '[만료 가능]'
-                : state === 'urgent'
-                  ? '[긴급]'
-                  : '[리마인더]';
+                : '[리마인더]';
             const title = `${titlePrefix} Instagram access token 갱신 필요 (${elapsedDays}일 경과)`;
             const body = [
               marker,
