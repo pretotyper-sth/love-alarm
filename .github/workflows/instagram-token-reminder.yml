@@ -1,0 +1,138 @@
+name: Instagram Token Reminder
+
+on:
+  schedule:
+    # Every Monday 09:00 KST. Instagram long-lived tokens expire after about 60 days.
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      token_issued_at:
+        description: 'Override token issue date for a manual run (YYYY-MM-DD)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  TOKEN_ISSUED_AT: '2026-06-19'
+  FIRST_REMINDER_DAYS: '45'
+  URGENT_REMINDER_DAYS: '55'
+  EXPIRY_DAYS: '60'
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update renewal reminder issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- instagram-token-reminder -->';
+            const label = 'instagram-token';
+            const issuedAtInput = core.getInput('token_issued_at').trim();
+            const issuedAt = issuedAtInput || process.env.TOKEN_ISSUED_AT;
+            const firstReminderDays = Number(process.env.FIRST_REMINDER_DAYS);
+            const urgentReminderDays = Number(process.env.URGENT_REMINDER_DAYS);
+            const expiryDays = Number(process.env.EXPIRY_DAYS);
+
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(issuedAt)) {
+              core.setFailed(`TOKEN_ISSUED_AT must be YYYY-MM-DD, got: ${issuedAt}`);
+              return;
+            }
+
+            const issuedAtMs = Date.parse(`${issuedAt}T00:00:00Z`);
+            const elapsedDays = Math.floor((Date.now() - issuedAtMs) / 86_400_000);
+            const remainingDays = expiryDays - elapsedDays;
+
+            if (elapsedDays < firstReminderDays) {
+              core.notice(`Instagram token is ${elapsedDays} days old. No reminder needed yet.`);
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            let labelReady = false;
+            try {
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: label,
+                color: 'E1306C',
+                description: 'Instagram API token renewal reminder',
+              });
+              labelReady = true;
+            } catch (error) {
+              if (error.status === 422) {
+                labelReady = true;
+              } else {
+                core.warning(`Could not ensure label "${label}": ${error.message}`);
+              }
+            }
+
+            const state =
+              elapsedDays >= expiryDays
+                ? 'expired'
+                : elapsedDays >= urgentReminderDays
+                  ? 'urgent'
+                  : 'reminder';
+            const titlePrefix =
+              state === 'expired'
+                ? '[만료 가능]'
+                : state === 'urgent'
+                  ? '[긴급]'
+                  : '[리마인더]';
+            const title = `${titlePrefix} Instagram access token 갱신 필요 (${elapsedDays}일 경과)`;
+            const body = [
+              marker,
+              'Instagram access token은 보통 60일마다 만료됩니다.',
+              '',
+              `- 발급 기준일: ${issuedAt}`,
+              `- 경과일: ${elapsedDays}일`,
+              `- 예상 잔여일: ${remainingDays}일`,
+              '',
+              '해야 할 일:',
+              '1. Meta Developers에서 lovealarm.kr 토큰을 새로 생성하거나 기존 long-lived token을 갱신합니다.',
+              '2. Render love-alarm-server 환경변수 INSTAGRAM_ACCESS_TOKEN을 새 값으로 교체합니다.',
+              '3. Render 서비스를 재시작하거나 재배포합니다.',
+              '4. 앱에서 인스타그램 인증 DM이 정상으로 오는지 확인합니다.',
+              '5. 갱신이 끝나면 이 workflow의 TOKEN_ISSUED_AT 값을 새 발급일로 바꾸고 이 이슈를 닫습니다.',
+              '',
+              '토큰 값은 이슈나 댓글에 절대 적지 마세요.',
+            ].join('\n');
+
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = openIssues.find((issue) => issue.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                title,
+                body,
+                labels: labelReady ? [label] : undefined,
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body: `Instagram token renewal reminder: ${elapsedDays} days elapsed, about ${remainingDays} days remaining.`,
+              });
+              core.notice(`Updated reminder issue #${existing.number}.`);
+              return;
+            }
+
+            const issue = await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+              labels: labelReady ? [label] : undefined,
+            });
+            core.notice(`Created reminder issue #${issue.data.number}.`);
