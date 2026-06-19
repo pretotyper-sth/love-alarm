@@ -8,17 +8,31 @@ const GRAPH_VERSION = 'v22.0';
  * @param {string} accessToken
  */
 export async function fetchInstagramUsername(igScopedUserId, accessToken) {
+  const profile = await fetchInstagramUserProfile(igScopedUserId, accessToken);
+  return profile?.username || null;
+}
+
+/**
+ * Instagram-scoped 사용자 ID로 프로필 조회
+ * @param {string} igScopedUserId
+ * @param {string} accessToken
+ */
+export async function fetchInstagramUserProfile(igScopedUserId, accessToken) {
   const url = new URL(`${GRAPH_HOST}/${GRAPH_VERSION}/${igScopedUserId}`);
-  url.searchParams.set('fields', 'id,username');
+  url.searchParams.set('fields', 'id,username,is_user_follow_business');
   url.searchParams.set('access_token', accessToken);
 
   const res = await fetch(url);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    console.error('[instagram] fetch username failed', res.status, data);
+    console.error('[instagram] fetch profile failed', res.status, data);
     return null;
   }
-  return data.username ? String(data.username).toLowerCase() : null;
+  return {
+    id: data.id ? String(data.id) : null,
+    username: data.username ? String(data.username).toLowerCase() : null,
+    isUserFollowBusiness: data.is_user_follow_business,
+  };
 }
 
 /**
@@ -35,7 +49,7 @@ export async function sendInstagramDm(recipientIgScopedId, text) {
     return { ok: false, error: 'missing_env' };
   }
 
-  const url = new URL(`${GRAPH_HOST}/${GRAPH_VERSION}/me/messages`);
+  const url = new URL(`${GRAPH_HOST}/${GRAPH_VERSION}/${igBusinessId}/messages`);
   url.searchParams.set('access_token', token);
 
   const res = await fetch(url.toString(), {

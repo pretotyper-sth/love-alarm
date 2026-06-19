@@ -1,4 +1,4 @@
-import { fetchInstagramUsername, sendInstagramDm } from './instagramMessaging.js';
+import { fetchInstagramUserProfile, sendInstagramDm } from './instagramMessaging.js';
 import { normalizeInstagramUsername } from '../utils/instagramUsername.js';
 
 function extractMessageEvents(body) {
@@ -35,11 +35,28 @@ function generateSixDigitCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
+const NO_SESSION_DM =
+  `[좋아하면 울리는] 앱에서 인스타그램 ID를 입력하고 ` +
+  `'코드 요청하기'를 먼저 눌러주세요.\n` +
+  `그 다음 10분 안에 이 DM으로 '인증'이라고 보내면 인증번호를 보내드릴게요.`;
+
+const PROFILE_LOOKUP_FAILED_DM =
+  `[좋아하면 울리는] 인스타그램 계정 정보를 확인하지 못했어요.\n` +
+  `@lovealarm.kr 팔로우 여부를 확인한 뒤 앱에서 다시 코드 요청을 해주세요.`;
+
+const FOLLOW_REQUIRED_DM =
+  `[좋아하면 울리는] @lovealarm.kr 팔로우가 확인되지 않았어요.\n` +
+  `팔로우한 뒤 앱에서 다시 코드 요청을 하고 '인증'이라고 보내주세요.`;
+
 /**
  * @param {import('@prisma/client').PrismaClient} prisma
  * @param {object} body
  */
-export async function handleInstagramWebhookPayload(prisma, body) {
+export async function handleInstagramWebhookPayload(
+  prisma,
+  body,
+  deps = { fetchInstagramUserProfile, sendInstagramDm },
+) {
   const token = process.env.INSTAGRAM_ACCESS_TOKEN;
   if (!token) {
     console.error('[webhook] INSTAGRAM_ACCESS_TOKEN not set');
@@ -57,13 +74,20 @@ export async function handleInstagramWebhookPayload(prisma, body) {
       continue;
     }
 
-    const usernameFromApi = await fetchInstagramUsername(senderId, token);
-    if (!usernameFromApi) {
+    const profile = await deps.fetchInstagramUserProfile(senderId, token);
+    if (!profile?.username) {
       console.warn('[webhook] could not resolve username for', senderId);
+      await deps.sendInstagramDm(senderId, PROFILE_LOOKUP_FAILED_DM);
       continue;
     }
 
-    const normalized = normalizeInstagramUsername(usernameFromApi);
+    if (profile.isUserFollowBusiness === false) {
+      console.log('[webhook] sender does not follow business account', senderId);
+      await deps.sendInstagramDm(senderId, FOLLOW_REQUIRED_DM);
+      continue;
+    }
+
+    const normalized = normalizeInstagramUsername(profile.username);
     const now = new Date();
 
     const session = await prisma.verificationSession.findFirst({
@@ -77,6 +101,7 @@ export async function handleInstagramWebhookPayload(prisma, body) {
 
     if (!session) {
       console.log('[webhook] no pending session for @' + normalized);
+      await deps.sendInstagramDm(senderId, NO_SESSION_DM);
       continue;
     }
 
@@ -98,9 +123,18 @@ export async function handleInstagramWebhookPayload(prisma, body) {
       `앱에 10분 이내로 입력해 주세요.\n\n` +
       `팔로워 노출이 신경쓰인다면 인증 완료 후엔 팔로우를 취소해도 괜찮아요!`;
 
-    const sendResult = await sendInstagramDm(senderId, dmText);
+    const sendResult = await deps.sendInstagramDm(senderId, dmText);
     if (!sendResult.ok) {
       console.error('[webhook] DM send failed for session', session.id);
+      await prisma.verificationSession.update({
+        where: { id: session.id },
+        data: {
+          igUserId: null,
+          code: null,
+          status: 'pending',
+          expiresAt: session.expiresAt,
+        },
+      });
     } else {
       console.log('[webhook] code sent via DM for session', session.id);
     }
