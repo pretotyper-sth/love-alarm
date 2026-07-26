@@ -6,7 +6,8 @@
 - **검수 중**: 검수 3 (`review/3`, EXP-006 좋아하는 사람 수 확인)
 - **검수 중**: 검수 4 (`review/4`, EXP-007 메시지 + EXP-008 메시지 수신 알림)
 - **현재 브랜치**: `review/4`
-- **서버**: Railway (`love-alarm-production.up.railway.app`)
+- **서버**: Render (`love-alarm-server.onrender.com`) — 2026-07 Free hours 소진으로 Suspended
+- **앱인토스**: 긴급 점검 **~2026-08-01** (콘솔에서 설정). keep-alive는 `ENABLE_KEEP_ALIVE` opt-in으로 변경(Free 기본 OFF)
 
 ## 🏁 마일스톤
 
@@ -26,7 +27,7 @@
 - **토스 콘솔 검토 요청**: 2026-04-11 제출
 - **예상 승인**: 영업일 2~3일
 - **코드**: 전부 완료 (Prisma, API, UI, 발송 함수, 트리거)
-- **승인 후 할 일**: Railway 배포 (`npx prisma migrate deploy`) + 템플릿 코드 확인
+- **승인 후 할 일**: Render 배포 (`npx prisma migrate deploy`) + 템플릿 코드 확인
 
 ### A/B 테스트 소재
 | | 제목 | 본문 |
@@ -69,12 +70,12 @@ cd frontend && npm run build
 cd .. && npx granite build
 
 # 배포
-# - Backend: Railway (main push 시 자동 배포)
+# - Backend: Render (main push 시 자동 배포)
 # - 번들: 토스 콘솔에 .ait 업로드
 ```
 
 ## 📚 참고 문서
 
 - [실험 로그](experiments.md) — 전체 실험 기록 및 측정 계획
-- [배포 가이드](DEPLOY_GUIDE.md) — Railway 배포 절차
+- [배포 가이드](DEPLOY_GUIDE.md) — Render 배포 절차
 - [앱 테스트 가이드](APP_TEST_GUIDE.md) — 개발 서버 연결 방법
