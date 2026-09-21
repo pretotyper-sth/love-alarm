@@ -16,7 +16,7 @@ permissions:
   issues: write
 
 env:
-  TOKEN_ISSUED_AT: '2026-06-19'
+  TOKEN_ISSUED_AT: '2026-09-21'
   REMINDER_DAYS: '55'
   EXPIRY_DAYS: '60'
 
