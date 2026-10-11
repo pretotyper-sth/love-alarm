@@ -16,6 +16,8 @@ import webhooksInstagramRoutes from './routes/webhooksInstagram.js';
 import verifyInstagramRoutes from './routes/verifyInstagram.js';
 import messagesRoutes from './routes/messages.js';
 import eventsRoutes from './routes/events.js';
+import dbActivityRoutes from './routes/dbActivity.js';
+import { recordDbActivity } from './services/dbActivity.js';
 
 dotenv.config();
 
@@ -89,6 +91,7 @@ app.use('/api/messages', messagesRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/verify/instagram', verifyInstagramRoutes);
 app.use('/webhook', webhooksInstagramRoutes);
+app.use('/internal/db-activity', dbActivityRoutes);
 
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -107,6 +110,10 @@ app.use((err, req, res, next) => {
 httpServer.listen(PORT, () => {
   console.log(`🚀 서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
   console.log(`🔌 WebSocket 활성화됨`);
+  recordDbActivity(prisma).then(
+    (result) => console.log('[db-activity] startup', result),
+    (err) => console.error('[db-activity] startup failed:', err),
+  );
 });
 
 // Graceful shutdown

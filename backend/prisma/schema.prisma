@@ -125,3 +125,12 @@ model VerificationSession {
   @@index([userId, status])
 }
 
+// Supabase Free 일시정지 방지용. 서비스 테이블과 관계가 없다.
+model DbActivityPing {
+  id        String   @id @default(cuid())
+  note      String   @default("activity")
+  seq       Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
