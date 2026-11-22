@@ -11,44 +11,50 @@ datasource db {
 
 // 사용자 테이블
 model User {
-  id              String    @id @default(uuid())
-  tossUserId      String    @unique // 토스 계정 고유 ID
-  name            String?            // 토스 로그인에서 받은 사용자 이름 (필수 동의)
-  gender          String?            // 성별 (선택 동의) - male/female
-  birthday        DateTime?          // 생년월일 (선택 동의)
-  instagramId     String?            // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
-  maxSlots        Int       @default(2) // 최대 알람 슬롯 수 (기본 2개, 결제로 증가)
-  adFree          Boolean   @default(false) // 광고 영구 제거 (30일 체크인 보상)
-  pushEnabled     Boolean   @default(false) // 연결 시 푸시 알림 허용 여부
-  tossAppEnabled  Boolean   @default(false) // 연결 시 토스 앱 알림 허용 여부
-  messagePushEnabled    Boolean @default(false) // 메시지 수신 시 푸시 알림
-  messageTossAppEnabled Boolean @default(false) // 메시지 수신 시 토스 앱 알림
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                    String    @id @default(uuid())
+  tossUserId            String    @unique // 토스 계정 고유 ID
+  name                  String? // 토스 로그인에서 받은 사용자 이름 (필수 동의)
+  gender                String? // 성별 (선택 동의) - male/female
+  birthday              DateTime? // 생년월일 (선택 동의)
+  instagramId           String? // 인스타그램 ID (중복 허용 - 실제 인증은 OAuth로)
+  maxSlots              Int       @default(2) // 최대 알람 슬롯 수 (기본 2개, 결제로 증가)
+  adFree                Boolean   @default(false) // 광고 영구 제거 (30일 체크인 보상)
+  pushEnabled           Boolean   @default(false) // 연결 시 푸시 알림 허용 여부
+  tossAppEnabled        Boolean   @default(false) // 연결 시 토스 앱 알림 허용 여부
+  messagePushEnabled    Boolean   @default(false) // 메시지 수신 시 푸시 알림
+  messageTossAppEnabled Boolean   @default(false) // 메시지 수신 시 토스 앱 알림
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  messagePassBalance    Int       @default(0)
 
   // Relations
-  alarms       Alarm[]    @relation("UserAlarms")      // 내가 등록한 알람들
-  matchesAsUser1 Match[]  @relation("MatchUser1")
-  matchesAsUser2 Match[]  @relation("MatchUser2")
-  feedbacks    Feedback[]                              // 내가 보낸 피드백들
+  alarms               Alarm[]               @relation("UserAlarms") // 내가 등록한 알람들
+  matchesAsUser1       Match[]               @relation("MatchUser1")
+  matchesAsUser2       Match[]               @relation("MatchUser2")
+  feedbacks            Feedback[] // 내가 보낸 피드백들
   verificationSessions VerificationSession[]
+  messageUnlocks       MessageUnlock[]
+  messagePassOrders    MessagePassOrder[]
+  messagePassEntries   MessagePassEntry[]
+  messageReports       MessageReport[]
 }
 
 // 알람 (좋아요) 테이블
 model Alarm {
-  id                 String    @id @default(uuid())
-  userId             String                          // 알람을 등록한 사용자
-  fromInstagramId    String                          // 본인 인스타그램 ID (알람별로 다를 수 있음)
-  targetInstagramId  String                          // 대상의 인스타그램 ID
-  status             String    @default("waiting")   // waiting | matched
-  message            String?                         // 알람 등록 시 남기는 메시지 (선택)
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  deletedAt          DateTime?                       // Soft Delete용 (null = 활성, 값 있으면 = 삭제됨)
+  id                String    @id @default(uuid())
+  userId            String // 알람을 등록한 사용자
+  fromInstagramId   String // 본인 인스타그램 ID (알람별로 다를 수 있음)
+  targetInstagramId String // 대상의 인스타그램 ID
+  status            String    @default("waiting") // waiting | matched
+  message           String? // 알람 등록 시 남기는 메시지 (선택)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime? // Soft Delete용 (null = 활성, 값 있으면 = 삭제됨)
 
   // Relations
-  user               User              @relation("UserAlarms", fields: [userId], references: [id], onDelete: Cascade)
-  reactions          MessageReaction[]
+  user       User              @relation("UserAlarms", fields: [userId], references: [id], onDelete: Cascade)
+  reactions  MessageReaction[]
+  deliveries MessageDelivery[]
 
   @@unique([userId, targetInstagramId]) // 같은 대상에게 중복 알람 방지
 }
@@ -56,12 +62,14 @@ model Alarm {
 // 메시지 반응 테이블 (받은 메시지에 이모지 반응)
 model MessageReaction {
   id        String   @id @default(uuid())
-  alarmId   String   @unique          // 메시지당 1개 반응 (upsert)
-  emoji     String                    // ❤️ 😊 🤔 😳 🥹
+  alarmId   String?  @unique
+  messageId String?  @unique
+  emoji     String // ❤️ 😊 🤔 😳 🥹
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  alarm     Alarm    @relation(fields: [alarmId], references: [id], onDelete: Cascade)
+  alarm    Alarm?           @relation(fields: [alarmId], references: [id], onDelete: SetNull)
+  delivery MessageDelivery? @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
 
 // 매칭 테이블
@@ -72,8 +80,8 @@ model Match {
   matchedAt DateTime @default(now())
 
   // Relations
-  user1     User     @relation("MatchUser1", fields: [user1Id], references: [id], onDelete: Cascade)
-  user2     User     @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+  user1 User @relation("MatchUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2 User @relation("MatchUser2", fields: [user2Id], references: [id], onDelete: Cascade)
 
   @@unique([user1Id, user2Id]) // 같은 매칭 중복 방지
 }
@@ -81,22 +89,22 @@ model Match {
 // 피드백 테이블
 model Feedback {
   id        String   @id @default(uuid())
-  userId    String?                         // 로그인한 사용자 ID (비로그인 시 null)
-  category  String                          // 카테고리: 건의, 버그, 신고, 칭찬, 기타
-  content   String                          // 피드백 내용
-  status    String   @default("pending")    // pending | reviewed | resolved
+  userId    String? // 로그인한 사용자 ID (비로그인 시 null)
+  category  String // 카테고리: 건의, 버그, 신고, 칭찬, 기타
+  content   String // 피드백 내용
+  status    String   @default("pending") // pending | reviewed | resolved
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 // 애널리틱스 이벤트
 model AnalyticsEvent {
   id        String   @id @default(cuid())
-  type      String   // screen | click | impression
-  name      String   // alarm_list_screen, alarm_add_button_click 등
+  type      String // screen | click | impression
+  name      String // alarm_list_screen, alarm_add_button_click 등
   params    Json?
   userId    String?
   sessionId String?
@@ -116,6 +124,7 @@ model VerificationSession {
   code              String?
   status            String   @default("pending") // pending | code_sent | verified | expired
   expiresAt         DateTime
+  attempts          Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -134,3 +143,72 @@ model DbActivityPing {
   updatedAt DateTime @updatedAt
 }
 
+// 알람을 삭제/재등록해도 이미 구매한 메시지의 본문은 바뀌지 않는다.
+model MessageDelivery {
+  id                String           @id @default(uuid())
+  alarmId           String?
+  targetInstagramId String
+  message           String
+  requiresPass      Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  deletedAt         DateTime?
+  alarm             Alarm?           @relation(fields: [alarmId], references: [id], onDelete: SetNull)
+  unlocks           MessageUnlock[]
+  reports           MessageReport[]
+  reaction          MessageReaction?
+
+  @@index([targetInstagramId, createdAt])
+}
+
+model MessageUnlock {
+  id        String            @id @default(uuid())
+  userId    String
+  messageId String
+  charged   Boolean           @default(false)
+  orderId   String?
+  order     MessagePassOrder? @relation(fields: [orderId], references: [orderId], onDelete: Restrict)
+  createdAt DateTime          @default(now())
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   MessageDelivery   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+}
+
+model MessagePassOrder {
+  orderId    String          @id
+  userId     String?
+  sku        String
+  quantity   Int
+  amount     Int
+  remaining  Int
+  refundedAt DateTime?
+  unlocks    MessageUnlock[]
+  createdAt  DateTime        @default(now())
+  user       User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model MessagePassEntry {
+  id        String   @id @default(uuid())
+  userId    String?
+  delta     Int
+  reason    String
+  reference String   @unique
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model MessageReport {
+  id         String          @id @default(uuid())
+  userId     String
+  messageId  String
+  reason     String
+  status     String          @default("pending")
+  restoredAt DateTime?
+  createdAt  DateTime        @default(now())
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message    MessageDelivery @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, messageId])
+}

@@ -1,157 +1,78 @@
 import express from 'express';
-const router = express.Router();
+import { requireSession, requireAdmin } from '../middleware/session.js';
+import { verifiedRecipient, receivedMessage, openReceivedMessage, resolveMessageReport, MessagePassError } from '../services/messagePasses.js';
 
-// ==================== GET /api/messages/sent ====================
-// 내가 보낸 메시지 목록 (userId 기반, 인증 불필요)
-// 메시지가 있는 알람만 반환
-router.get('/sent', async (req, res) => {
-  try {
-    const { userId } = req.query;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId가 필요합니다.' });
-    }
+const reasons = ['불쾌하거나 과도하게 성적인 내용', '욕설, 혐오, 위협이 느껴져요', '스팸 또는 광고 같아요', '원치 않는 연락이라 불편해요'];
 
-    const messages = await req.prisma.alarm.findMany({
-      where: {
-        userId,
-        message: { not: null },
-        deletedAt: null,
-      },
-      include: {
-        reactions: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+export function createMessageRouter({ verifyOrder } = {}) {
+  const router = express.Router();
 
-    return res.json({ messages });
-  } catch (error) {
-    console.error('보낸 메시지 조회 실패:', error);
-    return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
-});
+  router.post('/reports/:id/resolve', requireAdmin, async (req, res, next) => {
+    try {
+      if (typeof req.body.uphold !== 'boolean') throw new MessagePassError('신고 인정 여부가 필요합니다.');
+      res.json({ report: await resolveMessageReport(req.prisma, req.params.id, req.body.uphold) });
+    } catch (error) { next(error); }
+  });
+  router.get('/reports', requireAdmin, async (req, res, next) => {
+    try {
+      res.json({ reports: await req.prisma.messageReport.findMany({ where: { status: 'pending' }, include: { message: true }, orderBy: { createdAt: 'asc' }, take: 100 }) });
+    } catch (error) { next(error); }
+  });
+  router.use(requireSession);
+  router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
-// ==================== GET /api/messages/received ====================
-// 받은 메시지 목록 (인증된 instagramId 기반)
-router.get('/received', async (req, res) => {
-  try {
-    const { instagram_id } = req.query;
-    if (!instagram_id) {
-      return res.status(400).json({ error: 'instagram_id가 필요합니다.' });
-    }
-
-    const normalizedId = instagram_id.trim().toLowerCase();
-
-    const messages = await req.prisma.alarm.findMany({
-      where: {
-        targetInstagramId: normalizedId,
-        message: { not: null },
-        deletedAt: null,
-      },
-      include: {
-        reactions: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return res.json({ messages });
-  } catch (error) {
-    console.error('받은 메시지 조회 실패:', error);
-    return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
-});
-
-// ==================== POST /api/messages/:alarmId/reaction ====================
-// 받은 메시지에 이모지 반응 (upsert)
-router.post('/:alarmId/reaction', async (req, res) => {
-  try {
-    const { alarmId } = req.params;
-    const { emoji } = req.body;
-
-    const ALLOWED_EMOJIS = ['❤️', '😊', '🤔', '😳', '🥹'];
-    if (!emoji || !ALLOWED_EMOJIS.includes(emoji)) {
-      return res.status(400).json({ error: '유효하지 않은 이모지입니다.' });
-    }
-
-    // 알람 존재 확인
-    const alarm = await req.prisma.alarm.findUnique({
-      where: { id: alarmId },
-    });
-    if (!alarm) {
-      return res.status(404).json({ error: '메시지를 찾을 수 없습니다.' });
-    }
-
-    // upsert: 이미 반응이 있으면 업데이트, 없으면 생성
-    const reaction = await req.prisma.messageReaction.upsert({
-      where: { alarmId },
-      update: { emoji, updatedAt: new Date() },
-      create: { alarmId, emoji },
-    });
-
-    return res.json({ reaction });
-  } catch (error) {
-    console.error('반응 저장 실패:', error);
-    return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
-});
-
-// ==================== POST /api/messages/:alarmId/report ====================
-// 받은 메시지 신고
-router.post('/:alarmId/report', async (req, res) => {
-  try {
-    const { alarmId } = req.params;
-    const { reason, userId, instagramId } = req.body;
-
-    const ALLOWED_REASONS = [
-      '불쾌하거나 과도하게 성적인 내용',
-      '욕설, 혐오, 위협이 느껴져요',
-      '스팸 또는 광고 같아요',
-      '원치 않는 연락이라 불편해요',
-    ];
-
-    if (!reason || !ALLOWED_REASONS.includes(reason)) {
-      return res.status(400).json({ error: '유효한 신고 사유를 선택해 주세요.' });
-    }
-
-    const alarm = await req.prisma.alarm.findUnique({
-      where: { id: alarmId },
-      include: { user: true },
-    });
-
-    if (!alarm || !alarm.message || alarm.deletedAt) {
-      return res.status(404).json({ error: '신고할 메시지를 찾을 수 없습니다.' });
-    }
-
-    if (instagramId) {
-      const normalizedInstagramId = instagramId.trim().toLowerCase();
-      if (normalizedInstagramId !== alarm.targetInstagramId) {
-        return res.status(403).json({ error: '이 메시지를 신고할 권한이 없습니다.' });
-      }
-    }
-
-    const feedback = await req.prisma.feedback.create({
-      data: {
-        category: '신고',
-        userId: userId || null,
-        content: [
-          '[받은 메시지 신고]',
-          `alarmId: ${alarm.id}`,
-          `reason: ${reason}`,
-          `reportedInstagramId: ${alarm.targetInstagramId}`,
-          `senderInstagramId: ${alarm.fromInstagramId}`,
-          `message: ${alarm.message}`,
-        ].join('\n'),
-      },
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: '신고가 접수되었습니다.',
-      reportId: feedback.id,
-    });
-  } catch (error) {
-    console.error('메시지 신고 실패:', error);
-    return res.status(500).json({ error: '신고 접수에 실패했습니다.' });
-  }
-});
-
-export default router;
+  router.get('/sent', async (req, res, next) => {
+    try {
+      if (req.query.userId && req.query.userId !== req.user.id) return res.status(403).json({ error: '다른 계정의 메시지는 볼 수 없어요.' });
+      const alarms = await req.prisma.alarm.findMany({
+        where: { userId: req.user.id, message: { not: null }, deletedAt: null },
+        include: { deliveries: { where: { deletedAt: null }, orderBy: { createdAt: 'desc' }, take: 1, include: { reaction: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json({ messages: alarms.map(alarm => ({ id: alarm.id, targetInstagramId: alarm.targetInstagramId, message: alarm.message, createdAt: alarm.createdAt, reactions: alarm.deliveries[0]?.reaction ? [{ emoji: alarm.deliveries[0].reaction.emoji }] : [] })) });
+    } catch (error) { next(error); }
+  });
+  router.get('/received', async (req, res, next) => {
+    try {
+      const recipient = await verifiedRecipient(req.prisma, req.user.id);
+      const messages = await req.prisma.messageDelivery.findMany({
+        where: { OR: [{ targetInstagramId: recipient, deletedAt: null }, { unlocks: { some: { userId: req.user.id } } }], reports: { none: { userId: req.user.id } } },
+        include: { reaction: true, unlocks: { where: { userId: req.user.id }, select: { id: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json({ instagramId: recipient, messages: messages.map(message => receivedMessage(message, message.unlocks.length > 0)) });
+    } catch (error) { next(error); }
+  });
+  router.post('/:messageId/open', async (req, res, next) => {
+    try { res.json(await openReceivedMessage(req.prisma, req.user.id, req.params.messageId, verifyOrder)); }
+    catch (error) { next(error); }
+  });
+  router.post('/:messageId/reaction', async (req, res, next) => {
+    try {
+      if (!['❤️', '😊', '🤔', '😳', '🥹'].includes(req.body.emoji)) throw new MessagePassError('유효하지 않은 이모지예요.');
+      const recipient = await verifiedRecipient(req.prisma, req.user.id);
+      const message = await req.prisma.messageDelivery.findUnique({ where: { id: req.params.messageId }, include: { unlocks: { where: { userId: req.user.id } } } });
+      if (!message || (message.targetInstagramId !== recipient && !message.unlocks.length)) throw new MessagePassError('메시지를 찾을 수 없어요.', 404);
+      if (!message.unlocks.length) throw new MessagePassError('메시지를 먼저 열어 주세요.', 403);
+      // The unique messageId makes concurrent retries harmless; never overwrite the first choice.
+      await req.prisma.messageReaction.createMany({ data: [{ messageId: message.id, emoji: req.body.emoji }], skipDuplicates: true });
+      const reaction = await req.prisma.messageReaction.findUniqueOrThrow({ where: { messageId: message.id } });
+      res.json({ reaction: { emoji: reaction.emoji } });
+    } catch (error) { next(error); }
+  });
+  router.post('/:messageId/report', async (req, res, next) => {
+    try {
+      if (!reasons.includes(req.body.reason)) throw new MessagePassError('신고 사유를 선택해 주세요.');
+      const recipient = await verifiedRecipient(req.prisma, req.user.id);
+      const message = await req.prisma.messageDelivery.findUnique({ where: { id: req.params.messageId }, include: { unlocks: { where: { userId: req.user.id } } } });
+      if (!message || (message.targetInstagramId !== recipient && !message.unlocks.length)) throw new MessagePassError('메시지를 찾을 수 없어요.', 404);
+      const report = await req.prisma.messageReport.upsert({
+        where: { userId_messageId: { userId: req.user.id, messageId: message.id } }, update: {},
+        create: { userId: req.user.id, messageId: message.id, reason: req.body.reason },
+      });
+      res.status(201).json({ success: true, reportId: report.id });
+    } catch (error) { next(error); }
+  });
+  return router;
+}
+export default createMessageRouter();

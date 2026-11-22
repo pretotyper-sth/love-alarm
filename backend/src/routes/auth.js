@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import tossAuth from '../services/tossAuth.js';
+import { issueSession } from '../middleware/session.js';
 
 const router = Router();
 
@@ -128,7 +129,7 @@ router.post('/toss-login', async (req, res) => {
       }
     }
 
-    res.json({ user, isNewUser });
+    res.json({ user, isNewUser, session: issueSession(user.id) });
   } catch (error) {
     console.error('Toss login error:', error);
     res.status(500).json({ error: error.message || '토스 로그인 중 오류가 발생했습니다.' });
@@ -148,6 +149,9 @@ router.post('/toss-login', async (req, res) => {
  * Response: { user: User, isNewUser: boolean }
  */
 router.post('/login', async (req, res) => {
+  if (process.env.NODE_ENV === 'production' || process.env.ALLOW_MOCK_LOGIN !== 'true') {
+    return res.status(403).json({ error: '토스 앱에서 로그인해 주세요.' });
+  }
   try {
     const { tossUserId, name, gender, birthday } = req.body;
 
@@ -189,7 +193,7 @@ router.post('/login', async (req, res) => {
       }
     }
 
-    res.json({ user, isNewUser });
+    res.json({ user, isNewUser, session: issueSession(user.id) });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: '로그인 중 오류가 발생했습니다.' });
@@ -214,9 +218,10 @@ async function handleDisconnect(req, userKey, referrer) {
   });
 
   if (user) {
-    await req.prisma.user.delete({
-      where: { tossUserId },
-    });
+    await req.prisma.$transaction([
+      req.prisma.messageDelivery.updateMany({ where: { alarm: { userId: user.id }, deletedAt: null }, data: { deletedAt: new Date() } }),
+      req.prisma.user.delete({ where: { tossUserId } }),
+    ]);
     console.log(`User disconnected: ${tossUserId}, referrer: ${referrer}`);
   }
 

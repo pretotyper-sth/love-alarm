@@ -1,4 +1,5 @@
 import express from 'express';
+import { requireAdmin } from '../middleware/session.js';
 
 const router = express.Router();
 
@@ -42,7 +43,7 @@ router.post('/', async (req, res) => {
 });
 
 // 피드백 목록 조회 (관리자용)
-router.get('/', async (req, res) => {
+router.get('/', requireAdmin, async (req, res) => {
   try {
     const prisma = req.prisma;
     const { status, category, page = 1, limit = 20 } = req.query;
@@ -89,7 +90,7 @@ router.get('/', async (req, res) => {
 });
 
 // 피드백 상태 업데이트 (관리자용)
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -117,7 +118,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // 피드백 삭제 (관리자용)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const prisma = req.prisma;

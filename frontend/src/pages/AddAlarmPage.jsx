@@ -481,7 +481,7 @@ export function AddAlarmPage() {
           />
           <div className="add-alarm-message-footer">
             <p className="add-alarm-message-hint">
-              상대가 메시지를 확인하려면 인스타그램 인증이 필요해요.
+              상대는 인스타그램 인증 후 메시지를 확인해요. 열람권이 필요한 경우 수신자가 구매해요.
               <br />
               보낸 메시지는 메시지함에서 다시 볼 수 있어요.
             </p>

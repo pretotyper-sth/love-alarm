@@ -1,8 +1,14 @@
 import { Router } from 'express';
 import { sendConnectionSuccessNotification } from '../services/pushNotification.js';
 import { normalizeInstagramUsername } from '../utils/instagramUsername.js';
+import { requireSession } from '../middleware/session.js';
 
 const router = Router();
+router.use(requireSession);
+router.param('id', (req, res, next, id) => {
+  if (id !== req.user.id) return res.status(403).json({ error: '본인 계정만 변경할 수 있어요.' });
+  next();
+});
 
 /**
  * GET /api/users/:id
@@ -139,6 +145,7 @@ router.delete('/:id/instagram-auth', async (req, res) => {
           where: { id: alarmToDelete.id },
           data: { deletedAt: new Date() },
         });
+        await req.prisma.messageDelivery.updateMany({ where: { alarmId: alarmToDelete.id, deletedAt: null }, data: { deletedAt: new Date() } });
       }
     }
 

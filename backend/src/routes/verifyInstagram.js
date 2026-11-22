@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { normalizeInstagramUsername } from '../utils/instagramUsername.js';
+import { requireSession } from '../middleware/session.js';
 
 const router = Router();
+router.use(requireSession);
 
 const SESSION_TTL_MS = 10 * 60 * 1000;
 
@@ -11,7 +13,8 @@ const SESSION_TTL_MS = 10 * 60 * 1000;
  */
 router.post('/start', async (req, res) => {
   try {
-    const { tossUserId, instagramUsername } = req.body || {};
+    const { instagramUsername } = req.body || {};
+    const tossUserId = req.user.tossUserId;
 
     if (!tossUserId || !instagramUsername) {
       return res.status(400).json({ error: 'tossUserId와 instagramUsername이 필요합니다.' });
@@ -67,7 +70,8 @@ router.post('/start', async (req, res) => {
  */
 router.post('/confirm', async (req, res) => {
   try {
-    const { tossUserId, sessionId, code } = req.body || {};
+    const { sessionId, code } = req.body || {};
+    const tossUserId = req.user.tossUserId;
 
     if (!tossUserId || !sessionId || !code) {
       return res.status(400).json({ error: 'tossUserId, sessionId, code가 필요합니다.' });
@@ -113,6 +117,11 @@ router.post('/confirm', async (req, res) => {
       return res.status(400).json({ error: '인증 시간이 만료되었습니다. 다시 시작해 주세요.' });
     }
 
+    const attempt = await req.prisma.verificationSession.updateMany({
+      where: { id: session.id, status: 'code_sent', attempts: { lt: 5 } },
+      data: { attempts: { increment: 1 } },
+    });
+    if (!attempt.count) return res.status(429).json({ error: '인증 시도 횟수를 초과했어요. 코드를 다시 요청해 주세요.' });
     if (session.code !== codeStr) {
       return res.status(400).json({ error: '인증번호가 일치하지 않습니다.' });
     }
@@ -122,6 +131,9 @@ router.post('/confirm', async (req, res) => {
     }
 
     await req.prisma.$transaction([
+      req.prisma.verificationSession.updateMany({
+        where: { userId: user.id, status: 'verified', id: { not: session.id } }, data: { status: 'expired' },
+      }),
       req.prisma.verificationSession.update({
         where: { id: session.id },
         data: { status: 'verified' },

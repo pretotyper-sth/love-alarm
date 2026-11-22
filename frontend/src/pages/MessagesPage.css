@@ -184,16 +184,6 @@
   flex-shrink: 0;
 }
 
-.message-row-unread .message-row-top {
-  color: #191f28;
-  font-weight: 700;
-}
-
-.message-row-unread .message-row-preview {
-  color: #191f28;
-  font-weight: 500;
-}
-
 .message-row-preview {
   font-size: 13px;
   color: #4e5968;
@@ -381,6 +371,8 @@
 }
 
 .msg-sheet-emoji-btn {
+  height: 52px;
+  box-sizing: border-box;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -392,7 +384,7 @@
   border: 2px solid transparent;
   border-radius: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  transition: border-color 0.15s, background 0.15s;
   position: relative;
 }
 
@@ -401,9 +393,6 @@
   background: #eef4ff;
 }
 
-.msg-sheet-emoji-btn:active {
-  transform: scale(0.92);
-}
 
 .msg-sheet-emoji-img {
   width: 28px;
@@ -413,12 +402,6 @@
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.08));
 }
 
-.msg-sheet-emoji-check {
-  font-size: 9px;
-  font-weight: 700;
-  color: #3182f6;
-  line-height: 1;
-}
 
 /* 보낸 메시지 — 반응 카드 */
 .msg-sent-reaction-card {
@@ -724,6 +707,8 @@
 }
 
 .msg-sheet-emoji-btn {
+  height: 52px;
+  box-sizing: border-box;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -735,7 +720,7 @@
   border: 2px solid transparent;
   border-radius: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  transition: border-color 0.15s, background 0.15s;
   position: relative;
 }
 
@@ -744,21 +729,12 @@
   background: #eef4ff;
 }
 
-.msg-sheet-emoji-btn:active {
-  transform: scale(0.92);
-}
 
 .msg-sheet-emoji-glyph {
   font-size: 24px;
   line-height: 1;
 }
 
-.msg-sheet-emoji-check {
-  font-size: 9px;
-  font-weight: 700;
-  color: #3182f6;
-  line-height: 1;
-}
 
 /* 보낸 메시지 — 반응 chip */
 .msg-sent-reaction-chip {
@@ -895,6 +871,9 @@
 }
 
 .msg-report-reason-check {
+  width: 20px;
+  line-height: 20px;
+  text-align: center;
   color: #f04452;
   font-size: 18px;
   font-weight: 700;
@@ -940,3 +919,9 @@
 .msg-report-reason-item:active {
   opacity: 0.9;
 }
+.message-row-tappable:is(button) { width: 100%; border: 0; background: transparent; text-align: left; font: inherit; cursor: pointer; color: inherit; }
+
+
+.msg-sheet-react-description { margin: 10px 0 0; font-size: 12px; line-height: 1.5; color: #8b95a1; }
+
+.msg-sheet-emoji-btn:disabled { cursor: default; }

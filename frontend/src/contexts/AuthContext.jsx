@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { appLogin } from '@apps-in-toss/web-framework';
 import { api } from '../utils/api';
 import { storage } from '../utils/storage';
+import { restoreMessagePassOrders } from '../utils/messagePassPurchase';
 
 const AuthContext = createContext(null);
 const AUTO_LOGIN_TIMEOUT_MS = 8000;
@@ -19,6 +20,20 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (!user?.id || !api.hasSession()) return;
+    let active = true;
+    void (async () => {
+      try {
+        const wallet = await api.getMessagePassWallet();
+        const { IAP } = await import('@apps-in-toss/web-framework');
+        if (!active) return;
+        await restoreMessagePassOrders({ IAP, skus: wallet.products.map(p => p.sku).filter(Boolean), grant: api.grantMessagePassOrder, syncRefund: api.syncMessagePassRefund });
+      } catch { /* Purchase sheet provides a visible manual retry. */ }
+    })();
+    return () => { active = false; };
+  }, [user?.id]);
+
   // 브라우저 환경 감지 (토스 앱이 아닌 경우)
   const isBrowserEnv = () => {
     try {
@@ -32,8 +47,8 @@ export function AuthProvider({ children }) {
   // 토스 로그인 수행 (내부 함수)
   const performTossLoginInternal = useCallback(async () => {
     // 브라우저 환경에서는 Mock 로그인 (개발용)
-    if (isBrowserEnv()) {
-      const mockTossUserId = 'dev_browser_user_' + Date.now();
+    if (import.meta.env.DEV && isBrowserEnv()) {
+      const mockTossUserId = api.getCurrentUser()?.tossUserId || 'dev_browser_user_' + Date.now();
       const result = await api.login(mockTossUserId);
       return result.user;
     }
@@ -58,7 +73,11 @@ export function AuthProvider({ children }) {
         const currentUser = api.getCurrentUser();
         const hasVisitedIntro = storage.get('has_visited_intro');
         
-        if (currentUser) {
+        if (currentUser && !api.hasSession()) {
+          const newUser = await withTimeout(performTossLoginInternal(), AUTO_LOGIN_TIMEOUT_MS, '다시 로그인해 주세요.');
+          setUser(newUser);
+          api.connectSocket();
+        } else if (currentUser) {
           // 저장된 사용자로 먼저 렌더하고, 유효성 검증은 백그라운드에서 진행
           setUser(currentUser);
           api.connectSocket();
@@ -94,7 +113,9 @@ export function AuthProvider({ children }) {
           }
         }
       } catch {
-        // Auth init error - 무시
+        api.logout();
+        setUser(null);
+        storage.remove('has_visited_intro');
       } finally {
         setLoading(false);
       }

@@ -7,21 +7,12 @@ import fetch from 'node-fetch';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// 환경 변수
-const {
-  TOSS_CLIENT_CERT_PATH,
-  TOSS_CLIENT_KEY_PATH,
-  TOSS_CLIENT_CERT_BASE64,  // Base64 인코딩된 인증서 (Render용)
-  TOSS_CLIENT_KEY_BASE64,   // Base64 인코딩된 키 (Render용)
-  TOSS_DECRYPTION_KEY,
-  TOSS_AAD,
-} = process.env;
-
 // mTLS 인증서 로드
 let httpsAgent = null;
 
 export function getHttpsAgent() {
   if (httpsAgent) return httpsAgent;
+  const { TOSS_CLIENT_CERT_PATH, TOSS_CLIENT_KEY_PATH, TOSS_CLIENT_CERT_BASE64, TOSS_CLIENT_KEY_BASE64 } = process.env;
 
   try {
     let cert, key;
@@ -148,6 +139,7 @@ function decryptUserInfo(userInfo) {
  * 형식: base64(iv + ciphertext + authTag)
  */
 function decryptField(encryptedValue) {
+  const { TOSS_DECRYPTION_KEY, TOSS_AAD } = process.env;
   const key = Buffer.from(TOSS_DECRYPTION_KEY, 'base64');
   const aad = Buffer.from(TOSS_AAD, 'utf-8');
   

@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test:message-passes": "node --test backend/src/services/messagePasses.test.js backend/src/services/messagePasses.integration.test.js frontend/src/utils/messagePassPurchase.test.js",
     "dev": "granite dev",
     "build": "ait build",
     "build:staging": "cross-env VITE_MODE=staging ait build",

@@ -6,6 +6,24 @@ const DEFAULT_API_URL = 'https://love-alarm-server.onrender.com';
 const API_BASE_URL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL) + '/api';
 const SOCKET_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
 
+const SESSION_KEY = 'love_alarm_session';
+function sessionToken() {
+  try {
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    return session?.expiresAt > Date.now() ? session.token : null;
+  } catch { return null; }
+}
+async function authenticatedFetch(url, options = {}) {
+  const token = sessionToken();
+  return fetch(url, { ...options, headers: { ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+}
+async function messageRequest(path, options = {}) {
+  const response = await authenticatedFetch(`${API_BASE_URL}${path}`, options);
+  const data = await response.json();
+  if (!response.ok) throw Object.assign(new Error(data.error || '요청을 처리하지 못했어요.'), { code: data.code, status: response.status });
+  return data;
+}
+
 // 현재 사용자 정보 (로그인 후 저장)
 let currentUser = null;
 
@@ -39,6 +57,7 @@ export const api = {
         
         const data = await response.json();
         currentUser = data.user;
+        localStorage.setItem(SESSION_KEY, JSON.stringify(data.session));
         localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
         
         return data;
@@ -75,6 +94,7 @@ export const api = {
     
     const data = await response.json();
     currentUser = data.user;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data.session));
     
     // localStorage에 사용자 정보 저장 (앱 재시작 시 복원용)
     localStorage.setItem('love_alarm_user', JSON.stringify(currentUser));
@@ -85,6 +105,8 @@ export const api = {
   /**
    * 현재 로그인된 사용자 가져오기
    */
+  hasSession: () => !!sessionToken(),
+
   getCurrentUser: () => {
     if (currentUser) return currentUser;
     
@@ -104,6 +126,8 @@ export const api = {
   logout: () => {
     currentUser = null;
     localStorage.removeItem('love_alarm_user');
+    localStorage.removeItem(SESSION_KEY);
+    for (const key of ['love_alarm_messages_cache', 'love_alarm_read_received_message_ids', 'love_alarm_reported_received_message_ids', 'love_alarm_instagram_verified_username', 'love_alarm_msg_badge_count']) localStorage.removeItem(key);
     // 알람 관련 캐시도 함께 삭제 (연결 해제 후 재로그인 시 이전 데이터가 잠깐 보이는 문제 방지)
     localStorage.removeItem('love_alarm_alarms');
     localStorage.removeItem('love_alarm_max_slots');
@@ -191,7 +215,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/users/${user.id}`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}`);
     
     if (!response.ok) {
       throw new Error('사용자 정보 조회 실패');
@@ -212,7 +236,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/users/${user.id}/purchase-slot`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}/purchase-slot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -236,7 +260,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/users/${user.id}/claim-adfree`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}/claim-adfree`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -259,7 +283,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/users/${user.id}/settings`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}/settings`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),
@@ -285,7 +309,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/users/${user.id}/instagram`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}/instagram`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ instagramId }),
@@ -310,7 +334,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/users/${user.id}/instagram-auth`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}/instagram-auth`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -349,7 +373,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/verify/instagram/start`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/verify/instagram/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tossUserId: user.tossUserId || user.id, instagramUsername }),
@@ -370,7 +394,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/verify/instagram/confirm`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/verify/instagram/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tossUserId: user.tossUserId || user.id, sessionId, code }),
@@ -393,7 +417,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/alarms?userId=${user.id}`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/alarms?userId=${user.id}`);
     
     if (!response.ok) {
       throw new Error('알람 조회 실패');
@@ -410,7 +434,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/alarms`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/alarms`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -433,7 +457,7 @@ export const api = {
    * 알람 삭제
    */
   deleteAlarm: async (alarmId) => {
-    const response = await fetch(`${API_BASE_URL}/alarms/${alarmId}`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/alarms/${alarmId}`, {
       method: 'DELETE',
     });
 
@@ -448,7 +472,7 @@ export const api = {
    * 특정 인스타그램 ID를 좋아하는 사람 수 조회 (인증 불필요)
    */
   getLikeCount: async (instagramId) => {
-    const response = await fetch(
+    const response = await authenticatedFetch(
       `${API_BASE_URL}/alarms/count?instagram_id=${encodeURIComponent(instagramId.trim().toLowerCase())}`
     );
 
@@ -468,7 +492,7 @@ export const api = {
     const user = api.getCurrentUser();
     if (!user) throw new Error('로그인이 필요합니다.');
 
-    const response = await fetch(`${API_BASE_URL}/messages/sent?userId=${user.id}`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/messages/sent?userId=${user.id}`);
 
     if (!response.ok) {
       throw new Error('보낸 메시지 조회 실패');
@@ -481,24 +505,23 @@ export const api = {
   /**
    * 받은 메시지 목록 (인증된 instagramId 기반)
    */
-  getReceivedMessages: async (instagramId) => {
-    const response = await fetch(
-      `${API_BASE_URL}/messages/received?instagram_id=${encodeURIComponent(instagramId.trim().toLowerCase())}`
-    );
+  getReceivedMessages: async () => (await messageRequest('/messages/received')).messages,
 
-    if (!response.ok) {
-      throw new Error('받은 메시지 조회 실패');
-    }
-
-    const data = await response.json();
-    return data.messages;
-  },
+  getReceivedMessageState: () => messageRequest('/messages/received'),
+  getMessagePassWallet: () => messageRequest('/message-passes'),
+  grantMessagePassOrder: (orderId) => messageRequest('/message-passes/grant', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId }),
+  }),
+  syncMessagePassRefund: (orderId) => messageRequest('/message-passes/refund-status', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId }),
+  }),
+  openReceivedMessage: (id) => messageRequest(`/messages/${encodeURIComponent(id)}/open`, { method: 'POST' }),
 
   /**
    * 받은 메시지에 이모지 반응 (upsert)
    */
   reactToMessage: async (alarmId, emoji) => {
-    const response = await fetch(`${API_BASE_URL}/messages/${alarmId}/reaction`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/messages/${alarmId}/reaction`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ emoji }),
@@ -517,7 +540,7 @@ export const api = {
   reportMessage: async (alarmId, reason, instagramId) => {
     const user = api.getCurrentUser();
 
-    const response = await fetch(`${API_BASE_URL}/messages/${alarmId}/report`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/messages/${alarmId}/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -543,7 +566,7 @@ export const api = {
   healthCheck: async () => {
     try {
       const baseUrl = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
-      const response = await fetch(`${baseUrl}/health`);
+      const response = await authenticatedFetch(`${baseUrl}/health`);
       return response.ok;
     } catch {
       return false;
@@ -558,7 +581,7 @@ export const api = {
   submitFeedback: async (category, content) => {
     const user = api.getCurrentUser();
 
-    const response = await fetch(`${API_BASE_URL}/feedback`, {
+    const response = await authenticatedFetch(`${API_BASE_URL}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -588,7 +611,7 @@ export const api = {
     params.append('page', page.toString());
     params.append('limit', limit.toString());
 
-    const response = await fetch(`${API_BASE_URL}/feedback?${params.toString()}`);
+    const response = await authenticatedFetch(`${API_BASE_URL}/feedback?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error('피드백 조회 실패');

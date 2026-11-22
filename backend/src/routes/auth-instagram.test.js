@@ -37,6 +37,7 @@ test('instagram confirm stores verified username on user', async () => {
       update: (args) => Promise.resolve(args),
     },
     verificationSession: {
+      updateMany: () => Promise.resolve({ count: 1 }),
       findFirst: async () => ({
         id: 'session-1',
         userId: 'user-1',
@@ -52,6 +53,7 @@ test('instagram confirm stores verified username on user', async () => {
   };
 
   const req = {
+    user: { id: 'user-1', tossUserId: 'toss-1' },
     body: {
       tossUserId: 'toss-1',
       sessionId: 'session-1',

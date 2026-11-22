@@ -1,8 +1,19 @@
 import { Router } from 'express';
+import { requireSession } from '../middleware/session.js';
+import { messagePassSalesEnabled, lockWallet } from '../services/messagePasses.js';
 import { checkMatching } from '../services/matching.js';
 import { notifyConnectionSuccess, sendMessageReceivedNotification } from '../services/pushNotification.js';
 
 const router = Router();
+router.use((req, res, next) => {
+  if (req.method === 'GET' && req.path === '/count') return next();
+  return requireSession(req, res, next);
+});
+router.use((req, res, next) => {
+  const claimedIds = [req.query.userId, req.body?.userId];
+  if (claimedIds.some(id => id && id !== req.user?.id)) return res.status(403).json({ error: '본인 알람만 확인할 수 있어요.' });
+  next();
+});
 
 /**
  * GET /api/alarms?userId=xxx
@@ -18,7 +29,7 @@ router.get('/', async (req, res) => {
 
     // Soft Delete: deletedAt이 null인 것만 조회
     const alarms = await req.prisma.alarm.findMany({
-      where: { 
+      where: {
         userId,
         deletedAt: null,
       },
@@ -38,7 +49,10 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { userId, fromInstagramId, targetInstagramId, message } = req.body;
+    const { userId, fromInstagramId } = req.body;
+    const targetInstagramId = typeof req.body.targetInstagramId === 'string' ? req.body.targetInstagramId.trim().toLowerCase() : '';
+    const message = typeof req.body.message === 'string' ? req.body.message.trim() : null;
+    if (message && message.length > 1000) return res.status(400).json({ error: '메시지는 1,000자 이내로 작성해 주세요.' });
 
     if (!userId || !fromInstagramId || !targetInstagramId) {
       return res.status(400).json({ error: 'userId, fromInstagramId, targetInstagramId가 필요합니다.' });
@@ -56,36 +70,42 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: '자기 자신에게는 알람을 등록할 수 없습니다.' });
     }
 
-    // Soft Delete: 기존 알람 확인 (삭제된 것 포함)
-    const existingAlarm = await req.prisma.alarm.findUnique({
-      where: {
-        userId_targetInstagramId: { userId, targetInstagramId },
-      },
-    });
+    const alarm = await req.prisma.$transaction(async tx => {
+      // Serialize retries so one send cannot create two separately payable deliveries.
+      await lockWallet(tx, userId);
+      const existingAlarm = await tx.alarm.findUnique({ where: { userId_targetInstagramId: { userId, targetInstagramId } } });
+      let alarm;
 
-    let alarm;
-
-    if (existingAlarm) {
-      if (existingAlarm.deletedAt) {
-        // Soft-deleted 상태 → 복구
-        alarm = await req.prisma.alarm.update({
-          where: { id: existingAlarm.id },
-          data: { 
-            deletedAt: null, 
-            fromInstagramId,
-            status: 'waiting',
-            message: message ?? null,
-            updatedAt: new Date(),
-          },
-        });
+      if (existingAlarm) {
+        if (existingAlarm.deletedAt) {
+          // Soft-deleted 상태 → 복구
+          alarm = await tx.alarm.update({
+            where: { id: existingAlarm.id },
+            data: {
+              deletedAt: null,
+              fromInstagramId,
+              status: 'waiting',
+              message: message ?? null,
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          throw Object.assign(new Error('이미 등록된 알람입니다.'), { status: 409 });
+        }
       } else {
-        return res.status(409).json({ error: '이미 등록된 알람입니다.' });
+        alarm = await tx.alarm.create({
+          data: { userId, fromInstagramId, targetInstagramId, message: message ?? null },
+        });
       }
-    } else {
-      alarm = await req.prisma.alarm.create({
-        data: { userId, fromInstagramId, targetInstagramId, message: message ?? null },
-      });
-    }
+
+      if (typeof alarm.message === 'string' && alarm.message.trim()) {
+        await tx.messageDelivery.create({ data: {
+          alarmId: alarm.id, targetInstagramId: targetInstagramId.trim().toLowerCase(),
+          message: alarm.message, requiresPass: messagePassSalesEnabled(),
+        } });
+      }
+      return alarm;
+    });
 
     const matchResult = await checkMatching(req.prisma, user, fromInstagramId, targetInstagramId);
 
@@ -117,14 +137,14 @@ router.post('/', async (req, res) => {
       }).catch(() => {});
     }
 
-    res.status(201).json({ 
-      alarm, 
+    res.status(201).json({
+      alarm,
       matched: matchResult.matched,
       match: matchResult.match,
     });
   } catch (error) {
-    console.error('Create alarm error:', error);
-    res.status(500).json({ error: '알람 생성 중 오류가 발생했습니다.' });
+    if (!error.status) console.error('Create alarm error:', error);
+    res.status(error.status || 500).json({ error: error.status ? error.message : '알람 생성 중 오류가 발생했습니다.' });
   }
 });
 
@@ -137,8 +157,9 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
 
     const alarmToDelete = await req.prisma.alarm.findFirst({
-      where: { 
+      where: {
         id,
+        userId: req.user.id,
         deletedAt: null,
       },
       include: { user: true },
@@ -184,10 +205,10 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Soft Delete
-    await req.prisma.alarm.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await req.prisma.$transaction([
+      req.prisma.alarm.update({ where: { id }, data: { deletedAt: new Date() } }),
+      req.prisma.messageDelivery.updateMany({ where: { alarmId: id, deletedAt: null }, data: { deletedAt: new Date() } }),
+    ]);
 
     res.json({ success: true });
   } catch (error) {

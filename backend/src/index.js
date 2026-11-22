@@ -15,6 +15,7 @@ import feedbackRoutes from './routes/feedback.js';
 import webhooksInstagramRoutes from './routes/webhooksInstagram.js';
 import verifyInstagramRoutes from './routes/verifyInstagram.js';
 import messagesRoutes from './routes/messages.js';
+import messagePassRoutes from './routes/messagePasses.js';
 import eventsRoutes from './routes/events.js';
 import dbActivityRoutes from './routes/dbActivity.js';
 import { recordDbActivity } from './services/dbActivity.js';
@@ -76,6 +77,7 @@ app.use(express.json());
 
 // Prisma와 io를 req에 추가
 app.use((req, res, next) => {
+  if (req.headers.authorization) res.set('Cache-Control', 'no-store');
   req.prisma = prisma;
   req.io = io;
   req.userSockets = userSockets;
@@ -88,6 +90,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/alarms', alarmRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/message-passes', messagePassRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/verify/instagram', verifyInstagramRoutes);
 app.use('/webhook', webhooksInstagramRoutes);
@@ -102,6 +105,7 @@ app.get('/health', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
+  if (err.status) return res.status(err.status).json({ error: err.message, code: err.code });
   console.error(err.stack);
   res.status(500).json({ error: '서버 오류가 발생했습니다.' });
 });

@@ -5,7 +5,6 @@ import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
 import {
   loadReadReceivedMessageIds,
-  loadReportedReceivedMessageIds,
   markReceivedMessageAsReported,
   markReceivedMessageAsRead,
   pruneReadReceivedMessageIds,
@@ -13,29 +12,12 @@ import {
 } from '../utils/messages';
 import { logScreen, logClick } from '../utils/analytics';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
+import { MessagePassSheet } from '../components/MessagePassSheet';
 import './MessagesPage.css';
 
-const IS_DEV = import.meta.env.DEV;
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
-const MSG_CACHE_KEY = 'love_alarm_messages_cache';
 const MSG_BADGE_COUNT_KEY = 'love_alarm_msg_badge_count';
 
-function isMockId(id) {
-  return typeof id === 'string' && id.startsWith('mock-');
-}
-
-function getCachedMessages() {
-  try {
-    const raw = localStorage.getItem(MSG_CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-}
-
-function setCachedMessages(sent, received) {
-  try {
-    localStorage.setItem(MSG_CACHE_KEY, JSON.stringify({ sent, received, ts: Date.now() }));
-  } catch { /* ignore */ }
-}
 const REPORT_REASON_OPTIONS = [
   '불쾌하거나 과도하게 성적인 내용',
   '욕설, 혐오, 위협이 느껴져요',
@@ -151,7 +133,7 @@ function SentMessageDetailSheet({ message, onClose }) {
 // ──────────────────────────────────────────────────────────────────────
 // MessageDetailSheet — 받은 메시지 상세 바텀시트
 // ──────────────────────────────────────────────────────────────────────
-function MessageDetailSheet({ message, onClose, onReact, onReport }) {
+function MessageDetailSheet({ message, onClose, onReact, onReport, reacting }) {
   const EMOJIS = ['❤️', '😊', '🤔', '😳', '🥹'];
   const currentEmoji = message?.reactions?.[0]?.emoji ?? null;
 
@@ -206,6 +188,8 @@ function MessageDetailSheet({ message, onClose, onReact, onReport }) {
                   className={`msg-sheet-emoji-btn${currentEmoji === emoji ? ' active' : ''}`}
                   onClick={() => onReact(message.id, emoji)}
                   aria-label={asset?.label || emoji}
+                  aria-pressed={currentEmoji === emoji}
+                  disabled={!!currentEmoji || reacting}
                 >
                   <img
                     src={asset?.url}
@@ -213,13 +197,11 @@ function MessageDetailSheet({ message, onClose, onReact, onReport }) {
                     className="msg-sheet-emoji-img"
                     draggable={false}
                   />
-                  {currentEmoji === emoji && (
-                    <span className="msg-sheet-emoji-check">✓</span>
-                  )}
                 </button>
               );
             })}
           </div>
+          <p className="msg-sheet-react-description">이모지를 누르면 보낸 사람에게 반응이 전달돼요.<br />반응은 한 번만 보낼 수 있고, 보낸 뒤에는 바꿀 수 없어요.</p>
         </div>
 
         <div className="msg-sheet-report-section">
@@ -261,7 +243,7 @@ function ReportMessageSheet({
         </div>
 
         <div className="msg-report-preview">
-          <p className="msg-report-preview-text">{truncateText(message.message, 70)}</p>
+          <p className="msg-report-preview-text">{message.locked ? '아직 열지 않은 메시지' : truncateText(message.message, 70)}</p>
         </div>
 
         <div className="msg-report-reason-list">
@@ -273,7 +255,7 @@ function ReportMessageSheet({
               onClick={() => onSelectReason(reason)}
             >
               <span>{reason}</span>
-              {selectedReason === reason && <span className="msg-report-reason-check">✓</span>}
+              <span className="msg-report-reason-check" aria-hidden="true" style={{ visibility: selectedReason === reason ? 'visible' : 'hidden' }}>✓</span>
             </button>
           ))}
         </div>
@@ -316,369 +298,142 @@ function InstagramAuthCta({ onVerify }) {
 // ──────────────────────────────────────────────────────────────────────
 export function MessagesPage() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('sent'); // 'sent' | 'received'
-  const initialActiveTabRef = useRef(activeTab);
-  const cachedRef = useRef(getCachedMessages());
-  const [sentMessages, setSentMessages] = useState(() => cachedRef.current?.sent ?? []);
-  const [receivedMessages, setReceivedMessages] = useState(() => cachedRef.current?.received ?? []);
+  const [activeTab, setActiveTab] = useState('received');
+  const [sentMessages, setSentMessages] = useState([]);
+  const [receivedMessages, setReceivedMessages] = useState([]);
   const [readReceivedMessageIds, setReadReceivedMessageIds] = useState(() => loadReadReceivedMessageIds());
-  const [, setReportedReceivedMessageIds] = useState(() => loadReportedReceivedMessageIds());
-  const [isLoading, setIsLoading] = useState(() => !cachedRef.current);
-  const prevCountRef = useRef({
-    sent: cachedRef.current?.sent?.length ?? 0,
-    received: cachedRef.current?.received?.length ?? 0,
-  });
-  // 받은 메시지 상세 시트
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedReceivedMsg, setSelectedReceivedMsg] = useState(null);
-  // 보낸 메시지 상세 시트
+  const [selectedLockedMsg, setSelectedLockedMsg] = useState(null);
   const [selectedSentMsg, setSelectedSentMsg] = useState(null);
-  // 인증 시트
   const [showAuthSheet, setShowAuthSheet] = useState(false);
-  // 인증 상태 (시트에서 인증 후 즉시 반영)
-  const [verifiedId, setVerifiedId] = useState(() => localStorage.getItem(IG_VERIFIED_KEY));
-  const isVerified = !!verifiedId;
+  const [verifiedId, setVerifiedId] = useState(null);
+  const [, setWallet] = useState(null);
   const [reportTargetMessage, setReportTargetMessage] = useState(null);
   const [selectedReportReason, setSelectedReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [reportToast, setReportToast] = useState({ show: false, message: '', type: 'success' });
+  const opening = useRef(false);
+  const reactionLock = useRef(false);
+  const [reacting, setReacting] = useState(false);
+  const isVerified = !!verifiedId;
 
-  const MOCK_SENT = IS_DEV ? [
-    { id: 'mock-s1', targetInstagramId: 'cute_puppy_lover', message: '혹시 강남역 스타벅스에서 자주 보이시는 분 맞나요? 용기 내서 보내봐요 ☕', createdAt: '2026-04-10T09:12:00Z', reactions: [{ emoji: '❤️' }] },
-    { id: 'mock-s2', targetInstagramId: 'music_wave_99', message: '같은 수업 듣는 거 맞죠? 한번 말 걸어보고 싶었어요', createdAt: '2026-04-09T18:30:00Z', reactions: [] },
-  ] : [];
-  const MOCK_RECEIVED = IS_DEV ? [
-    { id: 'mock-r1', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [] },
-  ] : [];
-
-  const loadMessages = useCallback(async (currentVerifiedId) => {
-    const vid = currentVerifiedId ?? verifiedId;
-    const hasCache = !!cachedRef.current;
-    if (!hasCache) setIsLoading(true);
-    try {
-      let sent;
-      try {
-        sent = await api.getSentMessages();
-      } catch {
-        sent = [];
-      }
-      const mergedSent = [...sent, ...MOCK_SENT];
-      setSentMessages(mergedSent);
-      prevCountRef.current.sent = mergedSent.length;
-      let filteredReceived;
-      if (vid) {
-        let rawReceivedMessages;
-        try {
-          rawReceivedMessages = await api.getReceivedMessages(vid);
-        } catch {
-          rawReceivedMessages = [];
-        }
-        const allReceived = [...rawReceivedMessages, ...MOCK_RECEIVED];
-        const validMessageIds = allReceived.map((message) => message.id);
-        const nextReportedIds = pruneReportedReceivedMessageIds(validMessageIds);
-        setReportedReceivedMessageIds(nextReportedIds);
-        setReadReceivedMessageIds(pruneReadReceivedMessageIds(validMessageIds));
-        filteredReceived = allReceived.filter((message) => !nextReportedIds.includes(message.id));
-        setReceivedMessages(filteredReceived);
-        prevCountRef.current.received = filteredReceived.length;
-      } else {
-        filteredReceived = [...MOCK_RECEIVED];
-        setReceivedMessages(filteredReceived);
-        prevCountRef.current.received = filteredReceived.length;
-      }
-      setCachedMessages(mergedSent, filteredReceived);
-      cachedRef.current = { sent: mergedSent, received: filteredReceived };
-    } catch (err) {
-      console.error('메시지 로드 실패:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [verifiedId]);
-
-  useEffect(() => {
-    loadMessages();
-  }, [loadMessages]);
-
-  useEffect(() => {
-    logScreen('messages_screen', { tab: initialActiveTabRef.current });
+  const loadMessages = useCallback(async () => {
+    setIsLoading(true); setLoadError('');
+    // Previous versions cached complete received bodies. Never use that cache for access decisions.
+    localStorage.removeItem('love_alarm_messages_cache');
+    const [sent, received, passes] = await Promise.allSettled([
+      api.getSentMessages(), api.getReceivedMessageState(), api.getMessagePassWallet(),
+    ]);
+    if (sent.status === 'fulfilled') setSentMessages(sent.value);
+    if (received.status === 'fulfilled') {
+      setVerifiedId(received.value.instagramId);
+      localStorage.setItem(IG_VERIFIED_KEY, received.value.instagramId);
+      setReceivedMessages(received.value.messages);
+      pruneReportedReceivedMessageIds(received.value.messages.map(m => m.id));
+      setReadReceivedMessageIds(pruneReadReceivedMessageIds(received.value.messages.map(m => m.id)));
+    } else if (received.reason.code === 'INSTAGRAM_REQUIRED') {
+      setVerifiedId(null); setReceivedMessages([]);
+      localStorage.removeItem(IG_VERIFIED_KEY);
+    } else setLoadError(received.reason.message);
+    if (passes.status === 'fulfilled') setWallet(passes.value);
+    if (sent.status === 'rejected') setLoadError(sent.reason.message);
+    setIsLoading(false);
   }, []);
 
-  const handleTabChange = (newTab) => {
-    if (newTab === activeTab) return;
-    setActiveTab(newTab);
-    logClick('messages_tab_switch', { tab: newTab });
-  };
+  useEffect(() => { void loadMessages(); }, [loadMessages]);
+  useEffect(() => { logScreen('messages_screen', { tab: 'received' }); }, []);
 
-  const handleReact = async (alarmId, emoji) => {
-    logClick('message_reaction_click', { emoji });
-    // optimistic update
-    setReceivedMessages(prev =>
-      prev.map(m =>
-        m.id === alarmId ? { ...m, reactions: [{ emoji }] } : m
-      )
-    );
-    setSelectedReceivedMsg(prev =>
-      prev?.id === alarmId ? { ...prev, reactions: [{ emoji }] } : prev
-    );
-
-    if (!isMockId(alarmId)) {
-      try {
-        await api.reactToMessage(alarmId, emoji);
-      } catch (err) {
-        console.error('반응 저장 실패:', err);
-      }
-    }
-  };
-
-  const handleAuthSuccess = (username) => {
-    const newVerifiedId = username;
-    localStorage.setItem(IG_VERIFIED_KEY, newVerifiedId);
-    setVerifiedId(newVerifiedId);
-    setShowAuthSheet(false);
-    loadMessages(newVerifiedId);
-  };
-
-  const handleOpenReceivedMessage = (message) => {
+  function showError(message) { setReportToast({ show: true, message, type: 'error' }); }
+  function handleTabChange(tab) {
+    setActiveTab(tab); logClick('messages_tab_switch', { tab });
+  }
+  function handleWalletChange(balance) { setWallet(current => ({ ...current, balance })); }
+  function handleOpened(message) {
     logClick('message_detail_open', { type: 'received' });
-    const nextReadIds = markReceivedMessageAsRead(message.id);
-    setReadReceivedMessageIds(nextReadIds);
-    setSelectedReceivedMsg(message);
-    // 홈 배지 카운트 즉시 동기화 (API 대기 없이 복귀 시 반영)
-    const readSet = new Set(nextReadIds);
-    const reportedSet = new Set(loadReportedReceivedMessageIds());
-    const unread = receivedMessages.filter(m => !readSet.has(m.id) && !reportedSet.has(m.id)).length;
-    localStorage.setItem(MSG_BADGE_COUNT_KEY, String(unread));
-  };
+    setReadReceivedMessageIds(markReceivedMessageAsRead(message.id));
+    setReceivedMessages(current => current.map(m => m.id === message.id ? message : m));
+    setSelectedLockedMsg(null); setSelectedReceivedMsg(message);
+    void api.getMessagePassWallet().then(setWallet).catch(() => {});
+  }
+  async function handleOpenReceivedMessage(message) {
+    if (message.locked) { setSelectedLockedMsg(message); return; }
+    if (opening.current) return;
+    opening.current = true;
+    try {
+      const result = await api.openReceivedMessage(message.id);
+      handleWalletChange(result.balance); handleOpened(result.message);
+    } catch (error) { showError(error.message); }
+    finally { opening.current = false; }
+  }
+  useEffect(() => {
+    const read = new Set(readReceivedMessageIds);
+    const count = receivedMessages.filter(m => !read.has(m.id)).length;
+    localStorage.setItem(MSG_BADGE_COUNT_KEY, String(count));
+  }, [receivedMessages, readReceivedMessageIds]);
 
-  const handleOpenReportSheet = (message) => {
-    setReportTargetMessage(message);
-    setSelectedReportReason('');
-  };
-
-  const handleCloseReportSheet = () => {
-    if (isSubmittingReport) return;
-    setReportTargetMessage(null);
-    setSelectedReportReason('');
-  };
-
-  const handleSubmitReport = async () => {
+  async function handleReact(messageId, emoji) {
+    if (reactionLock.current || selectedReceivedMsg?.reactions?.length) return;
+    reactionLock.current = true; setReacting(true);
+    try {
+      const result = await api.reactToMessage(messageId, emoji);
+      emoji = result.reaction.emoji;
+      setReceivedMessages(current => current.map(m => m.id === messageId ? { ...m, reactions: [{ emoji }] } : m));
+      setSelectedReceivedMsg(current => current?.id === messageId ? { ...current, reactions: [{ emoji }] } : current);
+    } catch (error) { showError(error.message); }
+    finally { reactionLock.current = false; setReacting(false); }
+  }
+  function handleAuthSuccess() { setShowAuthSheet(false); void loadMessages(); }
+  function handleOpenReportSheet(message) { setReportTargetMessage(message); setSelectedReportReason(''); }
+  function handleCloseReportSheet() { if (!isSubmittingReport) setReportTargetMessage(null); }
+  async function handleSubmitReport() {
     if (!reportTargetMessage || !selectedReportReason || isSubmittingReport) return;
-
-    logClick('message_report_click', { reason: selectedReportReason });
     setIsSubmittingReport(true);
     try {
-      if (!isMockId(reportTargetMessage.id)) {
-        await api.reportMessage(reportTargetMessage.id, selectedReportReason, verifiedId);
-      }
+      await api.reportMessage(reportTargetMessage.id, selectedReportReason);
+      markReceivedMessageAsReported(reportTargetMessage.id);
+      setReceivedMessages(current => current.filter(m => m.id !== reportTargetMessage.id));
+      setSelectedReceivedMsg(null); setSelectedLockedMsg(null); setReportTargetMessage(null);
+      setReportToast({ show: true, message: '신고하고 숨겼어요. 위반이 확인되면 사용한 열람권을 돌려드려요.', type: 'success' });
+    } catch (error) { showError(error.message); }
+    finally { setIsSubmittingReport(false); }
+  }
 
-      const nextReportedIds = markReceivedMessageAsReported(reportTargetMessage.id);
-      setReportedReceivedMessageIds(nextReportedIds);
-      setReceivedMessages((prev) => {
-        const next = prev.filter((message) => message.id !== reportTargetMessage.id);
-        setCachedMessages(sentMessages, next);
-        // 홈 배지 카운트 즉시 동기화
-        const readSet = new Set(readReceivedMessageIds);
-        const reportedSet = new Set(nextReportedIds);
-        const unread = next.filter(m => !readSet.has(m.id) && !reportedSet.has(m.id)).length;
-        localStorage.setItem(MSG_BADGE_COUNT_KEY, String(unread));
-        return next;
-      });
-      setSelectedReceivedMsg(null);
-      setReportTargetMessage(null);
-      setSelectedReportReason('');
-      setReportToast({ show: true, message: '신고 및 숨김 처리를 완료했어요', type: 'success' });
-      window.setTimeout(() => setReportToast(prev => ({ ...prev, show: false })), 3000);
-    } catch (error) {
-      setReportToast({ show: true, message: error.message || '신고 접수에 실패했어요', type: 'error' });
-      window.setTimeout(() => setReportToast(prev => ({ ...prev, show: false })), 3000);
-    } finally {
-      setIsSubmittingReport(false);
-    }
-  };
-
-  return (
-    <div className="messages-page">
-      <Spacing size={14} />
-
-      <div className="messages-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph
-              size={22}
-              color={adaptive.grey900}
-              style={{ fontSize: '22px' }}
-            >
-              메시지
-            </Top.TitleParagraph>
-          }
-        />
-      </div>
-
-      <Spacing size={12} />
-
-      <div className="messages-segmented-wrap">
-        <div className="messages-segmented" role="tablist" aria-label="메시지 탭">
-          <button
-            className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`}
-            onClick={() => handleTabChange('sent')}
-            role="tab"
-            aria-selected={activeTab === 'sent'}
-            type="button"
-          >
-            내가 보낸 메시지
-          </button>
-          <button
-            className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`}
-            onClick={() => handleTabChange('received')}
-            role="tab"
-            aria-selected={activeTab === 'received'}
-            type="button"
-          >
-            받은 메시지
-          </button>
-        </div>
-      </div>
-
-      {/* 보낸 메시지 탭 */}
-      {activeTab === 'sent' && (
-        <div className="messages-content">
-          {isLoading ? (
-            <div className="messages-skeleton-wrap">
-              <Skeleton custom={['listWithIcon']} repeatLastItemCount={Math.max(prevCountRef.current.sent, 1)} />
-            </div>
-          ) : sentMessages.length === 0 ? (
-            <div className="messages-empty">
-              <p className="messages-empty-title">아직 보낸 메시지가 없어요.</p>
-              <p className="messages-empty-desc">알람을 추가할 때 메시지도 함께 보낼 수 있어요.</p>
-              <button className="messages-empty-btn" onClick={() => navigate('/add')}>
-                알람 추가하러 가기
-              </button>
-            </div>
-          ) : (
-            sentMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className="message-row message-row-tappable"
-                onClick={() => {
-                  logClick('message_detail_open', { type: 'sent' });
-                  setSelectedSentMsg(msg);
-                }}
-              >
-                <MessageIcon type="sent" />
-                <div className="message-row-body">
-                  <div className="message-row-top">To: @{msg.targetInstagramId}</div>
-                  <div className="message-row-preview">{truncateText(msg.message)}</div>
-                  <div className="message-row-bottom">
-                    {msg.reactions?.[0]?.emoji
-                      ? `${msg.reactions[0].emoji} 반응`
-                      : '반응 없음'}
-                    <span className="message-row-dot">·</span>
-                    {formatDate(msg.createdAt)}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* 받은 메시지 탭 */}
-      {activeTab === 'received' && (
-        <div className="messages-content">
-          {!isVerified ? (
-            <InstagramAuthCta
-              onVerify={() => {
-                logClick('instagram_auth_cta_click');
-                setShowAuthSheet(true);
-              }}
-            />
-          ) : isLoading ? (
-            <div className="messages-skeleton-wrap">
-              <Skeleton custom={['listWithIcon']} repeatLastItemCount={Math.max(prevCountRef.current.received, 1)} />
-            </div>
-          ) : receivedMessages.length === 0 ? (
-            <div className="messages-empty">
-              <p className="messages-empty-title">아직 받은 메시지가 없어요.</p>
-              <p className="messages-empty-desc">누군가 메시지를 보내면 여기서 확인할 수 있어요.</p>
-            </div>
-          ) : (
-            receivedMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`message-row message-row-tappable${readReceivedMessageIds.includes(msg.id) ? '' : ' message-row-unread'}`}
-                onClick={() => handleOpenReceivedMessage(msg)}
-              >
-                <MessageIcon type="received" />
-                <div className="message-row-body">
-                  <div className="message-row-top message-row-top--with-indicator">
-                    <span>알 수 없는 누군가</span>
-                    {!readReceivedMessageIds.includes(msg.id) && (
-                      <span className="message-row-unread-indicator" aria-hidden="true" />
-                    )}
-                  </div>
-                  <div className="message-row-preview">{truncateText(msg.message)}</div>
-                  <div className="message-row-bottom">
-                    {msg.reactions?.[0]?.emoji
-                      ? `${msg.reactions[0].emoji} 반응함`
-                      : ''}
-                    {msg.reactions?.[0]?.emoji && <span className="message-row-dot">·</span>}
-                    {formatDate(msg.createdAt)}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* 받은 메시지 상세 시트 */}
-      {selectedReceivedMsg && (
-        <MessageDetailSheet
-          message={selectedReceivedMsg}
-          onClose={() => setSelectedReceivedMsg(null)}
-          onReact={handleReact}
-          onReport={handleOpenReportSheet}
-        />
-      )}
-
-      {reportTargetMessage && (
-        <ReportMessageSheet
-          message={reportTargetMessage}
-          selectedReason={selectedReportReason}
-          onSelectReason={setSelectedReportReason}
-          onClose={handleCloseReportSheet}
-          onSubmit={handleSubmitReport}
-          isSubmitting={isSubmittingReport}
-        />
-      )}
-
-      {/* 보낸 메시지 상세 시트 */}
-      {selectedSentMsg && (
-        <SentMessageDetailSheet
-          message={selectedSentMsg}
-          onClose={() => setSelectedSentMsg(null)}
-        />
-      )}
-
-      {/* 인스타그램 인증 시트 (받은 메시지 탭 CTA에서 진입) */}
-      <InstagramAuthSheet
-        open={showAuthSheet}
-        onClose={() => setShowAuthSheet(false)}
-        onSuccess={handleAuthSuccess}
-      />
-
-      <div className="toast-stack messages-toast-stack">
-        <div
-          className={`custom-toast ${reportToast.show ? 'show' : ''}${reportToast.type === 'error' ? ' error' : ''}`}
-          style={{ bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))' }}
-        >
-          <div className="custom-toast-content">
-            <span className="custom-toast-icon">{reportToast.type === 'error' ? '!' : '✓'}</span>
-            <span className="custom-toast-text">{reportToast.message}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <div className="messages-page">
+    <Spacing size={14} />
+    <div className="messages-top-section"><Top title={<Top.TitleParagraph size={22} color={adaptive.grey900}>메시지</Top.TitleParagraph>} /></div>
+    <Spacing size={12} />
+    <div className="messages-segmented-wrap"><div className="messages-segmented" role="tablist" aria-label="메시지 탭">
+      <button className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`} onClick={() => handleTabChange('sent')} role="tab" aria-selected={activeTab === 'sent'}>내가 보낸 메시지</button>
+      <button className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`} onClick={() => handleTabChange('received')} role="tab" aria-selected={activeTab === 'received'}>받은 메시지</button>
+    </div></div>
+    {loadError && <div className="messages-load-error" role="alert">{loadError}<button className="messages-empty-btn" onClick={loadMessages}>다시 불러오기</button></div>}
+    {activeTab === 'sent' && <div className="messages-content">
+      {isLoading ? <Skeleton custom={['listWithIcon']} repeatLastItemCount={1} /> : sentMessages.length === 0 ? <div className="messages-empty">
+        <p className="messages-empty-title">아직 보낸 메시지가 없어요.</p><p className="messages-empty-desc">알람을 추가할 때 메시지도 함께 보낼 수 있어요.</p>
+        <button className="messages-empty-btn" onClick={() => navigate('/add')}>알람 추가하러 가기</button>
+      </div> : sentMessages.map(msg => <button key={msg.id} className="message-row message-row-tappable" onClick={() => setSelectedSentMsg(msg)}>
+        <MessageIcon type="sent" /><div className="message-row-body"><div className="message-row-top">To: @{msg.targetInstagramId}</div>
+        <div className="message-row-preview">{truncateText(msg.message)}</div><div className="message-row-bottom">{msg.reactions?.[0]?.emoji ? `${msg.reactions[0].emoji} 반응` : '반응 없음'} · {formatDate(msg.createdAt)}</div></div>
+      </button>)}
+    </div>}
+    {activeTab === 'received' && <div className="messages-content">
+      {isLoading ? <Skeleton custom={['listWithIcon']} repeatLastItemCount={1} /> : !isVerified ? <InstagramAuthCta onVerify={() => setShowAuthSheet(true)} /> : receivedMessages.length === 0 ? <div className="messages-empty">
+        <p className="messages-empty-title">아직 받은 메시지가 없어요.</p><p className="messages-empty-desc">누군가 메시지를 보내면 여기서 확인할 수 있어요.</p>
+      </div> : receivedMessages.map(msg => <button key={msg.id} className={`message-row message-row-tappable${readReceivedMessageIds.includes(msg.id) ? '' : ' message-row-unread'}`} onClick={() => handleOpenReceivedMessage(msg)}>
+        <MessageIcon type="received" /><div className="message-row-body"><div className="message-row-top message-row-top--with-indicator"><span>알 수 없는 누군가</span>
+        {!readReceivedMessageIds.includes(msg.id) && <span className="message-row-unread-indicator" aria-hidden="true" />}</div>
+        <div className="message-row-preview">{msg.locked ? '열람권으로 메시지를 확인해 보세요' : truncateText(msg.message)}</div>
+        <div className="message-row-bottom">{msg.locked ? '잠긴 메시지 · ' : ''}{formatDate(msg.createdAt)}</div></div>
+      </button>)}
+    </div>}
+    {selectedReceivedMsg && <MessageDetailSheet message={selectedReceivedMsg} onClose={() => setSelectedReceivedMsg(null)} onReact={handleReact} reacting={reacting} onReport={handleOpenReportSheet} />}
+    {selectedLockedMsg && !reportTargetMessage && <MessagePassSheet key={selectedLockedMsg.id} message={selectedLockedMsg} onOpened={handleOpened} onClose={() => setSelectedLockedMsg(null)} onReport={handleOpenReportSheet} onWalletChange={handleWalletChange} />}
+    {reportTargetMessage && <ReportMessageSheet message={reportTargetMessage} selectedReason={selectedReportReason} onSelectReason={setSelectedReportReason} onClose={handleCloseReportSheet} onSubmit={handleSubmitReport} isSubmitting={isSubmittingReport} />}
+    {selectedSentMsg && <SentMessageDetailSheet message={selectedSentMsg} onClose={() => setSelectedSentMsg(null)} />}
+    <InstagramAuthSheet open={showAuthSheet} onClose={() => setShowAuthSheet(false)} onSuccess={handleAuthSuccess} />
+    {reportToast.show && <div className="messages-load-error" role="status">{reportToast.message}<button onClick={() => setReportToast(current => ({ ...current, show: false }))}>닫기</button></div>}
+  </div>;
 }
-
 export default MessagesPage;
