@@ -39,3 +39,22 @@ test('Toss verification requires completed status and explicit buyer match', asy
 test('unrecognized product never starts a wallet transaction', async () => {
   await assert.rejects(grantMessagePasses({ $transaction: () => assert.fail('must not grant') }, { id: 'u', tossUserId: 't' }, 'order-123', async () => ({ sku: 'slot-product' })), /열람권 상품/);
 });
+
+test('production login can issue and verify sessions with the existing deployment secret', () => {
+  const saved = { NODE_ENV: process.env.NODE_ENV, SESSION_SECRET: process.env.SESSION_SECRET, JWT_SECRET: process.env.JWT_SECRET };
+  try {
+    process.env.NODE_ENV = 'production';
+    delete process.env.SESSION_SECRET;
+    process.env.JWT_SECRET = 'existing-production-secret-for-test';
+    const session = issueSession('existing-user');
+    assert.equal(verifySession(session.token), 'existing-user');
+    delete process.env.JWT_SECRET;
+    assert.throws(() => issueSession('user'), /Configure SESSION_SECRET/);
+    process.env.JWT_SECRET = 'short';
+    assert.throws(() => issueSession('user'), /Configure SESSION_SECRET/);
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
+});

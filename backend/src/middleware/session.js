@@ -1,10 +1,16 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 const developmentSecret = randomBytes(32).toString('hex');
 function secret() {
   const value = process.env.SESSION_SECRET;
   if (value && value.length >= 32) return value;
-  if (process.env.NODE_ENV === 'production') throw new Error('SESSION_SECRET must contain at least 32 characters');
+  // Existing Render installations already provision JWT_SECRET. Keep their login working
+  // without introducing a hardcoded key or relaxing session verification.
+  const legacy = process.env.JWT_SECRET;
+  if (!value && legacy && legacy.length >= 16) {
+    return createHash('sha256').update(`love-alarm-session:${legacy}`).digest('hex');
+  }
+  if (process.env.NODE_ENV === 'production') throw new Error('Configure SESSION_SECRET (32+ characters) or existing JWT_SECRET (16+ characters)');
   return developmentSecret;
 }
 

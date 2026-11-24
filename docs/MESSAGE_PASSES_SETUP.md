@@ -21,6 +21,8 @@ ALLOW_MOCK_LOGIN=false
 NODE_ENV=production
 ```
 
+기존 배포에 16자 이상의 `JWT_SECRET`이 설정돼 있으면 세션 서명에도 재사용합니다. 신규 환경은 32자 이상의 `SESSION_SECRET`을 설정합니다. 명시적으로 잘못 설정된 SESSION_SECRET을 다른 키로 우회하지는 않습니다.
+
 기존 토스 로그인용 mTLS 인증서를 재사용합니다. `TOSS_CLIENT_CERT_BASE64`와 `TOSS_CLIENT_KEY_BASE64` 또는 파일 경로 설정이 필요합니다. 비밀값은 `VITE_` 변수에 넣거나 커밋하지 않습니다.
 
 ## 적용 순서
