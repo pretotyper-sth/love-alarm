@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { normalizeInstagramUsername } from '../utils/instagramUsername.js';
-import { requireSession } from '../middleware/session.js';
+import { allowLegacySession } from '../middleware/session.js';
 
 const router = Router();
-router.use(requireSession);
+router.use(allowLegacySession);
 
 const SESSION_TTL_MS = 10 * 60 * 1000;
 
@@ -14,7 +14,7 @@ const SESSION_TTL_MS = 10 * 60 * 1000;
 router.post('/start', async (req, res) => {
   try {
     const { instagramUsername } = req.body || {};
-    const tossUserId = req.user.tossUserId;
+    const tossUserId = req.user?.tossUserId ?? req.body?.tossUserId;
 
     if (!tossUserId || !instagramUsername) {
       return res.status(400).json({ error: 'tossUserId와 instagramUsername이 필요합니다.' });
@@ -71,7 +71,7 @@ router.post('/start', async (req, res) => {
 router.post('/confirm', async (req, res) => {
   try {
     const { sessionId, code } = req.body || {};
-    const tossUserId = req.user.tossUserId;
+    const tossUserId = req.user?.tossUserId ?? req.body?.tossUserId;
 
     if (!tossUserId || !sessionId || !code) {
       return res.status(400).json({ error: 'tossUserId, sessionId, code가 필요합니다.' });

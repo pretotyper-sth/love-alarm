@@ -53,6 +53,20 @@ export async function requireSession(req, res, next) {
   } catch (error) { next(error); }
 }
 
+export function isLegacyApiRequest(req) {
+  // shortcut: allow the released app until its session-enabled update is live; then set ALLOW_LEGACY_API=false.
+  return (process.env.ALLOW_LEGACY_API ?? 'true') === 'true'
+    && !req.headers.authorization && !req.headers['x-love-alarm-auth'];
+}
+
+export function allowLegacySession(req, res, next) {
+  res.set('Cache-Control', 'no-store');
+  if (isLegacyApiRequest(req)) {
+    return next();
+  }
+  return requireSession(req, res, next);
+}
+
 export function requireAdmin(req, res, next) {
   const configured = Buffer.from(process.env.ADMIN_API_TOKEN || '');
   const supplied = Buffer.from(req.headers.authorization?.replace(/^Bearer /, '') || '');

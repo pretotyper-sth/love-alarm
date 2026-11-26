@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireSession, requireAdmin } from '../middleware/session.js';
 import { verifiedRecipient, receivedMessage, openReceivedMessage, resolveMessageReport, MessagePassError } from '../services/messagePasses.js';
+import legacyMessages from './legacyMessages.js';
 
 const reasons = ['불쾌하거나 과도하게 성적인 내용', '욕설, 혐오, 위협이 느껴져요', '스팸 또는 광고 같아요', '원치 않는 연락이라 불편해요'];
 
@@ -18,6 +19,7 @@ export function createMessageRouter({ verifyOrder } = {}) {
       res.json({ reports: await req.prisma.messageReport.findMany({ where: { status: 'pending' }, include: { message: true }, orderBy: { createdAt: 'asc' }, take: 100 }) });
     } catch (error) { next(error); }
   });
+  router.use(legacyMessages);
   router.use(requireSession);
   router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 

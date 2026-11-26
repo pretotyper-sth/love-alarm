@@ -68,7 +68,7 @@ app.use(cors({
   origin: true, // 모든 origin 허용 (credentials와 함께 사용 가능)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Love-Alarm-Auth'],
 }));
 
 // Preflight 요청 명시적 처리

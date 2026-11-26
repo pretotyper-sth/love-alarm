@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireSession } from '../middleware/session.js';
+import { allowLegacySession } from '../middleware/session.js';
 import { messagePassSalesEnabled, lockWallet } from '../services/messagePasses.js';
 import { checkMatching } from '../services/matching.js';
 import { notifyConnectionSuccess, sendMessageReceivedNotification } from '../services/pushNotification.js';
@@ -7,11 +7,11 @@ import { notifyConnectionSuccess, sendMessageReceivedNotification } from '../ser
 const router = Router();
 router.use((req, res, next) => {
   if (req.method === 'GET' && req.path === '/count') return next();
-  return requireSession(req, res, next);
+  return allowLegacySession(req, res, next);
 });
 router.use((req, res, next) => {
   const claimedIds = [req.query.userId, req.body?.userId];
-  if (claimedIds.some(id => id && id !== req.user?.id)) return res.status(403).json({ error: '본인 알람만 확인할 수 있어요.' });
+  if (req.user && claimedIds.some(id => id && id !== req.user.id)) return res.status(403).json({ error: '본인 알람만 확인할 수 있어요.' });
   next();
 });
 
@@ -159,7 +159,7 @@ router.delete('/:id', async (req, res) => {
     const alarmToDelete = await req.prisma.alarm.findFirst({
       where: {
         id,
-        userId: req.user.id,
+        ...(req.user ? { userId: req.user.id } : {}),
         deletedAt: null,
       },
       include: { user: true },

@@ -13,6 +13,7 @@ import { issueSession } from '../middleware/session.js';
 // Explicit, disposable database only. Never fall back to DATABASE_URL.
 const url = process.env.TEST_DATABASE_URL;
 test('message pass API: purchase, unlock, restore, report, and refund against PostgreSQL', { skip: !url }, async t => {
+  process.env.ALLOW_LEGACY_API = 'false';
   const db = new PrismaClient({ datasources: { db: { url } } });
   const suffix = randomUUID();
   process.env.TOSS_MESSAGE_PASS_SINGLE_SKU = 'test-pass-single';

@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { sendConnectionSuccessNotification } from '../services/pushNotification.js';
 import { normalizeInstagramUsername } from '../utils/instagramUsername.js';
-import { requireSession } from '../middleware/session.js';
+import { allowLegacySession } from '../middleware/session.js';
 
 const router = Router();
-router.use(requireSession);
+router.use(allowLegacySession);
 router.param('id', (req, res, next, id) => {
-  if (id !== req.user.id) return res.status(403).json({ error: '본인 계정만 변경할 수 있어요.' });
+  if (req.user && id !== req.user.id) return res.status(403).json({ error: '본인 계정만 변경할 수 있어요.' });
   next();
 });
 
