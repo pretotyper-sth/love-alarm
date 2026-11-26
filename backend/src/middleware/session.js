@@ -37,9 +37,18 @@ export function verifySession(token, now = Date.now()) {
 
 export async function requireSession(req, res, next) {
   try {
-    const userId = verifySession(req.headers.authorization?.replace(/^Bearer /, ''));
+    const token = req.headers.authorization?.replace(/^Bearer /, '');
+    const userId = verifySession(token);
     req.user = userId ? await req.prisma.user.findUnique({ where: { id: userId } }) : null;
-    if (!req.user) return res.status(401).json({ error: '다시 로그인해 주세요.', code: 'LOGIN_REQUIRED' });
+    if (!req.user) {
+      // Never log the token, user ID, URL parameters, or request body.
+      console.warn('[auth] session rejected', {
+        resource: req.baseUrl,
+        method: req.method,
+        reason: !token ? 'missing_session' : userId ? 'account_missing' : 'invalid_or_expired_session',
+      });
+      return res.status(401).json({ error: '다시 로그인해 주세요.', code: 'LOGIN_REQUIRED' });
+    }
     next();
   } catch (error) { next(error); }
 }
