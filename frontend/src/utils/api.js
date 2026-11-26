@@ -218,7 +218,7 @@ export const api = {
     const response = await authenticatedFetch(`${API_BASE_URL}/users/${user.id}`);
     
     if (!response.ok) {
-      throw new Error('사용자 정보 조회 실패');
+      throw Object.assign(new Error('사용자 정보 조회 실패'), { status: response.status });
     }
 
     const data = await response.json();

@@ -3,6 +3,7 @@ import { appLogin } from '@apps-in-toss/web-framework';
 import { api } from '../utils/api';
 import { storage } from '../utils/storage';
 import { restoreMessagePassOrders } from '../utils/messagePassPurchase';
+import { refreshAuthUser } from '../utils/auth.js';
 
 const AuthContext = createContext(null);
 const AUTO_LOGIN_TIMEOUT_MS = 8000;
@@ -19,6 +20,7 @@ function withTimeout(promise, timeoutMs, message) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
     if (!user?.id || !api.hasSession()) return;
@@ -50,6 +52,7 @@ export function AuthProvider({ children }) {
     if (import.meta.env.DEV && isBrowserEnv()) {
       const mockTossUserId = api.getCurrentUser()?.tossUserId || 'dev_browser_user_' + Date.now();
       const result = await api.login(mockTossUserId);
+      storage.set('has_visited_intro', true);
       return result.user;
     }
 
@@ -62,6 +65,7 @@ export function AuthProvider({ children }) {
 
     const { authorizationCode, referrer } = loginResult;
     const result = await api.tossLogin(authorizationCode, referrer);
+    storage.set('has_visited_intro', true);
     return result.user;
   }, []);
 
@@ -78,20 +82,25 @@ export function AuthProvider({ children }) {
           setUser(newUser);
           api.connectSocket();
         } else if (currentUser) {
+          storage.set('has_visited_intro', true);
           // 저장된 사용자로 먼저 렌더하고, 유효성 검증은 백그라운드에서 진행
           setUser(currentUser);
           api.connectSocket();
 
           void (async () => {
             try {
-              const validUser = await api.getUser();
+              const validUser = await refreshAuthUser(api, () => withTimeout(
+                performTossLoginInternal(), AUTO_LOGIN_TIMEOUT_MS, '다시 로그인해 주세요.'
+              ));
               setUser(validUser);
-            } catch {
-              // 서버에서 사용자를 찾을 수 없음 (연결 해제됨)
-              // → 로컬 데이터 정리하고 IntroPage에서 다시 로그인하도록 함
-              api.logout();
-              setUser(null);
-              storage.remove('has_visited_intro');
+            } catch (error) {
+              if (error.status === 401) setAuthError(true);
+              // 통신 장애는 계정 삭제가 아니므로 로그인·온보딩 기록을 유지한다.
+              if (error.status === 404) {
+                api.logout();
+                setUser(null);
+                storage.remove('has_visited_intro');
+              }
             }
           })();
         } else if (hasVisitedIntro) {
@@ -107,15 +116,12 @@ export function AuthProvider({ children }) {
             setUser(newUser);
             api.connectSocket();
           } catch {
-            // 실패 또는 무한 대기 시 IntroPage에서 다시 시도하도록 초기화
-            api.logout();
-            storage.remove('has_visited_intro');
+            setAuthError(true);
           }
         }
       } catch {
-        api.logout();
-        setUser(null);
-        storage.remove('has_visited_intro');
+        // 자동 로그인 실패는 온보딩 기록이나 저장된 계정을 지우지 않는다.
+        setAuthError(true);
       } finally {
         setLoading(false);
       }
@@ -152,7 +158,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, updateInstagramId, logout, relogin }}>
+    <AuthContext.Provider value={{ user, setUser, loading, authError, updateInstagramId, logout, relogin }}>
       {children}
     </AuthContext.Provider>
   );

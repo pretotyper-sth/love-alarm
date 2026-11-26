@@ -150,7 +150,7 @@ function TabLayout({ children }) {
 
 // 라우팅 컴포넌트 (AuthProvider 안에서 useAuth 사용 가능)
 function AppRoutes() {
-  const { loading } = useAuth();
+  const { loading, authError } = useAuth();
   
   // 첫 방문 여부 - 초기값은 스토리지에서 바로 읽음 (빈 화면 방지)
   const [hasVisited, setHasVisited] = useState(() => storage.get('has_visited_intro'));
@@ -239,6 +239,20 @@ function AppRoutes() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  if (!loading && authError) {
+    return (
+      <div className="app-loading-screen">
+        <div className="app-loading-screen__content">
+          <Text color="#191F28" typography="t5" fontWeight="bold">
+            로그인하지 못했어요
+          </Text>
+          <Spacing size={16} />
+          <Button onClick={() => window.location.reload()}>다시 시도하기</Button>
+        </div>
+      </div>
+    );
+  }
 
   // 로딩 중에는 빈 화면 (로그인 과정에서 알람 목록이 잠깐 보이는 문제 방지)
   if (loading) {
