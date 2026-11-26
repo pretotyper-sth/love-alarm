@@ -15,7 +15,7 @@ function sessionToken() {
 }
 async function authenticatedFetch(url, options = {}) {
   const token = sessionToken();
-  return fetch(url, { ...options, headers: { ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+  return fetch(url, { ...options, headers: { ...options.headers, 'X-Love-Alarm-Auth': 'session-v1', ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
 }
 async function messageRequest(path, options = {}) {
   const response = await authenticatedFetch(`${API_BASE_URL}${path}`, options);

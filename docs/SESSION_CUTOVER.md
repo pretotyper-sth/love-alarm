@@ -28,3 +28,11 @@
 ## 검증
 
 `node --test backend/src/routes/legacy-api.test.js`는 운영 DB 없이 로컬 HTTP 서버로 기존 앱 재접속, 기존 로그인 수정, 이전 메시지 호환, 인증 우회 방지, 환경변수 전환을 확인한다. 테스트용 PostgreSQL이 필요한 기존 결제 통합 테스트는 `TEST_DATABASE_URL`이 별도로 있을 때만 실행한다.
+
+## 2026-11-26 검토용 빌드
+
+- 파일: 저장소 루트 `love-alarm.ait` (4,378,968 bytes)
+- deploymentId: `01a2161e-a599-7af5-a119-2880e3d9413b`
+- 운영 Render URL, 세션 인증 및 새 클라이언트 구분 헤더, 로그인 오류 재시도 화면 포함을 번들에서 확인했다.
+- iOS/Android의 RN 0.84.0 / 0.72.6 번들을 모두 포함한다.
+- 서버 호환 모드는 검토 중 유지하며 이 파일을 올리는 것만으로 끄지 않는다.
