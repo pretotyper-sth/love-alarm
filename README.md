@@ -90,17 +90,9 @@ npm run deploy
 
 ### 아이콘 이미지 설정
 
-`granite.config.ts` 파일에서 앱 아이콘을 설정할 수 있습니다:
+SDK 3.x에서는 앱인토스 콘솔에서 앱 이름과 아이콘을 관리합니다. 빌드 설정은 `apps-in-toss.config.ts`를 사용합니다.
 
-```typescript
-brand: {
-  displayName: '좋아하면 울리는',
-  primaryColor: '#FF6B6B',
-  icon: 'https://your-image-url.com/icon.png', // 여기에 이미지 URL 입력
-  bridgeColorMode: 'basic',
-}
-```
-
+세션 인증 빌드의 검토·출시와 이전 API 종료 순서는 [세션 인증 전환](docs/SESSION_CUTOVER.md)을 참고하세요.
 
 ### 결제 상품 ID 설정
 

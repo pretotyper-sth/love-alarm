@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "test:message-passes": "node --test backend/src/services/messagePasses.test.js backend/src/services/messagePasses.integration.test.js frontend/src/utils/messagePassPurchase.test.js",
-    "dev": "granite dev",
-    "build": "ait build",
-    "build:staging": "cross-env VITE_MODE=staging ait build",
+    "dev": "cd frontend && vite --host",
+    "build": "npm run vite:build && ait build",
+    "build:staging": "cross-env VITE_MODE=staging npm run build",
     "lint": "cd frontend && eslint .",
     "preview": "cd frontend && vite preview",
     "deploy": "ait deploy",
@@ -18,10 +18,10 @@
     "vite:build": "cd frontend && vite build --mode ${VITE_MODE:-production}"
   },
   "dependencies": {
-    "@apps-in-toss/web-framework": "^2.4.7",
+    "@apps-in-toss/web-framework": "3.11.0",
     "@emotion/react": "^11.14.0",
-    "@toss/tds-mobile": "^2.2.0",
-    "@toss/tds-mobile-ait": "^2.3.0",
+    "@toss/tds-mobile": "2.4.1",
+    "@toss/tds-mobile-ait": "2.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.10.1",

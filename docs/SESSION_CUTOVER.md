@@ -31,8 +31,13 @@
 
 ## 2026-11-26 검토용 빌드
 
-- 파일: 저장소 루트 `love-alarm.ait` (4,378,968 bytes)
-- deploymentId: `01a2161e-a599-7af5-a119-2880e3d9413b`
-- 운영 Render URL, 세션 인증 및 새 클라이언트 구분 헤더, 로그인 오류 재시도 화면 포함을 번들에서 확인했다.
-- iOS/Android의 RN 0.84.0 / 0.72.6 번들을 모두 포함한다.
+- 파일: 저장소 루트 `love-alarm.ait` (707,132 bytes)
+- 콘솔 버전: `20261126-54`
+- deploymentId: `01a21622-ef9d-7bf2-8175-739c75f3776b`
+- SDK: `@apps-in-toss/web-framework` 3.11.0, TDS 2.4.1
+- 공식 배포 상태: `CREATED`, `failureReason: null`, `isTested: false`, `deployed: false`. 업로드 처리 완료이며 기기 테스트·검토 요청·실제 출시는 아직 하지 않았다.
+- 운영 Render URL, 세션 인증 및 새 클라이언트 구분 헤더, 온보딩 오류 수정 포함을 실제 업로드 파일에서 확인했다. 데스크톱·390px 모바일 폭에서 초기 화면 표시를 확인했다.
+- 기존 SDK 2.4.7 업로드는 토스가 SDK 3.1 이상을 요구해 BUILD_FAILED였다. 이 파일로 대체한다. SDK 3 설정은 `apps-in-toss.config.ts`에 있으며 `npm run build`로 다시 생성한다.
 - 서버 호환 모드는 검토 중 유지하며 이 파일을 올리는 것만으로 끄지 않는다.
+
+[공식 SDK 3.x 전환 가이드](https://developers-apps-in-toss.toss.im/documentation/integration/sdk-3.x)에 따라 SDK와 TDS, 설정 파일, 빌드 명령을 전환했다. SDK 3.x를 실제 출시한 뒤에는 SDK 2.x 빌드로 롤백할 수 없으므로 출시 전 토스 기기 QR 테스트가 필요하다. API 호환 설정을 다시 켜는 서버 복구는 이 플랫폼 제한과 별개다.

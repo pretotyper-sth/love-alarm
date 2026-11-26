@@ -16,5 +16,6 @@ export default defineConfig({
   publicDir: 'public',
   build: {
     outDir: '../dist/web',
+    emptyOutDir: true,
   },
 })
