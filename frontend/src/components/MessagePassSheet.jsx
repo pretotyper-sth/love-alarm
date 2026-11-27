@@ -86,6 +86,7 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
       }
       await openMessage();
     } catch (failure) {
+      logClick(failure.canceled ? 'message_pass_purchase_cancel' : 'message_pass_purchase_fail');
       if (!mounted.current) return;
       if (!failure.canceled) setError(paid ? '구매한 열람권이 있어요. 다시 열어 주세요.' : failure.message);
       try { await refreshWallet(); } catch { /* Preserve the actionable purchase error. */ }

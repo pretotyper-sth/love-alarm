@@ -545,3 +545,18 @@
 .alarm-list-msg-badge--dot {
   padding: 0;
 }
+
+.guest-alarm-intro { padding: 20px 24px 0; }
+.guest-alarm-intro h2 { font-size: 20px; word-break: keep-all; line-height: 1.4; margin: 0 0 10px; color: #191f28; }
+.guest-alarm-intro > p { font-size: 15px; line-height: 1.6; color: #6b7684; margin: 0 0 16px; word-break: keep-all; }
+.guest-alarm-preview { border-radius: 16px; padding: 16px; background: #f7f8fa; }
+.guest-alarm-preview h3 { margin: 0 0 12px; font-size: 12px; font-weight: 500; color: #8b95a1; }
+.guest-alarm-preview-field { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; font-size: 13px; line-height: 1.5; }
+.guest-alarm-preview-field + .guest-alarm-preview-field { border-top: 1px solid #e5e8eb; }
+.guest-alarm-preview-field span { color: #6b7684; }
+.guest-alarm-preview-field strong { font-weight: 500; color: #333d4b; }
+.add-tutorial-dimmer { position: fixed; inset: 0; z-index: 10000; border: 0; background: rgba(0,0,0,.62); cursor: default; }
+.add-tutorial-target { position: relative; z-index: 10001; background: #fff; border-radius: 0; }
+.add-tutorial-target > * { border-radius: 0; }
+
+.guest-alarm-sheet { background: #fff; border-radius: 24px 24px 0 0; width: 100%; max-width: 420px; max-height: 80dvh !important; }

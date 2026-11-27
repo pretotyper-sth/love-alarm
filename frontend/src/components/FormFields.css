@@ -1,0 +1,43 @@
+.form-field-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 0 24px;
+  color: #4e5968;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.form-field-heading span { color: #8b95a1; font-size: 13px; flex-shrink: 0; }
+.form-field-notes { padding: 0 24px 24px; color: #6b7684; font-size: 13px; line-height: 1.6; word-break: keep-all; }
+.form-field-notes p { margin: 0; }
+.form-field-notes p + p { margin-top: 8px; }
+.alarm-entry-fields textarea, .feedback-entry-fields textarea { text-align: left; word-spacing: normal; letter-spacing: normal; }
+
+.form-entry-fields .form-field-heading { font-weight: 600; font-size: 15px; color: #333d4b; }
+.form-entry-fields .form-field-heading span { font-weight: 400; }
+.form-entry-fields input, .form-entry-fields textarea {
+  background: transparent;
+  color: #191f28;
+  border: 0;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: left;
+}
+.form-entry-fields input::placeholder, .form-entry-fields textarea::placeholder {
+  color: #8b95a1;
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: normal;
+  word-spacing: normal;
+}
+.form-entry-fields .form-field-notes { padding-top: 14px; line-height: 1.7; }
+
+.form-entry-fields {
+  --adaptiveGreyOpacity50: #f2f4f6;
+  --adaptiveGrey500: #8b95a1;
+  --adaptiveGrey800: #333d4b;
+  --adaptiveGrey600: #6b7684;
+}

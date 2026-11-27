@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Asset,
   Text,
   Top,
   TextField,
   TextArea,
   Spacing,
-  Button,
+  BottomCTA,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
@@ -14,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import { logScreen, logClick } from '../utils/analytics';
 import './AddAlarmPage.css';
+import '../components/FormFields.css';
 
 // 최초 알람 등록 여부 키
 const FIRST_ALARM_REGISTERED_KEY = 'love_alarm_first_registered';
@@ -134,6 +134,7 @@ export function AddAlarmPage() {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+    logClick('add_alarm_submit', { has_message: !!message.trim() });
     setIsSubmitting(true);
     try {
       const account = await requireLogin('알람을 추가하려면 로그인이 필요해요');
@@ -303,14 +304,6 @@ export function AddAlarmPage() {
     }
   };
 
-  const handleClearMyId = () => {
-    setMyId('');
-  };
-
-  const handleClearTargetId = () => {
-    setTargetId('');
-  };
-
   // 인스타그램 ID 유효성 검사
   // - 영문 소문자(a-z), 숫자(0-9), 마침표(.), 밑줄(_) 만 허용
   // - 1~30자
@@ -350,166 +343,91 @@ export function AddAlarmPage() {
   return (
     <div className="add-alarm-page-container">
       <div className="add-alarm-form-content">
-      <Spacing size={14} />
-
-      <div className="add-alarm-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph 
-              size={22} 
-              color={adaptive.grey900}
-              fontWeight="bold"
-              style={{ fontSize: '22px' }}
-            >
-              알람 추가
-            </Top.TitleParagraph>
-          }
-          subtitleBottom={
-            <div className="add-alarm-subtitle">
-              <Text 
-                color={adaptive.grey700} 
-                typography="t7"
-                style={{ 
-                  fontSize: '17px', 
-                  fontWeight: 500,
-                  color: adaptive.grey700 
-                }}
-              >
-                추가해도 상대에게 연락이 가지 않아요.
-              </Text>
-            </div>
-          }
-        />
-      </div>
-
       <Spacing size={16} />
-
-      <div className="add-alarm-content">
-          {isVerified ? (
-            /* 인증된 경우: TDS TextField 동일 스타일, 읽기 전용 */
-            <div className="add-alarm-verified-field">
-              <TextField
-                variant="big"
-                label="본인 인스타그램 ID"
-                labelOption="sustain"
-                value={verifiedUsername}
-                disabled
-                onChange={() => {}}
-                help="인증된 계정으로 적용됐어요. (변경은 '더보기' 메뉴에서)"
-              />
-            </div>
-          ) : (
-            <TextField
-              variant="big"
-              hasError={myIdHasError}
-              label="본인 인스타그램 ID"
-              labelOption="sustain"
-              help={getMyIdErrorMessage()}
-              value={myId}
-              onChange={(e) => setMyId(e.target.value)}
-              placeholder="예: abcd1234"
-              right={
-                myId ? (
-                  <button
-                    onClick={handleClearMyId}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                    aria-label="지우기"
-                  >
-                    <Asset.Icon
-                      frameShape={Asset.frameShape.CleanW20}
-                      backgroundColor="transparent"
-                      name="icon-x-mono"
-                      color={adaptive.greyOpacity600}
-                      aria-hidden={true}
-                      ratio="1/1"
-                    />
-                  </button>
-                ) : null
-              }
-            />
-          )}
-
-        <Spacing size={12} />
-
+      <Top
+        title={<Top.TitleParagraph size={28} color={adaptive.grey900} fontWeight="bold" style={{ fontSize: 28, lineHeight: 1.4 }}>알람 추가</Top.TitleParagraph>}
+        subtitleBottom={<Text color={adaptive.grey600} typography="t6" style={{ fontSize: 16, lineHeight: 1.5 }}>추가해도 상대에게 연락이 가지 않아요.</Text>}
+      />
+      <Spacing size={12} />
+      <div className="alarm-entry-fields form-entry-fields">
+        <div className="form-field-heading"><label htmlFor="alarm-my-id">본인 인스타그램 ID</label></div>
+        {isVerified ? (
           <TextField
-            variant="big"
-            hasError={targetIdHasError}
-            label="상대 인스타그램 ID"
-            labelOption="sustain"
-            help={getTargetIdErrorMessage()}
-            value={targetId}
-            onChange={(e) => setTargetId(e.target.value)}
-            placeholder="예: abcd1234"
-            right={
-              targetId ? (
-                <button
-                  onClick={handleClearTargetId}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                  aria-label="지우기"
-                >
-                  <Asset.Icon
-                    frameShape={Asset.frameShape.CleanW20}
-                    backgroundColor="transparent"
-                    name="icon-x-mono"
-                    color={adaptive.greyOpacity600}
-                    aria-hidden={true}
-                    ratio="1/1"
-                  />
-                </button>
-              ) : null
-            }
-          />
-
-        <Spacing size={12} />
-
-        <div className="add-alarm-message-wrapper">
-          <TextArea
             variant="box"
-            minHeight={112}
-            label="메시지 (선택)"
+            paddingTop={8}
+            paddingBottom={0}
+            id="alarm-my-id"
             labelOption="sustain"
-            placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            maxLength={MESSAGE_MAX_LENGTH}
+            value={verifiedUsername}
+            disabled
+            help="인증된 계정으로 적용됐어요. (변경은 '더보기' 메뉴에서)"
           />
-          <div className="add-alarm-message-footer">
-            <p className="add-alarm-message-hint">
-              상대는 인스타그램 인증 후 메시지를 확인해요. 열람권이 필요한 경우 수신자가 구매해요.
-              <br />
-              보낸 메시지는 메시지함에서 다시 볼 수 있어요.
-            </p>
-            <div className="add-alarm-message-count">{message.length}/{MESSAGE_MAX_LENGTH}</div>
-          </div>
+        ) : (
+          <TextField.Clearable
+            variant="box"
+            paddingTop={8}
+            paddingBottom={0}
+            hasError={myIdHasError}
+            id="alarm-my-id"
+            labelOption="sustain"
+            help={getMyIdErrorMessage()}
+            value={myId}
+            onChange={(e) => setMyId(e.target.value)}
+            onClear={() => setMyId('')}
+            placeholder="예: abcd1234"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+        )}
+        <Spacing size={24} />
+        <div className="form-field-heading"><label htmlFor="alarm-target-id">상대 인스타그램 ID</label></div>
+        <TextField.Clearable
+          variant="box"
+            paddingTop={8}
+            paddingBottom={0}
+          hasError={targetIdHasError}
+          id="alarm-target-id"
+          labelOption="sustain"
+          help={getTargetIdErrorMessage()}
+          value={targetId}
+          onChange={(e) => setTargetId(e.target.value)}
+          onClear={() => setTargetId('')}
+          placeholder="예: abcd1234"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <Spacing size={28} />
+        <div className="form-field-heading">
+          <label htmlFor="alarm-message">메시지 (선택)</label>
+          <span>{message.length}/{MESSAGE_MAX_LENGTH}</span>
+        </div>
+        <TextArea
+          id="alarm-message"
+          variant="box"
+            paddingTop={8}
+            paddingBottom={0}
+          minHeight={128}
+          style={{ textAlign: 'left' }}
+          labelOption="sustain"
+          placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          maxLength={MESSAGE_MAX_LENGTH}
+        />
+        <div className="form-field-notes">
+          <p>상대는 인스타그램 인증 후 메시지를 확인해요. 열람권이 필요한 경우 수신자가 구매해요. 보낸 메시지는 메시지함에서 다시 볼 수 있어요.</p>
         </div>
       </div>
       </div>
-
-      <div className="add-alarm-cta-section">
-        <Button
-          size="xlarge"
-          display="block"
-          onClick={handleSubmit}
-          disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
-          loading={isSubmitting}
-        >
-          {isAdFree() ? '알람 추가하기' : '광고보고 추가하기'}
-        </Button>
-      </div>
+      <BottomCTA
+        onClick={handleSubmit}
+        disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
+        loading={isSubmitting}
+      >
+        {isAdFree() ? '알람 추가하기' : '광고보고 추가하기'}
+      </BottomCTA>
 
       {/* 에러 Toast */}
       <div className={`single-toast ${errorToast.show ? 'show' : ''}`}>

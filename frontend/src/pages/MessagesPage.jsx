@@ -361,6 +361,7 @@ export function MessagesPage() {
     void api.getMessagePassWallet().then(setWallet).catch(() => {});
   }
   async function handleOpenReceivedMessage(message) {
+    logClick('message_open_click');
     if (message.locked) { setSelectedLockedMsg(message); return; }
     if (opening.current) return;
     opening.current = true;

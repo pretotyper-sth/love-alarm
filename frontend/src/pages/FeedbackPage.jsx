@@ -5,12 +5,13 @@ import {
   TextField,
   TextArea,
   Spacing,
-  Button,
+  BottomCTA,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import './FeedbackPage.css';
+import '../components/FormFields.css';
 
 // 카테고리 옵션
 const CATEGORY_OPTIONS = [
@@ -74,115 +75,53 @@ export function FeedbackPage() {
   return (
     <div className="feedback-page-container">
       <div className="feedback-form-content">
-      <Spacing size={14} />
-
-      <div className="add-alarm-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph 
-              size={22} 
-              color={adaptive.grey900}
-              fontWeight="bold"
-              style={{ fontSize: '22px' }}
-            >
-              의견 보내기
-            </Top.TitleParagraph>
-          }
-          subtitleBottom={
-            <div className="add-alarm-subtitle">
-              <Text 
-                color={adaptive.grey700} 
-                typography="t7"
-                style={{ 
-                  fontSize: '17px', 
-                  fontWeight: 500,
-                  color: adaptive.grey700 
-                }}
-              >
-                서비스 개선에 도움이 되는 의견을 보내주세요.
-                하나도 놓치지 않고 전부 읽어볼게요!
-              </Text>
-            </div>
-          }
+      <Spacing size={16} />
+      <Top
+        title={<Top.TitleParagraph size={28} color={adaptive.grey900} fontWeight="bold" style={{ fontSize: 28, lineHeight: 1.4 }}>의견 보내기</Top.TitleParagraph>}
+        subtitleBottom={<Text color={adaptive.grey600} typography="t6" style={{ fontSize: 16, lineHeight: 1.5 }}>
+          서비스 개선에 도움이 되는 의견을 보내주세요.
+          하나도 놓치지 않고 전부 읽어볼게요!
+        </Text>}
+      />
+      <Spacing size={12} />
+      <div className="feedback-entry-fields form-entry-fields">
+        <div className="form-field-heading"><label htmlFor="feedback-category">카테고리</label></div>
+        <TextField.Button
+          variant="box"
+          paddingTop={8}
+          paddingBottom={0}
+          id="feedback-category"
+          labelOption="sustain"
+          value={category}
+          placeholder="선택"
+          onClick={() => setShowCategorySheet(true)}
+          aria-haspopup="dialog"
+          aria-expanded={showCategorySheet}
+          right={<img src="https://static.toss.im/icons/png/4x/icon-arrow-down-mono.png" alt="" style={{ width: 20, height: 20 }} />}
+        />
+        <Spacing size={28} />
+        <div className="form-field-heading">
+          <label htmlFor="feedback-content">내용</label>
+          <span>{content.length}/500 (최소 10자)</span>
+        </div>
+        <TextArea
+          id="feedback-content"
+          variant="box"
+          paddingTop={8}
+          paddingBottom={0}
+          minHeight={200}
+          placeholder="자유롭게 의견을 작성해 주세요."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          maxLength={500}
         />
       </div>
-
-      <Spacing size={16} />
-
-      <div className="add-alarm-content">
-          <div 
-            className={`category-field-wrapper ${showCategorySheet ? 'is-focused' : ''}`}
-            onClick={() => {
-              setShowCategorySheet(true);
-            }}
-          >
-            <TextField
-              variant="line"
-              hasError={false}
-              label="카테고리"
-              labelOption="sustain"
-              value={category}
-              placeholder="선택"
-              readOnly={true}
-              right={
-                category ? (
-                  <img 
-                    src="https://static.toss.im/icons/png/4x/icon-arrow-down-mono.png"
-                    alt="아래 화살표"
-                    style={{ width: '20px', height: '20px', opacity: 0.6 }}
-                  />
-                ) : null
-              }
-              style={{ pointerEvents: 'none' }}
-            />
-          </div>
-
-        <Spacing size={16} />
-
-          {/* 내용 입력 TextArea */}
-          <div className="feedback-textarea-wrapper">
-            <TextArea
-              variant="box"
-              minHeight={200}
-              label="내용"
-              labelOption="sustain"
-              placeholder="자유롭게 의견을 작성해 주세요."
-              value={content}
-              onChange={(e) => {
-                setContent(e.target.value);
-              }}
-              maxLength={500}
-            />
-            <div style={{ 
-              marginTop: '-16px', 
-              textAlign: 'right',
-              paddingRight: '20px'
-            }}>
-              <Text
-                typography="t8"
-                style={{ 
-                  fontSize: '12px',
-                  color: '#8b95a1'
-                }}
-              >
-                {content.length}/500 (최소 10자)
-              </Text>
-          </div>
-        </div>
       </div>
-      </div>
-
-      <div className="feedback-submit-section">
-        <Button
-          size="xlarge"
-          display="block"
-          onClick={handleSubmit}
-          disabled={!category || content.trim().length < 10 || isSubmitting}
-          loading={isSubmitting}
-        >
-          보내기
-        </Button>
-      </div>
+      <BottomCTA
+        onClick={handleSubmit}
+        disabled={!category || content.trim().length < 10 || isSubmitting}
+        loading={isSubmitting}
+      >보내기</BottomCTA>
 
       {/* 에러 Toast */}
       {errorToast.message && (

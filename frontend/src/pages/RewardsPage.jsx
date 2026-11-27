@@ -165,22 +165,6 @@ export function RewardsPage() {
       <Spacing size={20} />
 
       <List>
-        {!user && <ListRow
-          left={<ListRow.AssetIcon
-            shape="squircle"
-            size="medium"
-            url="https://static.toss.im/3d-emojis/u1F4C5-apng.png"
-            backgroundColor="#f2f4f6"
-          />}
-          contents={<div className="checkin-contents">
-            <p className="checkin-title">오늘의 출석</p>
-            <p className="checkin-sub">매일 출석하고 보상을 모아요</p>
-          </div>}
-          right={<Button size="small" onClick={() => requireLogin('출석을 기록하려면 로그인이 필요해요')}>출석 체크하기</Button>}
-          verticalPadding="large"
-          horizontalPadding="medium"
-        />}
-
       {/* ── 10일 체크인 ── */}
         <ListRow
           left={

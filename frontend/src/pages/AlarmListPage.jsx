@@ -5,6 +5,7 @@ import {
   Spacing,
   Button,
   Skeleton,
+  BottomSheet,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -153,7 +154,35 @@ const getCachedMaxSlots = () => {
 export function AlarmListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser } = useAuth();
+  const { user, setUser, requireLogin } = useAuth();
+  const [showGuestIntro, setShowGuestIntro] = useState(false);
+  const [guestLoginBusy, setGuestLoginBusy] = useState(false);
+  const tutorialRef = useRef(null);
+  const tutorialKey = user ? `love_alarm_add_tutorial_${user.id}` : null;
+  const [showAddTutorial, setShowAddTutorial] = useState(() => !!user &&
+    !localStorage.getItem(`love_alarm_add_tutorial_${user.id}`));
+  const dismissAddTutorial = () => {
+    if (tutorialKey) localStorage.setItem(tutorialKey, 'true');
+    setShowAddTutorial(false);
+  };
+  useEffect(() => {
+    if (!showAddTutorial) return;
+    const controls = () => [...tutorialRef.current.querySelectorAll('button, [role="button"]')];
+    controls()[0]?.focus();
+    const handleKey = (event) => {
+      if (event.key === 'Escape') {
+        localStorage.setItem(`love_alarm_add_tutorial_${user.id}`, 'true');
+        setShowAddTutorial(false);
+      }
+      if (event.key !== 'Tab') return;
+      const buttons = controls();
+      event.preventDefault();
+      const index = buttons.indexOf(document.activeElement);
+      buttons[(index + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length]?.focus();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [showAddTutorial, user?.id]);
   const hasEverRegistered = !!user && localStorage.getItem('love_alarm_first_registered') === 'true';
   // 캐시된 알람 목록으로 초기화 (깜빡임 방지)
   const [alarms, setAlarms] = useState(() => user ? getCachedAlarms() || [] : []);
@@ -262,7 +291,7 @@ export function AlarmListPage() {
   }, [loadAlarms, user]);
 
   useEffect(() => {
-    if (alarmListScreenLoggedRef.current || isLoading || !user) return;
+    if (alarmListScreenLoggedRef.current || isLoading) return;
     alarmListScreenLoggedRef.current = true;
     logScreen('alarm_list_screen', { alarm_count: alarms.length });
   }, [isLoading, user, alarms.length]);
@@ -458,6 +487,8 @@ export function AlarmListPage() {
   };
 
   const handleAddAlarm = () => {
+    if (!user) { logClick('alarm_add_button_click'); logImpression('guest_alarm_intro_view'); setShowGuestIntro(true); return; }
+    dismissAddTutorial();
     logClick('alarm_add_button_click', { slot_used: alarms.length, slot_max: user?.maxSlots });
     // 최초 추가 시 비정상적 사용 방지 페이지 표시
     if (!hasConfirmedAbuseWarning()) {
@@ -470,6 +501,19 @@ export function AlarmListPage() {
       return;
     }
     navigate('/add-alarm');
+  };
+
+  const handleGuestLogin = async () => {
+    if (guestLoginBusy) return;
+    logClick('guest_alarm_login_click');
+    setGuestLoginBusy(true);
+    setShowGuestIntro(false);
+    try {
+      const account = await requireLogin('로그인하고 알람을 추가해 보세요');
+      if (account) navigate(hasConfirmedAbuseWarning() ? '/add-alarm' : '/abuse-warning');
+    } finally {
+      setGuestLoginBusy(false);
+    }
   };
 
   // 결제 성공 시 슬롯 증가 처리
@@ -608,6 +652,8 @@ export function AlarmListPage() {
 
       <div className="alarm-list-content">
         {/* 추가하기 ListRow */}
+        {showAddTutorial && <button className="add-tutorial-dimmer" aria-label="튜토리얼 닫기" onClick={dismissAddTutorial} />}
+        <div ref={tutorialRef} className={showAddTutorial ? 'add-tutorial-target' : undefined}>
         <ListRow
           ref={addButtonRef}
           left={
@@ -627,6 +673,8 @@ export function AlarmListPage() {
           horizontalPadding="medium"
           onClick={handleAddAlarm}
         />
+
+        </div>
 
         {/* 초기 사용 안내 힌트 — 한 번도 알람을 만든 적 없고 현재 알람 0개일 때만 노출 */}
         {!hasEverRegistered && !isLoading && alarms.length === 0 && (
@@ -792,6 +840,18 @@ export function AlarmListPage() {
           </div>
         </div>
       </div>
+      <BottomSheet className="guest-alarm-sheet" ctaContentGap={12} open={showGuestIntro} onClose={() => setShowGuestIntro(false)}>
+        <div className="guest-alarm-intro">
+          <h2>좋아하는 사람을 추가해요</h2>
+          <p>서로의 인스타그램 ID를 등록하면 알람이 울려요.<br />추가해도 상대에게 연락이 가지 않아요.</p>
+          <div className="guest-alarm-preview" aria-label="알람 추가 화면 미리보기">
+            <h3>알람 추가 미리보기</h3>
+            <div className="guest-alarm-preview-field"><span>본인 인스타그램 ID</span><strong>my_id</strong></div>
+            <div className="guest-alarm-preview-field"><span>상대 인스타그램 ID</span><strong>someone_i_like</strong></div>
+          </div>
+        </div>
+        <BottomSheet.CTA onClick={handleGuestLogin} loading={guestLoginBusy} disabled={guestLoginBusy}>로그인하고 추가하기</BottomSheet.CTA>
+      </BottomSheet>
     </div>
   );
 }

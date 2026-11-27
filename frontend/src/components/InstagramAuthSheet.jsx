@@ -1,3 +1,4 @@
+import { logClick } from '../utils/analytics';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import { api } from '../utils/api';
@@ -72,13 +73,16 @@ export function InstagramAuthSheet({
     setIsRequesting(true);
     setError('');
     try {
+      logClick('instagram_verify_start');
       const data = await api.verifyInstagramStart(trimmed);
+      logClick('instagram_verify_code_sent');
       setSessionId(data.sessionId);
       setStage('waiting');
       setCountdown(600);
       setOtp(['', '', '', '', '', '']);
       setTimeout(() => otpRefs.current[0]?.focus(), 300);
     } catch (err) {
+      logClick('instagram_verify_fail');
       setError(err.message || '코드 요청에 실패했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsRequesting(false);
@@ -96,6 +100,7 @@ export function InstagramAuthSheet({
       const verifiedUsername = data.instagramUsername
         || username.trim().toLowerCase().replace(/^@/, '');
       localStorage.setItem('love_alarm_instagram_verified_username', verifiedUsername);
+      logClick('instagram_verify_success');
       onSuccess?.(verifiedUsername);
     } catch {
       setError('코드가 일치하지 않거나 만료되었습니다.');

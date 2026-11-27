@@ -1,50 +1,45 @@
 import { Router } from 'express';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
+import { sanitizeEvents, overview } from '../services/ubl.js';
 
 const router = Router();
 
-const DASHBOARD_SECRET = process.env.DASHBOARD_SECRET || 'LA100%';
-
 function requireDashAuth(req, res, next) {
-  const auth = req.headers.authorization;
-  if (auth) {
-    const [scheme, encoded] = auth.split(' ');
-    if (scheme === 'Basic') {
-      const decoded = Buffer.from(encoded, 'base64').toString();
-      const [, pass] = decoded.split(':');
-      if (pass === DASHBOARD_SECRET) return next();
-    }
+  const secret = process.env.DASHBOARD_SECRET;
+  if (!secret) return res.status(503).json({error:'DASHBOARD_SECRET 설정이 필요합니다.'});
+  const auth = req.headers.authorization || '';
+  let password = '';
+  if (auth.startsWith('Basic ')) {
+    const decoded = Buffer.from(auth.slice(6),'base64').toString();
+    password = decoded.slice(decoded.indexOf(':')+1);
   }
-  if (req.query.secret === DASHBOARD_SECRET) return next();
-  res.status(401).json({ error: 'Unauthorized' });
+  const expected = Buffer.from(secret), actual = Buffer.from(password);
+  if(actual.length === expected.length && timingSafeEqual(actual,expected)) return next();
+  res.status(401).json({error:'Unauthorized'});
 }
 
 // POST /api/events — 이벤트 수집 (프론트에서 배치 전송)
 router.post('/', async (req, res) => {
   try {
-    const { events } = req.body;
-    if (!Array.isArray(events) || events.length === 0) {
-      return res.json({ ok: true });
-    }
-
-    const data = events
-      .filter(e => e.type && e.name)
-      .map(e => ({
-        type: e.type,
-        name: e.name,
-        params: e.params || null,
-        userId: e.userId || null,
-        sessionId: e.sessionId || null,
-      }));
-
-    if (data.length > 0) {
-      await req.prisma.analyticsEvent.createMany({ data });
-    }
+    const incoming = req.body.events;
+    const data = sanitizeEvents(Array.isArray(incoming) ? incoming.map(e=>({...e,id:e?.id || randomUUID()})) : incoming);
+    await req.prisma.analyticsEvent.createMany({ data, skipDuplicates: true });
 
     res.json({ ok: true });
   } catch (err) {
     console.error('[events] ingest error:', err.message);
-    res.json({ ok: true });
+    res.status(err.message.includes('이벤트') ? 400 : 503).json({ error: '이벤트를 저장하지 못했습니다.' });
   }
+});
+
+router.get('/overview', requireDashAuth, async (req, res) => {
+  const days = Number(req.query.days || 7);
+  if (![1,7,14,30].includes(days)) return res.status(400).json({error:'기간은 1, 7, 14, 30일 중 선택해 주세요.'});
+  try {
+    const events = await req.prisma.analyticsEvent.findMany({where:{createdAt:{gte:new Date(Date.now()-days*86400000)}},orderBy:{createdAt:'asc'},take:50001,select:{id:true,name:true,type:true,sessionId:true,userId:true,createdAt:true}});
+    if(events.length>50000) return res.status(422).json({error:'선택 기간의 이벤트가 50,000개를 넘었습니다. 조회 기간을 줄여 주세요.'});
+    res.set('Cache-Control','no-store').json(overview(events,days));
+  } catch { res.status(503).json({error:'행동 로그를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'}); }
 });
 
 // GET /api/events/summary — 기간별 이벤트 요약

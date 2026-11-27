@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { logScreen, logClick } from '../utils/analytics';
 import { useNavigate } from 'react-router-dom';
 import {
   Asset,
@@ -12,8 +14,10 @@ import { storage } from '../utils/storage';
 import './IntroPage.css';
 
 export function IntroPage({ onComplete }) {
+  useEffect(() => { logScreen('intro_screen'); }, []);
   const navigate = useNavigate();
   const handleConfirm = () => {
+    logClick('intro_browse_click');
     if (onComplete) onComplete();
     else storage.set('has_visited_intro', true);
     navigate('/alarms', { replace: true });

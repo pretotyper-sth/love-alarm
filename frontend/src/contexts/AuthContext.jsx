@@ -3,6 +3,7 @@ import { appLogin } from '@apps-in-toss/web-framework';
 import { api } from '../utils/api';
 import { restoreMessagePassOrders } from '../utils/messagePassPurchase';
 import { restoreAuthUser } from '../utils/auth.js';
+import { logClick, logImpression } from '../utils/analytics';
 import { LoginPrompt } from '../components/LoginPrompt';
 
 const AuthContext = createContext(null);
@@ -52,6 +53,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const confirmLogin = useCallback(async () => {
+    logClick('login_start');
     setLoginBusy(true);
     setLoginError('');
     try {
@@ -62,10 +64,12 @@ export function AuthProvider({ children }) {
         const { authorizationCode, referrer } = await appLogin();
         result = await api.tossLogin(authorizationCode, referrer);
       }
+      logClick('login_success');
       setUser(result.user);
       api.connectSocket();
       finishLogin(result.user);
     } catch (error) {
+      logClick(/cancel|취소/i.test(String(error?.message || error?.code || '')) ? 'login_cancel' : 'login_fail');
       if (!/cancel|취소/i.test(String(error?.message || error?.code || ''))) {
         setLoginError('로그인하지 못했어요. 다시 시도해 주세요.');
       }
@@ -81,6 +85,7 @@ export function AuthProvider({ children }) {
     let resolve;
     const promise = new Promise(done => { resolve = done; });
     pendingLogin.current = { promise, resolve };
+    logImpression('login_required');
     setLoginError('');
     if (api.isPreview) setLoginTitle(title);
     else void confirmLogin();
@@ -103,7 +108,7 @@ export function AuthProvider({ children }) {
       {children}
       {!api.isPreview && loginError && <div className="login-error-toast" role="alert">{loginError}</div>}
       {api.isPreview && loginTitle && <LoginPrompt title={loginTitle} busy={loginBusy} error={loginError}
-        onConfirm={confirmLogin} onClose={() => { if (!loginBusy) finishLogin(null); }} />}
+        onConfirm={confirmLogin} onClose={() => { if (!loginBusy) { logClick('login_cancel'); finishLogin(null); } }} />}
     </AuthContext.Provider>
   );
 }
