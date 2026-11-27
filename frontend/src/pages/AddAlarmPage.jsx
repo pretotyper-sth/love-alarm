@@ -61,7 +61,7 @@ function isAdFree() {
 
 export function AddAlarmPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, requireLogin } = useAuth();
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
   const [message, setMessage] = useState('');
@@ -71,7 +71,7 @@ export function AddAlarmPage() {
   const adCleanupRef = useRef(null);
 
   // 인증된 Instagram 계정 여부
-  const verifiedUsername = localStorage.getItem(IG_VERIFIED_KEY) || '';
+  const verifiedUsername = user ? localStorage.getItem(IG_VERIFIED_KEY) || '' : '';
   const isVerified = !!verifiedUsername;
 
   // 저장된 인스타그램 ID가 있으면 자동 입력 (localStorage에서)
@@ -79,10 +79,10 @@ export function AddAlarmPage() {
     if (isVerified) {
       setMyId(verifiedUsername);
     } else {
-      const savedMyId = localStorage.getItem('love_alarm_my_instagram_id');
-      if (savedMyId) setMyId(savedMyId);
+      const savedMyId = user ? localStorage.getItem('love_alarm_my_instagram_id') : null;
+      if (savedMyId) setMyId(current => current || savedMyId);
     }
-  }, [isVerified, verifiedUsername]);
+  }, [isVerified, verifiedUsername, user]);
 
   useEffect(() => {
     logScreen('add_alarm_screen');
@@ -90,6 +90,7 @@ export function AddAlarmPage() {
 
   // 페이지 진입 시 광고 사전 로드 (Preload) - 검수 필수 요건
   useEffect(() => {
+    if (!api.hasSession()) return;
     const preloadAd = async () => {
       try {
         const { GoogleAdMob } = await import('@apps-in-toss/web-framework');
@@ -132,7 +133,14 @@ export function AddAlarmPage() {
   };
 
   const handleSubmit = async () => {
-    await addAlarm();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const account = await requireLogin('알람을 추가하려면 로그인이 필요해요');
+      if (account) await addAlarm(account);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // 리워드 광고 표시 함수 (문서: https://developers-apps-in-toss.toss.im/ads/develop.html)
@@ -216,9 +224,9 @@ export function AddAlarmPage() {
     }
   };
 
-  const addAlarm = async () => {
+  const addAlarm = async (account) => {
     // ① 하루 추가 제한 체크 (광고 노출 전)
-    const dailyLimit = (user?.maxSlots ?? 2) * 2;
+    const dailyLimit = (account.maxSlots ?? 2) * 2;
     const dailyCount = getDailyAddCount();
     if (dailyCount >= dailyLimit) {
       showErrorToast(`하루 최대 ${dailyLimit}번까지 추가할 수 있어요.`);
@@ -256,8 +264,8 @@ export function AddAlarmPage() {
       
       // 6. 최초 알람 등록인지 확인 (알림 팝업 표시 여부)
       const isFirstAlarm = !localStorage.getItem(FIRST_ALARM_REGISTERED_KEY);
-      const pushEnabled = user?.pushEnabled ?? false;
-      const tossAppEnabled = user?.tossAppEnabled ?? false;
+      const pushEnabled = account.pushEnabled ?? false;
+      const tossAppEnabled = account.tossAppEnabled ?? false;
       const shouldShowNotificationSheet = isFirstAlarm && !pushEnabled && !tossAppEnabled;
       
       // 최초 등록 완료 표시

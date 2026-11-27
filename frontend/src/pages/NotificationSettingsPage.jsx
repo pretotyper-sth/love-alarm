@@ -20,8 +20,9 @@ import './SettingsPage.css';
 
 export function NotificationSettingsPage() {
   const navigate = useNavigate();
-  const { user, setUser } = useAuth();
+  const { user, setUser, requireLogin } = useAuth();
 
+  const userId = user?.id;
   const [pushEnabled, setPushEnabled] = useState(user?.pushEnabled ?? false);
   const [tossAppEnabled, setTossAppEnabled] = useState(user?.tossAppEnabled ?? false);
   const [messagePushEnabled, setMessagePushEnabled] = useState(user?.messagePushEnabled ?? false);
@@ -30,6 +31,7 @@ export function NotificationSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    if (!userId) return;
     const syncSettings = async () => {
       try {
         const userData = await api.getUser();
@@ -42,7 +44,7 @@ export function NotificationSettingsPage() {
       }
     };
     syncSettings();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     logScreen('notification_settings_screen');
@@ -56,6 +58,7 @@ export function NotificationSettingsPage() {
   };
 
   const handleSettingChange = async (field, value) => {
+    if (!await requireLogin('알림 설정을 저장하려면 로그인이 필요해요')) return;
     logClick('notification_toggle_change', { field, value });
     const setter = SETTING_SETTERS[field];
     if (!setter) return;

@@ -1,30 +1,42 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { refreshAuthUser } from './auth.js';
+import { restoreAuthUser } from './auth.js';
 
-test('valid session restores the user without logging in again', async () => {
-  const user = { id: 'existing' };
-  assert.equal(await refreshAuthUser({ getUser: async () => user }, () => assert.fail('unexpected login')), user);
+function savedApi(overrides = {}) {
+  return {
+    getCurrentUser: () => ({ id: 'existing' }),
+    hasSession: () => true,
+    getUser: async () => ({ id: 'existing' }),
+    login: () => assert.fail('browsing must never initiate login'),
+    tossLogin: () => assert.fail('browsing must never initiate Toss login'),
+    logout: () => {},
+    ...overrides,
+  };
+}
+
+test('first visit and expired saved sessions stay signed out without starting login', async () => {
+  assert.equal(await restoreAuthUser(savedApi({ getCurrentUser: () => null, getUser: () => assert.fail('no guest profile request') })), null);
+  assert.equal(await restoreAuthUser(savedApi({ hasSession: () => false, getUser: () => assert.fail('no expired profile request') })), null);
 });
 
-test('rejected session renews Toss login and returns the restored user', async () => {
-  const user = { id: 'existing' };
-  let logins = 0;
-  const api = { getUser: async () => { throw Object.assign(new Error('expired'), { status: 401 }); } };
-  assert.equal(await refreshAuthUser(api, async () => { logins++; return user; }), user);
-  assert.equal(logins, 1);
+test('valid saved session restores silently', async () => {
+  const user = { id: 'existing', maxSlots: 3 };
+  assert.equal(await restoreAuthUser(savedApi({ getUser: async () => user })), user);
 });
 
-for (const status of [404, 500, undefined]) {
-  test(`lookup failure (${status ?? 'network'}) preserves the error without logging in`, async () => {
-    const error = Object.assign(new Error('lookup failed'), { status });
-    const api = { getUser: async () => { throw error; } };
-    await assert.rejects(refreshAuthUser(api, () => assert.fail('unexpected login')), e => e === error);
+for (const status of [401, 403, 404]) {
+  test(`rejected saved account (${status}) returns to browsing instead of forcing login`, async () => {
+    let loggedOut = 0;
+    const api = savedApi({ getUser: async () => { throw Object.assign(new Error('rejected'), { status }); }, logout: () => { loggedOut++; } });
+    assert.equal(await restoreAuthUser(api), null);
+    assert.equal(loggedOut, 1);
   });
 }
 
-test('failed session renewal propagates the login error', async () => {
-  const error = new Error('Toss unavailable');
-  const api = { getUser: async () => { throw Object.assign(new Error('expired'), { status: 401 }); } };
-  await assert.rejects(refreshAuthUser(api, async () => { throw error; }), e => e === error && e.status === 401);
+test('temporary server or network failure keeps an existing session', async () => {
+  for (const status of [500, undefined]) {
+    const user = { id: 'existing' };
+    const api = savedApi({ getCurrentUser: () => user, getUser: async () => { throw Object.assign(new Error('unavailable'), { status }); }, logout: () => assert.fail('must preserve account') });
+    assert.equal(await restoreAuthUser(api), user);
+  }
 });

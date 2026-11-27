@@ -1,15 +1,14 @@
-// 서버가 세션을 거부한 경우에만 토스 인증을 갱신한다.
-export async function refreshAuthUser(api, login) {
+// Restore existing sessions silently; requesting Toss login requires a user action.
+export async function restoreAuthUser(api) {
+  const savedUser = api.getCurrentUser();
+  if (!savedUser || !api.hasSession()) return null;
   try {
     return await api.getUser();
   } catch (error) {
-    if (error.status === 401) {
-      try {
-        return await login();
-      } catch (loginError) {
-        throw Object.assign(loginError, { status: 401 });
-      }
+    if ([401, 403, 404].includes(error.status)) {
+      api.logout();
+      return null;
     }
-    throw error;
+    return savedUser;
   }
 }

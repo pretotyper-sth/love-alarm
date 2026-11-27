@@ -1,5 +1,6 @@
 // API 클라이언트
 import { io } from 'socket.io-client';
+import { createPreviewApi } from './previewApi.js';
 
 // AppsInToss 빌드는 VITE_API_URL이 비어 있을 수 있어 현재 프로덕션 서버를 fallback으로 둔다.
 const DEFAULT_API_URL = 'https://love-alarm-server.onrender.com';
@@ -30,7 +31,7 @@ let currentUser = null;
 // WebSocket 연결
 let socket = null;
 
-export const api = {
+const serverApi = {
   // ==================== 인증 ====================
   
   /**
@@ -620,6 +621,10 @@ export const api = {
     return await response.json();
   },
 };
+
+export const api = import.meta.env.DEV && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+  ? createPreviewApi(localStorage)
+  : serverApi;
 
 export default api;
 

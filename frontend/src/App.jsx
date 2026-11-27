@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { Button, Skeleton, Spacing, Text } from '@toss/tds-mobile';
+import { Button } from '@toss/tds-mobile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
 import { AlarmListPage } from './pages/AlarmListPage';
@@ -15,6 +15,7 @@ import { ErrorPage } from './pages/ErrorPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
+import { api } from './utils/api';
 import './App.css';
 
 // 앱 종료 처리
@@ -64,51 +65,6 @@ function ExitConfirmModal({ onClose, onConfirm }) {
   );
 }
 
-function LoadingScreen() {
-  return (
-    <div className="app-loading-screen">
-      <div className="app-loading-screen__content">
-        <div className="app-loading-screen__spinner" aria-hidden="true" />
-
-        <Spacing size={16} />
-
-        <Text color="#191F28" typography="t5" fontWeight="bold">
-          앱을 불러오고 있어요
-        </Text>
-        <Spacing size={8} />
-        <Text color="#6B7684" typography="t7">
-          네트워크 상태에 따라 조금 늦어질 수 있어요.
-        </Text>
-      </div>
-    </div>
-  );
-}
-
-function AlarmListLoadingShell() {
-  return (
-    <div className="app-loading-shell">
-      <div className="app-loading-shell__header">
-        <div className="app-loading-shell__header-skeleton" aria-hidden="true" />
-      </div>
-
-      <div className="app-loading-shell__content">
-        <Skeleton custom={['listWithIcon']} repeatLastItemCount={4} />
-      </div>
-
-      <div className="app-loading-shell__like-count-bar" aria-hidden="true">
-        <div className="app-loading-shell__like-count-pill" />
-        <div className="app-loading-shell__like-count-arrow" />
-      </div>
-
-      <div className="app-loading-shell__bottom-nav" aria-hidden="true">
-        <div className="app-loading-shell__bottom-tab app-loading-shell__bottom-tab--active" />
-        <div className="app-loading-shell__bottom-tab" />
-        <div className="app-loading-shell__bottom-tab" />
-      </div>
-    </div>
-  );
-}
-
 // 히스토리 가드 설정 (앱 시작 시 한 번만)
 function setupHistoryGuard() {
   if (sessionStorage.getItem('history_guard_set')) return;
@@ -150,7 +106,7 @@ function TabLayout({ children }) {
 
 // 라우팅 컴포넌트 (AuthProvider 안에서 useAuth 사용 가능)
 function AppRoutes() {
-  const { loading, authError } = useAuth();
+  const { user, logout } = useAuth();
   
   // 첫 방문 여부 - 초기값은 스토리지에서 바로 읽음 (빈 화면 방지)
   const [hasVisited, setHasVisited] = useState(() => storage.get('has_visited_intro'));
@@ -163,14 +119,6 @@ function AppRoutes() {
     storage.set('has_visited_intro', true);
     setHasVisited(true);
   }, []);
-
-  // 🔑 loading 완료 후 스토리지 다시 체크 (연결 해제 시 storage.remove 반영)
-  useEffect(() => {
-    if (!loading) {
-      // loading 완료 후 스토리지 값 다시 확인 (AuthContext에서 변경되었을 수 있음)
-      setHasVisited(storage.get('has_visited_intro'));
-    }
-  }, [loading]);
 
   // storage 변경 감지 (런타임 중 변경 시)
   useEffect(() => {
@@ -240,37 +188,10 @@ function AppRoutes() {
     };
   }, []);
 
-  if (!loading && authError) {
-    return (
-      <div className="app-loading-screen">
-        <div className="app-loading-screen__content">
-          <Text color="#191F28" typography="t5" fontWeight="bold">
-            로그인하지 못했어요
-          </Text>
-          <Spacing size={16} />
-          <Button onClick={() => window.location.reload()}>다시 시도하기</Button>
-        </div>
-      </div>
-    );
-  }
-
-  // 로딩 중에는 빈 화면 (로그인 과정에서 알람 목록이 잠깐 보이는 문제 방지)
-  if (loading) {
-    return (
-      <>
-        {hasVisited ? <AlarmListLoadingShell /> : <LoadingScreen />}
-        {showExitModal && (
-          <ExitConfirmModal
-            onClose={() => setShowExitModal(false)}
-            onConfirm={exitApp}
-          />
-        )}
-      </>
-    );
-  }
-
   return (
     <>
+      {api.isPreview && <div className="preview-status"><span>로컬 미리보기 · {user ? '로그인됨' : '로그인 없이 둘러보기'}</span>
+        {user && <button onClick={logout}>가상 로그아웃</button>}</div>}
       <BrowserRouter>
         <NavigationTracker />
         <TabLayout>
@@ -288,11 +209,11 @@ function AppRoutes() {
             {/* 인트로 미완료 시 모든 페이지에서 인트로로 리다이렉트 */}
             <Route 
               path="/alarms" 
-              element={hasVisited ? <AlarmListPage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <AlarmListPage key={user?.id || 'guest'} /> : <Navigate to="/" replace />}
             />
             <Route 
               path="/rewards" 
-              element={hasVisited ? <RewardsPage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <RewardsPage key={user?.id || 'guest'} /> : <Navigate to="/" replace />}
             />
             <Route 
               path="/more" 
@@ -324,7 +245,7 @@ function AppRoutes() {
             />
             <Route 
               path="/messages" 
-              element={hasVisited ? <MessagesPage /> : <Navigate to="/" replace />} 
+              element={hasVisited ? <MessagesPage key={user?.id || 'guest'} /> : <Navigate to="/" replace />}
             />
             <Route path="/error" element={<ErrorPage />} />
           </Routes>

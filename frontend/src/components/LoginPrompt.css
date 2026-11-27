@@ -1,0 +1,14 @@
+.login-prompt-backdrop { position: fixed; inset: 0; z-index: 20000; background: #fff; overflow-y: auto; }
+.login-prompt { width: 100%; max-width: 480px; min-height: 100%; margin: auto; box-sizing: border-box; padding: 24px; background: #fff; color: #191f28; }
+.login-prompt-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 56px; color: #6b7684; font-size: 13px; }
+.login-prompt-header button { border: 0; background: none; color: #4e5968; padding: 8px; font: inherit; cursor: pointer; }
+.login-preview-account { padding: 24px 0; margin-bottom: 32px; font-weight: 600; }
+.login-preview-account span { display: block; margin-top: 8px; font-size: 14px; color: #8b95a1; font-weight: 400; }
+.login-error-toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 20000; width: max-content; max-width: 85%; padding: 14px 20px; border-radius: 14px; background: #333d4b; color: white; }
+.login-prompt h2 { margin: 0 0 12px; font-size: 22px; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+.login-prompt p { margin: 0 0 24px; color: #6b7684; font-size: 15px; line-height: 1.6; word-break: keep-all; }
+.login-prompt-preview { display: inline-block; margin-bottom: 12px; font-size: 12px; color: #3182f6; font-weight: 600; }
+.login-prompt p.login-prompt-error { color: #d93025; margin-bottom: 16px; }
+.login-prompt-dismiss { display: block; width: 100%; margin-top: 8px; padding: 14px 8px; border: 0; background: transparent; color: #6b7684; cursor: pointer; font: inherit; font-size: 15px; }
+.preview-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 20px; background: #edf4ff; color: #4e5968; font-size: 12px; }
+.preview-status button { border: 0; background: none; color: #3182f6; padding: 4px; cursor: pointer; font: inherit; }

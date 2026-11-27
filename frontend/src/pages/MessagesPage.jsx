@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Top, Skeleton, Spacing } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 import {
   loadReadReceivedMessageIds,
   markReceivedMessageAsReported,
@@ -297,6 +298,7 @@ function InstagramAuthCta({ onVerify }) {
 // MessagesPage
 // ──────────────────────────────────────────────────────────────────────
 export function MessagesPage() {
+  const { user, requireLogin } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('received');
   const [sentMessages, setSentMessages] = useState([]);
@@ -320,6 +322,7 @@ export function MessagesPage() {
   const isVerified = !!verifiedId;
 
   const loadMessages = useCallback(async () => {
+    if (!user) { setIsLoading(false); return; }
     setIsLoading(true); setLoadError('');
     // Previous versions cached complete received bodies. Never use that cache for access decisions.
     localStorage.removeItem('love_alarm_messages_cache');
@@ -340,7 +343,7 @@ export function MessagesPage() {
     if (passes.status === 'fulfilled') setWallet(passes.value);
     if (sent.status === 'rejected') setLoadError(sent.reason.message);
     setIsLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => { void loadMessages(); }, [loadMessages]);
   useEffect(() => { logScreen('messages_screen', { tab: 'received' }); }, []);
@@ -408,17 +411,22 @@ export function MessagesPage() {
       <button className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`} onClick={() => handleTabChange('sent')} role="tab" aria-selected={activeTab === 'sent'}>내가 보낸 메시지</button>
       <button className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`} onClick={() => handleTabChange('received')} role="tab" aria-selected={activeTab === 'received'}>받은 메시지</button>
     </div></div>
+    {!user && <div className="messages-empty">
+      <p className="messages-empty-title">로그인하면 내 메시지를 확인할 수 있어요.</p>
+      <p className="messages-empty-desc">알람과 함께 보낸 메시지와 누군가 보낸 마음이 여기에 모여요.</p>
+      <button className="messages-empty-btn" onClick={() => requireLogin('메시지를 확인하려면 로그인이 필요해요')}>메시지 확인하기</button>
+    </div>}
     {loadError && <div className="messages-load-error" role="alert">{loadError}<button className="messages-empty-btn" onClick={loadMessages}>다시 불러오기</button></div>}
-    {activeTab === 'sent' && <div className="messages-content">
+    {user && activeTab === 'sent' && <div className="messages-content">
       {isLoading ? <Skeleton custom={['listWithIcon']} repeatLastItemCount={1} /> : sentMessages.length === 0 ? <div className="messages-empty">
         <p className="messages-empty-title">아직 보낸 메시지가 없어요.</p><p className="messages-empty-desc">알람을 추가할 때 메시지도 함께 보낼 수 있어요.</p>
-        <button className="messages-empty-btn" onClick={() => navigate('/add')}>알람 추가하러 가기</button>
+        <button className="messages-empty-btn" onClick={() => navigate('/add-alarm')}>알람 추가하러 가기</button>
       </div> : sentMessages.map(msg => <button key={msg.id} className="message-row message-row-tappable" onClick={() => setSelectedSentMsg(msg)}>
         <MessageIcon type="sent" /><div className="message-row-body"><div className="message-row-top">To: @{msg.targetInstagramId}</div>
         <div className="message-row-preview">{truncateText(msg.message)}</div><div className="message-row-bottom">{msg.reactions?.[0]?.emoji ? `${msg.reactions[0].emoji} 반응` : '반응 없음'} · {formatDate(msg.createdAt)}</div></div>
       </button>)}
     </div>}
-    {activeTab === 'received' && <div className="messages-content">
+    {user && activeTab === 'received' && <div className="messages-content">
       {isLoading ? <Skeleton custom={['listWithIcon']} repeatLastItemCount={1} /> : !isVerified ? <InstagramAuthCta onVerify={() => setShowAuthSheet(true)} /> : receivedMessages.length === 0 ? <div className="messages-empty">
         <p className="messages-empty-title">아직 받은 메시지가 없어요.</p><p className="messages-empty-desc">누군가 메시지를 보내면 여기서 확인할 수 있어요.</p>
       </div> : receivedMessages.map(msg => <button key={msg.id} className={`message-row message-row-tappable${readReceivedMessageIds.includes(msg.id) ? '' : ' message-row-unread'}`} onClick={() => handleOpenReceivedMessage(msg)}>

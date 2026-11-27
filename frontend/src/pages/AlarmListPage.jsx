@@ -154,11 +154,11 @@ export function AlarmListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, setUser } = useAuth();
-  const hasEverRegistered = localStorage.getItem('love_alarm_first_registered') === 'true';
+  const hasEverRegistered = !!user && localStorage.getItem('love_alarm_first_registered') === 'true';
   // 캐시된 알람 목록으로 초기화 (깜빡임 방지)
-  const [alarms, setAlarms] = useState(() => getCachedAlarms() || []);
+  const [alarms, setAlarms] = useState(() => user ? getCachedAlarms() || [] : []);
   // 캐시가 존재하면(빈 배열이어도) 로딩 표시 안 함, 캐시 없으면 로딩
-  const [isLoading, setIsLoading] = useState(() => getCachedAlarms() === null);
+  const [isLoading, setIsLoading] = useState(() => !!user && getCachedAlarms() === null);
   const [isRestoring, setIsRestoring] = useState(false); // 되돌리기 중 상태
   const [lastAlarmCount, setLastAlarmCount] = useState(() => {
     // 이전에 저장된 알람 개수 불러오기 (초기 로딩 스켈레톤용)
@@ -169,14 +169,14 @@ export function AlarmListPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
   // 캐시된 maxSlots 또는 user.maxSlots로 초기화
-  const [maxSlots, setMaxSlots] = useState(() => user?.maxSlots || getCachedMaxSlots());
+  const [maxSlots, setMaxSlots] = useState(() => user ? user.maxSlots || getCachedMaxSlots() : 2);
 
   // 좋아하는 사람 수 확인 상태
   const [showLikeCountSheet, setShowLikeCountSheet] = useState(false);
   const [likeCountCache, setLikeCountCache] = useState(() => getLikeCountCache());
   // 메시지 배지 카운트
   const [msgBadgeCount, setMsgBadgeCount] = useState(() => {
-    const cached = localStorage.getItem(MSG_BADGE_COUNT_KEY);
+    const cached = user ? localStorage.getItem(MSG_BADGE_COUNT_KEY) : null;
     return cached ? parseInt(cached, 10) : 0;
   });
   const [unreadMessageBadgeEnabled, setUnreadMessageBadgeEnabled] = useState(() => loadUnreadMessageBadgeEnabled());
@@ -284,11 +284,6 @@ export function AlarmListPage() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  const IS_DEV = import.meta.env.DEV;
-  const MOCK_RECEIVED_FOR_BADGE = IS_DEV ? [
-    { id: 'mock-r1', fromInstagramId: null, message: '항상 밝게 웃으시는 게 좋아서 알람 보내봐요 😊', createdAt: '2026-04-09T20:15:00Z', reactions: [] },
-  ] : [];
-
   // 메시지 배지 카운트 로드 (인증된 경우, 페이지 복귀마다 재계산)
   useEffect(() => {
     if (!user) return;
@@ -297,7 +292,7 @@ export function AlarmListPage() {
       setUnreadMessageBadgeEnabled(badgeEnabled);
 
       const vid = localStorage.getItem(IG_VERIFIED_KEY);
-      if (!vid && !IS_DEV) {
+      if (!vid) {
         setMsgBadgeCount(0);
         localStorage.setItem(MSG_BADGE_COUNT_KEY, '0');
         return;
@@ -311,8 +306,7 @@ export function AlarmListPage() {
             messages = [];
           }
         }
-        const allMessages = [...messages, ...MOCK_RECEIVED_FOR_BADGE];
-        const count = countUnreadReceivedMessages(allMessages);
+        const count = countUnreadReceivedMessages(messages);
         setMsgBadgeCount(count);
         localStorage.setItem(MSG_BADGE_COUNT_KEY, String(count));
       } catch { /* 캐시값 유지 */ }
@@ -322,6 +316,7 @@ export function AlarmListPage() {
 
   // WebSocket 이벤트 리스너 (실시간 업데이트)
   useEffect(() => {
+    if (!user) return;
     api.onMatched(() => {
       loadAlarms(); // 목록 새로고침 (아이콘으로 구별)
     });
@@ -340,7 +335,7 @@ export function AlarmListPage() {
       api.offMatched();
       api.offMatchCanceled();
     };
-  }, [addToast, loadAlarms]);
+  }, [addToast, loadAlarms, user]);
 
   // 모든 알람에 동시에 shine 효과 적용 (retry 로직 포함)
   useEffect(() => {

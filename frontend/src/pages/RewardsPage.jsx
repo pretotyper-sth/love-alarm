@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   List,
   ListRow,
@@ -46,17 +46,13 @@ function getConsecutiveStreak(dates) {
 
 // ─── 컴포넌트 ───────────────────────────────────────────────
 export function RewardsPage() {
-  const { setUser } = useAuth();
-  const appendedTodayRef = useRef(false);
-  const [visitDates] = useState(() => {
+  const { user, setUser, requireLogin } = useAuth();
+  const [{ dates: visitDates, appendedToday }] = useState(() => {
+    if (!user) return { dates: [], appendedToday: false };
     const dates = loadVisitDates();
     const today = getTodayStr();
-    const updated = dates.includes(today) ? dates : [...dates, today];
-    if (updated.length !== dates.length) {
-      appendedTodayRef.current = true;
-      localStorage.setItem(VISIT_DATES_KEY, JSON.stringify(updated));
-    }
-    return updated;
+    const appendedToday = !dates.includes(today);
+    return { dates: appendedToday ? [...dates, today] : dates, appendedToday };
   });
 
   useEffect(() => {
@@ -64,14 +60,15 @@ export function RewardsPage() {
       checkin_days: visitDates.length,
       streak: getConsecutiveStreak(visitDates),
     });
-    if (appendedTodayRef.current) {
+    if (appendedToday) {
+      localStorage.setItem(VISIT_DATES_KEY, JSON.stringify(visitDates));
       logClick('rewards_checkin_click', { day_count: visitDates.length });
     }
-  }, []);
+  }, [visitDates, appendedToday]);
   const [claimed10Cycles, setClaimed10Cycles] = useState(() => (
-    parseInt(localStorage.getItem(CHECKIN10_CYCLES_KEY) || '0', 10)
+    user ? parseInt(localStorage.getItem(CHECKIN10_CYCLES_KEY) || '0', 10) : 0
   ));
-  const [claimed30, setClaimed30] = useState(() => localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true');
+  const [claimed30, setClaimed30] = useState(() => !!user && localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true');
   const [toast, setToast] = useState({ show: false, message: '' });
 
   // ─── 10일 체크인 계산 ───────────────────────────────────
@@ -91,7 +88,7 @@ export function RewardsPage() {
 
   // ─── 수령 핸들러 ─────────────────────────────────────────
   const handleClaim30 = async () => {
-    if (!canClaim30) return;
+    if (!canClaim30 || !await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
     logClick('rewards_claim_adfree');
     localStorage.setItem(CHECKIN30_CLAIMED_KEY, 'true');
     setClaimed30(true);
@@ -104,7 +101,7 @@ export function RewardsPage() {
   };
 
   const handleClaim10 = async () => {
-    if (!canClaim10) return;
+    if (!canClaim10 || !await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
     logClick('rewards_claim_slot');
     const next = claimed10Cycles + 1;
     localStorage.setItem(CHECKIN10_CYCLES_KEY, String(next));
@@ -168,7 +165,23 @@ export function RewardsPage() {
       <Spacing size={20} />
 
       <List>
-        {/* ── 10일 체크인 ── */}
+        {!user && <ListRow
+          left={<ListRow.AssetIcon
+            shape="squircle"
+            size="medium"
+            url="https://static.toss.im/3d-emojis/u1F4C5-apng.png"
+            backgroundColor="#f2f4f6"
+          />}
+          contents={<div className="checkin-contents">
+            <p className="checkin-title">오늘의 출석</p>
+            <p className="checkin-sub">매일 출석하고 보상을 모아요</p>
+          </div>}
+          right={<Button size="small" onClick={() => requireLogin('출석을 기록하려면 로그인이 필요해요')}>출석 체크하기</Button>}
+          verticalPadding="large"
+          horizontalPadding="medium"
+        />}
+
+      {/* ── 10일 체크인 ── */}
         <ListRow
           left={
             <ListRow.AssetIcon
@@ -241,7 +254,7 @@ export function RewardsPage() {
       </div>
 
       {/* DEV: 보상 bypass 버튼 */}
-      {IS_DEV && (
+      {IS_DEV && !api.isPreview && (
         <div className="dev-bypass">
           <p className="dev-bypass-label">DEV bypass</p>
           <button className="dev-bypass-btn" onClick={devResetSlotClaim}>

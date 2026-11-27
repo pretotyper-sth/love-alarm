@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import { api } from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 import './InstagramAuthSheet.css';
 
 const IG_HANDLE = 'lovealarm.kr';
@@ -12,6 +13,7 @@ export function InstagramAuthSheet({
   alreadyVerified = false,
   currentVerifiedUsername = '',
 }) {
+  const { requireLogin } = useAuth();
   const [username, setUsername] = useState('');
   const [stage, setStage] = useState('input'); // 'input' | 'waiting'
   const [sessionId, setSessionId] = useState(null);
@@ -66,6 +68,7 @@ export function InstagramAuthSheet({
       return;
     }
 
+    if (!await requireLogin('인스타그램 인증을 시작하려면 로그인이 필요해요')) return;
     setIsRequesting(true);
     setError('');
     try {
@@ -173,6 +176,8 @@ export function InstagramAuthSheet({
     !isRequesting &&
     stage === 'input';
 
+  if (!open) return null;
+
   return (
     <>
       <div className={`ig-auth-overlay ${open ? 'show' : ''}`} onClick={onClose} />
@@ -194,6 +199,7 @@ export function InstagramAuthSheet({
         </div>
 
         <div className="ig-auth-body">
+          {api.isPreview && stage === 'waiting' && <p className="ig-auth-desc" role="status">미리보기에서는 DM을 보내지 않아요. 인증번호는 123456이에요.</p>}
           {/* Step 1 */}
           <div className="ig-auth-step">
             <span className="ig-auth-step-num">1</span>
@@ -329,10 +335,11 @@ export function InstagramAuthSheet({
                 확인
               </Button>
             )}
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV && !api.isPreview && (
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
+                  if (!await requireLogin('인스타그램 인증을 시작하려면 로그인이 필요해요')) return;
                   const u = (username || 'test_user').trim().toLowerCase().replace(/^@/, '');
                   localStorage.setItem('love_alarm_instagram_verified_username', u);
                   onSuccess?.(u);

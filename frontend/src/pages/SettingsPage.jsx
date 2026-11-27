@@ -51,9 +51,12 @@ export function SettingsPage() {
   const [showAuthManageSheet, setShowAuthManageSheet] = useState(false);
   const [authManageStep, setAuthManageStep] = useState('menu');
   const [isDisconnectingAuth, setIsDisconnectingAuth] = useState(false);
-  const [verifiedUsername, setVerifiedUsername] = useState(
-    () => localStorage.getItem(IG_VERIFIED_KEY) || ''
-  );
+  const [verifiedAccount, setVerifiedAccount] = useState(() => ({
+    userId: user?.id,
+    username: user ? localStorage.getItem(IG_VERIFIED_KEY) || '' : '',
+  }));
+  const verifiedUsername = user && verifiedAccount.userId === user.id ? verifiedAccount.username : '';
+  const setVerifiedUsername = username => setVerifiedAccount({ userId: user?.id, username });
   
   // 성공 토스트 상태
   const [successToast, setSuccessToast] = useState({ show: false, message: '' });
@@ -436,7 +439,7 @@ export function SettingsPage() {
       </div>
 
       {/* DEV ONLY: 좋아하는 사람 수 캐시 */}
-      {IS_DEV && (
+      {IS_DEV && !api.isPreview && (
         <div style={{
           margin: '24px 20px 16px',
           padding: '12px 14px',

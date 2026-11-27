@@ -16,6 +16,7 @@ function getSessionId() {
 }
 
 function queueEvent(type, name, params) {
+  if (IS_DEV) return;
   const userId = JSON.parse(localStorage.getItem('love_alarm_user') || '{}')?.id;
   eventBuffer.push({ type, name, params, userId, sessionId: getSessionId() });
   if (!flushTimer) flushTimer = setTimeout(flushEvents, 3000);
