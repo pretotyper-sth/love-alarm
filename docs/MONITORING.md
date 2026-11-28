@@ -33,3 +33,11 @@ GitHub Actions 알림을 Email / failed workflows only로 켜고 의도한 인�
 - 이 결과는 작은 읽기 부하에 대한 확인입니다. 로그인·결제·알람 쓰기·광고 SDK의 처리 한계나 ‘최대 동시 사용자 수’를 보장하지 않습니다. 실제 마케팅 규모에 대한 장시간/쓰기 포화 시험은 분리된 환경에서 해야 합니다.
 
 기존 `/health` 응답, 기존 API 호환 설정과 실제 앱 출시 상태는 변경하지 않습니다.
+
+## 활성화 확인 — 2026-11-28
+
+- 모니터 전용 인증을 Render 환경변수와 GitHub Actions secret에 등록했고 `MONITORING_ENABLED=true`를 적용했습니다. 비밀값과 수신 주소는 저장소에 기록하지 않습니다.
+- GitHub 계정의 인증된 기본 이메일에 Actions 실패 알림이 켜진 것을 확인했습니다.
+- [정상 운영 상태 확인](https://github.com/pretotyper-sth/love-alarm/actions/runs/46138617783)이 실제 DB 집계를 조회해 통과했습니다.
+- [모의 경고](https://github.com/pretotyper-sth/love-alarm/actions/runs/46138674927)를 실행하고, 해당 실행 링크와 ‘실제 장애 아님’ 문구가 포함된 메일이 의도한 계정의 받은편지함에 도착한 것을 확인했습니다. 이 실행의 failure는 메일 전달 검증을 위해 의도된 결과입니다.
+- 기존 API 설정과 실제 토스 앱 출시 상태는 변경하지 않았습니다.
