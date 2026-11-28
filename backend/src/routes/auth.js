@@ -1,8 +1,27 @@
 import { Router } from 'express';
 import tossAuth from '../services/tossAuth.js';
-import { issueSession } from '../middleware/session.js';
+import { issueSession, requireSession } from '../middleware/session.js';
 
 const router = Router();
+
+// Account deletion never accepts the released app's sessionless compatibility mode.
+router.delete('/account', requireSession, async (req, res, next) => {
+  try {
+    await tossAuth.disconnectTossUser(req.user.tossUserId);
+    await req.prisma.$transaction(async tx => {
+      const alarms = await tx.alarm.findMany({ where: { userId: req.user.id, deletedAt: null, status: 'matched' }, select: { fromInstagramId: true, targetInstagramId: true } });
+      for (const alarm of alarms) {
+        if (alarm.fromInstagramId) await tx.alarm.updateMany({ where: { fromInstagramId: alarm.targetInstagramId, targetInstagramId: alarm.fromInstagramId, userId: { not: req.user.id }, deletedAt: null }, data: { status: 'waiting' } });
+      }
+      await tx.messageDelivery.updateMany({ where: { alarm: { userId: req.user.id }, deletedAt: null }, data: { deletedAt: new Date() } });
+      await tx.analyticsEvent.updateMany({ where: { userId: req.user.id }, data: { userId: null } });
+      await tx.feedback.deleteMany({ where: { userId: req.user.id } });
+      // Cascades remove alarms, matches, verification, unlocks and reports; receipts retain no userId.
+      await tx.user.deleteMany({ where: { id: req.user.id } });
+    });
+    res.json({ success: true });
+  } catch (error) { next(error); }
+});
 
 // Basic Auth 검증용 (토스 연결 끊기 콜백) - 환경 변수에서 로드
 const DISCONNECT_AUTH = {

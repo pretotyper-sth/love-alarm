@@ -95,6 +95,13 @@ export function createPreviewApi(storage) {
     tossLogin: login,
     hasSession: () => !!currentUser(),
     getCurrentUser: currentUser,
+    withdrawAccount: async () => {
+      requireUser();
+      for (const key of [USER_KEY, LOGIN_KEY, ALARMS_KEY, PASSES_KEY, REACTIONS_KEY, REPORTS_KEY]) storage.removeItem(key);
+      storage.removeItem('love_alarm_user');
+      storage.removeItem('love_alarm_instagram_verified_username');
+      return { success: true };
+    },
     getUser: async () => requireUser(),
     logout: () => {
       storage.removeItem(LOGIN_KEY);

@@ -212,3 +212,15 @@
   cursor: default;
 }
 
+.withdrawal-sheet { width: 100%; max-width: 376px; max-height: 90dvh !important; overflow-y: auto; background: #fff; border-radius: 24px 24px 0 0; }
+.withdrawal-content { padding: 20px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.withdrawal-content h2 { margin: 0 0 10px; font-size: 20px; line-height: 1.4; color: #191f28; }
+.withdrawal-content p, .withdrawal-content li { font-size: 14px; line-height: 1.6; color: #6b7684; word-break: keep-all; overflow-wrap: anywhere; }
+.withdrawal-content p { margin: 0; }
+.withdrawal-content ul { margin: 18px 0 0; padding-left: 18px; }
+.withdrawal-content li + li { margin-top: 6px; }
+.withdrawal-content .withdrawal-warning { margin-top: 18px; padding: 14px; border-radius: 12px; background: #f2f4f6; color: #4e5968; }
+.withdrawal-content .withdrawal-error { margin-top: 14px; color: #d14356; }
+.withdrawal-actions { display: flex; gap: 10px; margin-top: 24px; }
+.withdrawal-actions > button { flex: 1; min-width: 0; }
+

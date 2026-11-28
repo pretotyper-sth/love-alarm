@@ -95,3 +95,14 @@ test('preview inbox covers locked, free, opened, reacted, long and reported mess
   await assert.rejects(reopened.openReceivedMessage('preview-message-7'), /찾을 수/);
   await assert.rejects(reopened.reactToMessage('preview-message-7', '❤️'), /찾을 수/);
 });
+
+test('local withdrawal removes the preview account without network requests and allows a fresh signup', async t => {
+  t.mock.method(globalThis, 'fetch', () => assert.fail('preview must not send requests'));
+  const saved = memoryStorage(), api = createPreviewApi(saved);
+  await assert.rejects(api.withdrawAccount(), { status: 401 });
+  await api.login(); await api.createAlarm('me', 'someone', 'hello');
+  await api.withdrawAccount();
+  assert.equal(api.hasSession(), false); assert.equal(api.getCurrentUser(), null);
+  assert.equal((await api.login()).isNewUser, true);
+  assert.deepEqual(await api.getAlarms(), []);
+});

@@ -192,9 +192,21 @@ export async function refreshAccessToken(refreshToken) {
   return data.success || data;
 }
 
+export async function disconnectTossUser(userKey, { request = fetch, agent = getHttpsAgent() } = {}) {
+  if (!agent) throw Object.assign(new Error('탈퇴 처리를 준비하지 못했어요. 잠시 후 다시 시도해 주세요.'), { status: 503 });
+  if (!/^\d+$/.test(String(userKey)) || !Number.isSafeInteger(Number(userKey))) throw Object.assign(new Error('계정 정보를 확인할 수 없어요.'), { status: 400 });
+  const response = await request(`${TOSS_API_BASE}/api-partner/v1/apps-in-toss/user/oauth2/access/remove-by-user-key`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userKey: Number(userKey) }), agent, signal: AbortSignal.timeout(10000),
+  });
+  const result = await response.json();
+  if (!response.ok || result.resultType !== 'SUCCESS') throw Object.assign(new Error('토스 연결을 해제하지 못했어요. 잠시 후 다시 시도해 주세요.'), { status: 503 });
+}
+
 export default {
   getAccessToken,
   getUserInfo,
   refreshAccessToken,
+  disconnectTossUser,
 };
 

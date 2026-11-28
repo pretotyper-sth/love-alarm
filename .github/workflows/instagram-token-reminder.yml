@@ -30,7 +30,7 @@ jobs:
           script: |
             const marker = '<!-- instagram-token-reminder -->';
             const label = 'instagram-token';
-            const issuedAtInput = core.getInput('token_issued_at').trim();
+            const issuedAtInput = (context.payload.inputs?.token_issued_at || '').trim();
             const issuedAt = issuedAtInput || process.env.TOKEN_ISSUED_AT;
             const reminderDays = Number(process.env.REMINDER_DAYS);
             const expiryDays = Number(process.env.EXPIRY_DAYS);

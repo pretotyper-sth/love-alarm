@@ -5,6 +5,8 @@ import {
   List,
   ListRow,
   Spacing,
+  BottomSheet,
+  Button,
 } from '@toss/tds-mobile';
 import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -45,7 +47,36 @@ ${tossLink}`;
 export function SettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser } = useAuth();
+  const { user, setUser, logout } = useAuth();
+  const [showWithdrawal, setShowWithdrawal] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawalError, setWithdrawalError] = useState('');
+  const [passBalance, setPassBalance] = useState(null);
+  const withdrawalLock = useRef(false);
+
+  useEffect(() => {
+    if (!showWithdrawal) return;
+    let active = true;
+    setPassBalance(null);
+    void api.getMessagePassWallet().then(wallet => { if (active) setPassBalance(wallet.balance); }).catch(() => {});
+    return () => { active = false; };
+  }, [showWithdrawal]);
+
+  const handleWithdraw = async () => {
+    if (withdrawalLock.current) return;
+    withdrawalLock.current = true; setWithdrawing(true); setWithdrawalError('');
+    logClick('account_withdraw_start');
+    try {
+      await api.withdrawAccount();
+      // Clear account-specific device caches only after server deletion succeeds.
+      for (const key of Object.keys(localStorage)) if (key.startsWith('love_alarm_')) localStorage.removeItem(key);
+      logout();
+      logClick('account_withdraw_success');
+      setShowWithdrawal(false);
+      navigate('/alarms', { replace: true });
+    } catch (error) { logClick('account_withdraw_fail'); setWithdrawalError(error.message || '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.'); }
+    finally { withdrawalLock.current = false; setWithdrawing(false); }
+  };
   
   const [showAuthSheet, setShowAuthSheet] = useState(false);
   const [showAuthManageSheet, setShowAuthManageSheet] = useState(false);
@@ -327,6 +358,30 @@ export function SettingsPage() {
           onClick={handleShareApp}
         />
       </List>
+
+      {user && <>
+        <Spacing size={12} />
+        <List><ListRow contents={<Text color="#4e5968" typography="t5" fontWeight="semibold">회원 탈퇴</Text>}
+          right={<img src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png" alt="" style={{ width: '20px', height: '20px', opacity: 0.6 }} />}
+          verticalPadding="large" horizontalPadding="medium" onClick={() => { setWithdrawalError(''); setShowWithdrawal(true); logClick('settings_withdraw_click'); }} /></List>
+      </>}
+      <BottomSheet className="withdrawal-sheet" open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
+        <div className="withdrawal-content">
+          <h2>정말 탈퇴할까요?</h2>
+          <p>계정과 등록한 알람, 인스타그램 인증 정보가 삭제돼요. 탈퇴 후에는 복구할 수 없어요.</p>
+          <ul>
+            <li>남은 열람권과 열람한 메시지도 복구할 수 없어요.</li>
+            <li>상대방이 이미 열어본 메시지는 남을 수 있어요.</li>
+            <li>결제 기록은 환불·정산 처리를 위해 보관해요.</li>
+          </ul>
+          {passBalance > 0 && <p className="withdrawal-warning">보유 열람권 {passBalance}장이 있어요. 구매 관련 문의는 탈퇴 전에 ‘의견 보내기’로 보내 주세요.</p>}
+          {withdrawalError && <p className="withdrawal-error" role="alert">{withdrawalError}</p>}
+          <div className="withdrawal-actions">
+            <button className="auth-manage-card-btn auth-manage-card-btn--ghost" onClick={() => setShowWithdrawal(false)} disabled={withdrawing}>계속 이용하기</button>
+            <Button size="large" onClick={handleWithdraw} loading={withdrawing} disabled={withdrawing}>탈퇴하기</Button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* 토스트 - 성공/에러 공용 */}
       <div className="toast-stack">

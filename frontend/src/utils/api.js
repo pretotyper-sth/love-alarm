@@ -107,6 +107,7 @@ const serverApi = {
    * 현재 로그인된 사용자 가져오기
    */
   hasSession: () => !!sessionToken(),
+  withdrawAccount: () => messageRequest('/auth/account', { method: 'DELETE' }),
 
   getCurrentUser: () => {
     if (currentUser) return currentUser;
