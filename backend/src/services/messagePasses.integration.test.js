@@ -160,11 +160,17 @@ test('message pass API: purchase, unlock, restore, report, and refund against Po
       assert.equal((await db.messageUnlock.findUnique({ where: { userId_messageId: { userId: other.id, messageId: target.id } } })).orderId, null);
     });
     await t.test('concurrent daily checkins credit once and ignore client-supplied progress', async () => {
+      assert.equal((await request('/message-passes/reward-summary', { as: null, method: 'POST' })).status, 401);
       assert.equal((await request('/message-passes/checkin', { as: null, method: 'POST' })).status, 401);
       const visits = await Promise.all(Array.from({ length: 5 }, () => request('/message-passes/checkin', { as: other, method: 'POST', body: { days: 3, now: '2099-01-01' } })));
       assert.ok(visits.every(r => r.status === 200 && r.data.days === 1 && !r.data.canClaim));
       assert.equal(await db.messagePassEntry.count({ where: { userId: other.id, reason: 'checkin' } }), 1);
       assert.equal((await request('/message-passes/checkin-reward', { as: other, method: 'POST', body: { days: 3 } })).status, 409);
+      const summary = await request('/message-passes/reward-summary', { as: other, method: 'POST' });
+      assert.equal(summary.status, 200);
+      assert.equal(summary.data.checkin.days, 1); assert.equal(summary.data.instagram.verified, true);
+      assert.equal(summary.data.balance, (await request('/message-passes', { as: other })).data.balance);
+      assert.equal(await db.messagePassEntry.count({ where: { userId: other.id, reason: 'checkin' } }), 1);
     });
     await t.test('concurrent alarm reward claims grant once from existing registrations', async () => {
       assert.equal((await request('/message-passes/alarm-rewards', { as: null })).status, 401);

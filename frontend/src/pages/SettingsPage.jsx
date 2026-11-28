@@ -1,3 +1,4 @@
+import { useAccountData } from '../utils/useAccountData';
 import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef } from 'react';
 import {
@@ -53,16 +54,14 @@ export function SettingsPage() {
   const [withdrawing, setWithdrawing] = useState(false);
   useBackDismiss(showWithdrawal, () => { if (!withdrawing) setShowWithdrawal(false); });
   const [withdrawalError, setWithdrawalError] = useState('');
-  const [passBalance, setPassBalance] = useState(null);
+  const account = useAccountData();
+  const passBalance = account?.userId === user?.id ? account.balance ?? null : null;
   const withdrawalLock = useRef(false);
 
   useEffect(() => {
-    if (!showWithdrawal) return;
-    let active = true;
-    setPassBalance(null);
-    void api.getMessagePassWallet().then(wallet => { if (active) setPassBalance(wallet.balance); }).catch(() => {});
-    return () => { active = false; };
-  }, [showWithdrawal]);
+    if (!user?.id) return;
+    void api.getRewardSummary().catch(() => {});
+  }, [user?.id, showWithdrawal]);
 
   const handleWithdraw = async () => {
     if (withdrawalLock.current) return;
@@ -383,11 +382,12 @@ export function SettingsPage() {
             <li>상대방이 이미 열어본 메시지는 남을 수 있어요.</li>
             <li>결제 기록은 환불·정산 처리를 위해 보관해요.</li>
           </ul>
+          {passBalance == null && <div className="withdrawal-warning" role="status">{account?.error ? <>보유 메시지 열람권을 확인하지 못했어요. <button onClick={() => { void api.getRewardSummary({ force: true }).catch(() => {}); }}>다시 확인</button></> : '보유 메시지 열람권을 확인하고 있어요.'}</div>}
           {passBalance > 0 && <p className="withdrawal-warning">보유 열람권 {passBalance}장이 있어요. 구매 관련 문의는 탈퇴 전에 ‘의견 보내기’로 보내 주세요.</p>}
           {withdrawalError && <p className="withdrawal-error" role="alert">{withdrawalError}</p>}
           <div className="withdrawal-actions">
             <button className="auth-manage-card-btn auth-manage-card-btn--ghost" onClick={() => setShowWithdrawal(false)} disabled={withdrawing}>계속 이용하기</button>
-            <Button size="large" onClick={handleWithdraw} loading={withdrawing} disabled={withdrawing}>탈퇴하기</Button>
+            <Button size="large" onClick={handleWithdraw} loading={withdrawing} disabled={withdrawing || passBalance == null}>탈퇴하기</Button>
           </div>
         </div>
       </BottomSheet>

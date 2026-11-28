@@ -111,6 +111,11 @@ export function createPreviewApi(storage, now = () => new Date()) {
   return {
     isPreview: true,
     messagePassIAP,
+    getRewardSummary: async () => {
+      const user = requireUser();
+      const attendance = await checkin();
+      return { instagram: { claimed: read('_love_alarm_preview_instagram_reward', false), verified: !!user.instagramId }, alarms: alarmRewards(), checkin: attendance, balance: passes().balance };
+    },
     getAlarmRewards: async () => alarmRewards(),
     claimAlarmReward: async missionId => {
       const status = alarmRewards();

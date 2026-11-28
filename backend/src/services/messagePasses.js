@@ -91,7 +91,7 @@ export async function claimInstagramReward(db, user) {
   });
 }
 
-export async function checkinMessagePass(db, user, { claim = false, now = new Date() } = {}) {
+export async function checkinMessagePass(db, user, { claim = false, now = new Date(), includeRewards = false } = {}) {
   const account = createHash('sha256').update(user.tossUserId).digest('hex');
   const date = new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   return db.$transaction(async tx => {
@@ -99,8 +99,15 @@ export async function checkinMessagePass(db, user, { claim = false, now = new Da
     // Stable account receipts preserve attendance and claimed cycles across devices and rejoining.
     const reference = `checkin:${account}:${date}`;
     await tx.messagePassEntry.upsert({ where: { reference }, create: { userId: user.id, delta: 0, reason: 'checkin', reference }, update: {} });
-    const days = await tx.messagePassEntry.count({ where: { reference: { startsWith: `checkin:${account}:` } } });
-    let claimed = await tx.messagePassEntry.count({ where: { reference: { startsWith: `checkin_reward:${account}:` } } });
+    const receipts = includeRewards ? await tx.messagePassEntry.findMany({ where: { OR: [
+      { reference: { startsWith: `checkin:${account}:` } },
+      { reference: { startsWith: `checkin_reward:${account}:` } },
+      { reference: { in: [instagramRewardReference(user), ...ALARM_REWARDS.map(mission => alarmRewardReference(user, mission.id))] } },
+    ] }, select: { reference: true } }) : null;
+    const days = receipts ? receipts.filter(item => item.reference.startsWith(`checkin:${account}:`)).length
+      : await tx.messagePassEntry.count({ where: { reference: { startsWith: `checkin:${account}:` } } });
+    let claimed = receipts ? receipts.filter(item => item.reference.startsWith(`checkin_reward:${account}:`)).length
+      : await tx.messagePassEntry.count({ where: { reference: { startsWith: `checkin_reward:${account}:` } } });
     let granted = false;
     if (claim) {
       if (days < (claimed + 1) * 3) throw new MessagePassError('3일 출석하면 받을 수 있어요.', 409);
@@ -108,12 +115,27 @@ export async function checkinMessagePass(db, user, { claim = false, now = new Da
       await tx.user.update({ where: { id: user.id }, data: { messagePassBalance: { increment: 1 } } });
       claimed++; granted = true;
     }
-    return { days, progress: Math.min(days - claimed * 3, 3), canClaim: days >= (claimed + 1) * 3, balance: wallet.messagePassBalance + Number(granted), granted };
+    const checkin = { days, progress: Math.min(days - claimed * 3, 3), canClaim: days >= (claimed + 1) * 3, balance: wallet.messagePassBalance + Number(granted), granted };
+    if (!includeRewards) return checkin;
+    const [verification, alarms] = await Promise.all([
+      tx.verificationSession.findFirst({ where: { userId: user.id, status: 'verified' } }),
+      tx.alarm.findMany({ where: { userId: user.id }, select: { targetInstagramId: true } }),
+    ]);
+    const instagram = { claimed: receipts.some(item => item.reference === instagramRewardReference(user)), verified: !!verification };
+    return { instagram, alarms: alarmRewardProgress(user, alarms, receipts), checkin, balance: checkin.balance };
   });
 }
 
 function alarmRewardReference(user, missionId) {
   return `alarm_reward:${createHash('sha256').update(user.tossUserId).digest('hex')}:${missionId}`;
+}
+
+function alarmRewardProgress(user, alarms, receipts) {
+  const count = new Set(alarms.map(alarm => alarm.targetInstagramId.trim().toLowerCase())).size;
+  return { count, rewards: ALARM_REWARDS.map(mission => {
+    const claimed = receipts.some(receipt => receipt.reference === alarmRewardReference(user, mission.id));
+    return { ...mission, progress: Math.min(count, mission.goal), claimed, canClaim: count >= mission.goal && !claimed };
+  }) };
 }
 
 export async function alarmRegistrationRewards(db, user) {
@@ -122,11 +144,7 @@ export async function alarmRegistrationRewards(db, user) {
     db.alarm.findMany({ where: { userId: user.id }, select: { targetInstagramId: true } }),
     db.messagePassEntry.findMany({ where: { reference: { in: ALARM_REWARDS.map(mission => alarmRewardReference(user, mission.id)) } }, select: { reference: true } }),
   ]);
-  const count = new Set(alarms.map(alarm => alarm.targetInstagramId.trim().toLowerCase())).size;
-  return { count, rewards: ALARM_REWARDS.map(mission => {
-    const claimed = receipts.some(receipt => receipt.reference === alarmRewardReference(user, mission.id));
-    return { ...mission, progress: Math.min(count, mission.goal), claimed, canClaim: count >= mission.goal && !claimed };
-  }) };
+  return alarmRewardProgress(user, alarms, receipts);
 }
 
 export async function claimAlarmRegistrationReward(db, user, missionId) {

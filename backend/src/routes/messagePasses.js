@@ -5,6 +5,9 @@ import { grantMessagePasses, messagePassSalesEnabled, passProducts, syncMessageP
 export function createMessagePassRouter({ verifyOrder } = {}) {
   const router = Router();
   router.use(requireSession);
+  router.post('/reward-summary', async (req, res, next) => {
+    try { res.json(await checkinMessagePass(req.prisma, req.user, { includeRewards: true })); } catch (error) { next(error); }
+  });
   router.get('/alarm-rewards', async (req, res, next) => {
     try { res.json(await alarmRegistrationRewards(req.prisma, req.user)); } catch (error) { next(error); }
   });
@@ -25,11 +28,8 @@ export function createMessagePassRouter({ verifyOrder } = {}) {
   });
   router.get('/', async (req, res, next) => {
     try {
-      const [entries, user] = await Promise.all([
-        req.prisma.messagePassEntry.findMany({ where: { userId: req.user.id }, orderBy: { createdAt: 'desc' }, take: 50 }),
-        req.prisma.user.findUniqueOrThrow({ where: { id: req.user.id } }),
-      ]);
-      res.json({ balance: user.messagePassBalance, enabled: messagePassSalesEnabled(), products: passProducts(), entries });
+      const entries = await req.prisma.messagePassEntry.findMany({ where: { userId: req.user.id }, orderBy: { createdAt: 'desc' }, take: 50 });
+      res.json({ balance: req.user.messagePassBalance, enabled: messagePassSalesEnabled(), products: passProducts(), entries });
     } catch (error) { next(error); }
   });
   router.post('/grant', async (req, res, next) => {

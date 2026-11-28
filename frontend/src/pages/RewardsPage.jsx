@@ -14,6 +14,7 @@ import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import { ALARM_REWARDS } from '../../../backend/src/config/alarmRewards.js';
 import './RewardsPage.css';
 import { createRewardQueue } from '../utils/rewardQueue';
+import { useAccountData } from '../utils/useAccountData';
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -91,67 +92,49 @@ export function RewardsPage() {
   };
   const pending = key => pendingClaims.includes(key);
   const processing = key => pendingClaims[0] === key;
-  const [reward, setReward] = useState(null);
   const [showRewardAuth, setShowRewardAuth] = useState(false);
-  const currentReward = reward?.userId === user?.id ? reward : null;
-  const [checkin, setCheckin] = useState(null);
-  const currentCheckin = checkin?.userId === user?.id ? checkin : null;
-  const [alarmRewards, setAlarmRewards] = useState(null);
-  const currentAlarmRewards = alarmRewards?.userId === user?.id ? alarmRewards : null;
+  const account = useAccountData();
+  const snapshot = account?.userId === user?.id ? account : null;
+  const currentReward = snapshot?.instagram || (snapshot?.error ? { error: true } : null);
+  const currentCheckin = snapshot?.checkin || (snapshot?.error ? { error: true } : null);
+  const currentAlarmRewards = snapshot?.alarms || (snapshot?.error ? { error: true } : null);
 
   useEffect(() => {
-    if (!user) return;
-    let active = true;
-    api.getAlarmRewards().then(result => { if (active) setAlarmRewards({ ...result, userId: user.id }); })
-      .catch(() => { if (active) setAlarmRewards({ error: true, userId: user.id }); });
-    return () => { active = false; };
-  }, [user]);
+    if (!user?.id) return;
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void api.getRewardSummary().catch(() => {});
+    };
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, [user?.id]);
 
   const handleClaimAlarmReward = missionId => enqueueClaim(`alarm:${missionId}`, async () => {
-    const result = currentAlarmRewards?.error ? await api.getAlarmRewards() : await api.claimAlarmReward(missionId);
-    setAlarmRewards({ ...result, userId: api.getCurrentUser().id });
+    if (currentAlarmRewards?.error) { await api.getRewardSummary({ force: true }); return; }
+    const result = await api.claimAlarmReward(missionId);
     if ('alreadyGranted' in result) {
       logClick('rewards_claim_alarm_pass_success', { type: missionId, pass_balance: result.balance });
       showToast(result.alreadyGranted ? '이미 받은 보상이에요' : `${missionId === 'first_alarm' ? '첫 알람 보상' : '알람 3명 보상'} · 메시지 열람권 1장`);
     }
   });
 
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-    const refresh = () => {
-      if (document.visibilityState !== 'visible') return;
-      api.checkinMessagePass().then(result => { if (active) setCheckin({ ...result, userId: user.id }); })
-        .catch(() => { if (active) setCheckin({ error: true, userId: user.id }); });
-    };
-    refresh();
-    document.addEventListener('visibilitychange', refresh);
-    return () => { active = false; document.removeEventListener('visibilitychange', refresh); };
-  }, [user]);
-
   const handleClaimCheckin = () => enqueueClaim('checkin', async () => {
-    const result = currentCheckin?.error ? await api.checkinMessagePass() : await api.claimCheckinPass();
-    setCheckin({ ...result, userId: api.getCurrentUser().id });
+    if (currentCheckin?.error) { await api.getRewardSummary({ force: true }); return; }
+    const result = await api.claimCheckinPass();
     if (result.granted) {
       logClick('rewards_claim_checkin_pass_success', { pass_balance: result.balance, day_count: result.days });
       showToast('출석 보상 · 메시지 열람권 1장');
     }
   });
 
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-    api.getInstagramReward().then(result => { if (active) setReward({ ...result, userId: user.id }); }).catch(() => {});
-    return () => { active = false; };
-  }, [user]);
-
   const handleClaimPass = verifiedNow => enqueueClaim('instagram', async () => {
     if (!await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
-    const status = verifiedNow === true ? { verified: true } : currentReward || await api.getInstagramReward();
+    if (currentReward?.error) { await api.getRewardSummary({ force: true }); return; }
+    const status = verifiedNow === true ? { verified: true } : currentReward || (await api.getRewardSummary())?.instagram;
+    if (!status) throw new Error('보상 정보를 확인하지 못했어요. 다시 시도해 주세요.');
     if (!status.claimed && !status.verified) { setShowRewardAuth(true); return; }
     logClick('rewards_claim_pass_start');
     const result = await api.claimInstagramReward();
-    setReward({ ...result, userId: api.getCurrentUser().id });
     logClick('rewards_claim_pass_success', { pass_balance: result.balance });
     showToast(result.alreadyGranted ? '이미 받은 보상이에요' : '인증 보상 · 메시지 열람권 1장');
   });
@@ -249,8 +232,8 @@ export function RewardsPage() {
             </div>
           }
           right={
-            <Button size="small" disabled={!!currentReward?.claimed || pending('instagram')} loading={processing('instagram')} onClick={handleClaimPass}>
-              {pending('instagram') && !processing('instagram') ? '대기 중' : currentReward?.claimed ? '완료' : currentReward?.verified ? '받기' : '인증하고 받기'}
+            <Button size="small" disabled={!!currentReward?.claimed || pending('instagram') || (!!user && !currentReward)} loading={processing('instagram')} onClick={handleClaimPass}>
+              {pending('instagram') && !processing('instagram') ? '대기 중' : user && !currentReward ? '확인 중' : currentReward?.error ? '다시 시도' : currentReward?.claimed ? '완료' : currentReward?.verified ? '받기' : '인증하고 받기'}
             </Button>
           }
           leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"

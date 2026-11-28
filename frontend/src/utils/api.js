@@ -1,6 +1,7 @@
 // API 클라이언트
 import { io } from 'socket.io-client';
 import { createPreviewApi } from './previewApi.js';
+import { createAccountData } from './accountData.js';
 
 // AppsInToss 빌드는 VITE_API_URL이 비어 있을 수 있어 현재 프로덕션 서버를 fallback으로 둔다.
 const DEFAULT_API_URL = 'https://love-alarm-server.onrender.com';
@@ -511,6 +512,7 @@ const serverApi = {
 
   getReceivedMessageState: () => messageRequest('/messages/received'),
   getMessagePassWallet: () => messageRequest('/message-passes'),
+  getRewardSummary: () => messageRequest('/message-passes/reward-summary', { method: 'POST' }),
   getInstagramReward: () => messageRequest('/message-passes/instagram-reward'),
   getAlarmRewards: () => messageRequest('/message-passes/alarm-rewards'),
   claimAlarmReward: missionId => messageRequest(`/message-passes/alarm-rewards/${encodeURIComponent(missionId)}`, { method: 'POST' }),
@@ -629,9 +631,11 @@ const serverApi = {
   },
 };
 
-export const api = import.meta.env.DEV && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+const rawApi = import.meta.env.DEV && ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
   ? createPreviewApi(localStorage)
   : serverApi;
+export const accountData = createAccountData(rawApi, localStorage);
+export const api = accountData.api;
 
 export default api;
 

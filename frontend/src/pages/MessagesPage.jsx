@@ -1,4 +1,5 @@
 import { useBackDismiss } from '../utils/backNavigation';
+import { useAccountData } from '../utils/useAccountData';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Top, Skeleton, Spacing } from '@toss/tds-mobile';
@@ -318,6 +319,8 @@ export function MessagesPage() {
   const [showAuthSheet, setShowAuthSheet] = useState(false);
   const [verifiedId, setVerifiedId] = useState(null);
   const [wallet, setWallet] = useState(null);
+  const account = useAccountData();
+  const passBalance = account?.userId === user?.id ? account.balance ?? wallet?.balance : wallet?.balance;
   const [reportTargetMessage, setReportTargetMessage] = useState(null);
   const [selectedReportReason, setSelectedReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -421,13 +424,13 @@ export function MessagesPage() {
 
   return <div className="messages-page">
     <Spacing size={14} />
-    <div className="messages-top-section"><Top title={<Top.TitleParagraph size={22} color={adaptive.grey900}>메시지</Top.TitleParagraph>} /></div>
+    <div className="messages-top-section"><Top title={<Top.TitleParagraph size={22} color={adaptive.grey900} style={{ fontSize: 22 }}>메시지</Top.TitleParagraph>} /></div>
     <Spacing size={12} />
     <div className="messages-segmented-wrap"><div className="messages-segmented" role="tablist" aria-label="메시지 탭">
       <button className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`} onClick={() => handleTabChange('sent')} role="tab" aria-selected={activeTab === 'sent'}>내가 보낸 메시지</button>
       <button className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`} onClick={() => handleTabChange('received')} role="tab" aria-selected={activeTab === 'received'}>받은 메시지</button>
     </div></div>
-    {user && activeTab === 'received' && wallet && <div className="message-pass-wallet" role="status"><span>보유 열람권</span><strong>{wallet.balance.toLocaleString('ko-KR')}장</strong></div>}
+    {user && activeTab === 'received' && passBalance != null && <div className="message-pass-wallet" role="status"><span>보유 열람권</span><strong>{passBalance.toLocaleString('ko-KR')}장</strong></div>}
     {!user && <div className="messages-empty">
       <p className="messages-empty-title">로그인하면 내 메시지를 확인할 수 있어요.</p>
       <p className="messages-empty-desc">알람과 함께 보낸 메시지와 누군가 보낸 마음이 여기에 모여요.</p>

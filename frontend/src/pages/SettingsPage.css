@@ -223,6 +223,8 @@
 .withdrawal-content ul { margin: 18px 0 0; padding-left: 18px; }
 .withdrawal-content li + li { margin-top: 6px; }
 .withdrawal-content .withdrawal-warning { margin-top: 18px; padding: 14px; border-radius: 12px; background: #f2f4f6; color: #4e5968; }
+.withdrawal-warning[role="status"] { min-height: 46px; font-size: 14px; line-height: 1.6; }
+.withdrawal-warning button { border: 0; background: none; padding: 4px 0; color: #3182f6; font: inherit; cursor: pointer; }
 .withdrawal-content .withdrawal-error { margin-top: 14px; color: #d14356; }
 .withdrawal-actions { display: flex; gap: 10px; margin-top: 24px; }
 .withdrawal-actions > button { flex: 1; min-width: 0; }

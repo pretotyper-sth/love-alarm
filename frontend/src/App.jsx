@@ -176,12 +176,12 @@ function TabLayout({ children }) {
 function AppRoutes() {
   const { user, logout } = useAuth();
   useEffect(() => {
-    if (!user) return;
-    const checkin = () => { if (document.visibilityState === 'visible') void api.checkinMessagePass().catch(() => {}); };
+    if (!user?.id) return;
+    const checkin = () => { if (document.visibilityState === 'visible') void api.getRewardSummary().catch(() => {}); };
     checkin();
     document.addEventListener('visibilitychange', checkin);
     return () => document.removeEventListener('visibilitychange', checkin);
-  }, [user]);
+  }, [user?.id]);
   
   // 첫 방문 여부 - 초기값은 스토리지에서 바로 읽음 (빈 화면 방지)
   const [hasVisited, setHasVisited] = useState(() => storage.get('has_visited_intro'));
