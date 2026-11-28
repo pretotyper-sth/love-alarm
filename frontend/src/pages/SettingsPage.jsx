@@ -357,7 +357,7 @@ export function SettingsPage() {
           right={<img src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png" alt="" style={{ width: '20px', height: '20px', opacity: 0.6 }} />}
           verticalPadding="large" horizontalPadding="medium" onClick={() => { setWithdrawalError(''); setShowWithdrawal(true); logClick('settings_withdraw_click'); }} /></List>
       </>}
-      <BottomSheet className="withdrawal-sheet" open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
+      <BottomSheet className="withdrawal-sheet" style={{ width: '100%' }} open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
         <div className="withdrawal-content">
           <div className="sheet-title-row withdrawal-title-row">
             <h2>정말 탈퇴할까요?</h2>
