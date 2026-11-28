@@ -1,0 +1,57 @@
+{
+  "startedAt": "2026-11-28T11:02:37.097Z",
+  "target": "/api/alarms/count",
+  "stages": [
+    {
+      "requestedRps": 1,
+      "seconds": 10,
+      "skipped": 0,
+      "requests": 10,
+      "errors": 0,
+      "errorRate": 0,
+      "p50Ms": 183,
+      "p95Ms": 773,
+      "maxMs": 773
+    },
+    {
+      "requestedRps": 3,
+      "seconds": 10,
+      "skipped": 0,
+      "requests": 30,
+      "errors": 0,
+      "errorRate": 0,
+      "p50Ms": 184,
+      "p95Ms": 292,
+      "maxMs": 350
+    },
+    {
+      "requestedRps": 5,
+      "seconds": 10,
+      "skipped": 0,
+      "requests": 50,
+      "errors": 0,
+      "errorRate": 0,
+      "p50Ms": 183,
+      "p95Ms": 307,
+      "maxMs": 738
+    },
+    {
+      "requestedRps": 10,
+      "seconds": 10,
+      "skipped": 0,
+      "requests": 100,
+      "errors": 0,
+      "errorRate": 0,
+      "p50Ms": 180,
+      "p95Ms": 187,
+      "maxMs": 340
+    }
+  ],
+  "stoppedEarly": false,
+  "finishedAt": "2026-11-28T11:03:21.962Z",
+  "environment": "production",
+  "baseCommit": "6c88efdc39ec7cd33b7c1b2314e3621ae6db24a9",
+  "writes": false,
+  "maxInFlight": 5,
+  "scope": "Short read-only database-backed API smoke load; not a saturation or payment/login/write benchmark"
+}

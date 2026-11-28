@@ -1,0 +1,38 @@
+name: Love Alarm service monitor
+run-name: "${{ inputs.test_alert && '운영 경고 메일 수신 테스트 (실제 장애 아님)' || 'Love Alarm 운영 상태 확인' }}"
+
+on:
+  schedule:
+    - cron: '3-58/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Send a synthetic failure notification without changing the service'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: love-alarm-service-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    # Enable only after the dedicated token and intended email delivery are configured.
+    if: vars.MONITORING_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check availability, DB, API latency, errors, and capacity
+        env:
+          MONITORING_TOKEN: ${{ secrets.MONITORING_TOKEN }}
+          TEST_ALERT: ${{ inputs.test_alert }}
+        run: |
+          if [ "$TEST_ALERT" = "true" ]; then
+            node scripts/monitor-service.mjs --test-alert
+          else
+            node scripts/monitor-service.mjs
+          fi

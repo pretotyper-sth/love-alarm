@@ -19,6 +19,8 @@ import messagePassRoutes from './routes/messagePasses.js';
 import eventsRoutes from './routes/events.js';
 import dbActivityRoutes from './routes/dbActivity.js';
 import { recordDbActivity } from './services/dbActivity.js';
+import { createRequestMonitor } from './services/monitoring.js';
+import { createMonitoringRouter } from './routes/monitoring.js';
 
 dotenv.config();
 
@@ -27,6 +29,7 @@ const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 8080;
+const requestMonitor = createRequestMonitor();
 
 // Socket.io 설정
 const socketCorsOrigin = process.env.CORS_ORIGIN === '*' 
@@ -73,6 +76,7 @@ app.use(cors({
 
 // Preflight 요청 명시적 처리
 app.options('*', cors());
+app.use(requestMonitor.middleware);
 app.use(express.json());
 
 // Prisma와 io를 req에 추가
@@ -95,6 +99,7 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/verify/instagram', verifyInstagramRoutes);
 app.use('/webhook', webhooksInstagramRoutes);
 app.use('/internal/db-activity', dbActivityRoutes);
+app.use('/internal/monitor', createMonitoringRouter(requestMonitor));
 
 app.use(express.static(path.join(__dirname, '../public')));
 
