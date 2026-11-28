@@ -1,3 +1,4 @@
+import { SheetCloseButton } from './SheetControls';
 import { useState, useEffect, useRef } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import './PaymentModal.css';
@@ -95,10 +96,10 @@ export function PaymentModal({ onClose, onSuccess }) {
 
   return (
     <>
-      <div className="payment-modal-overlay show" onClick={onClose} />
+      <div className="payment-modal-overlay show" onClick={isProcessing ? undefined : onClose} />
       <div className="payment-modal-container show" onClick={(e) => e.stopPropagation()}>
         <div className="payment-modal-header">
-          <h3 className="payment-modal-title">결제하기</h3>
+          <div className="sheet-title-row"><h3 className="payment-modal-title">결제하기</h3><SheetCloseButton onClose={onClose} disabled={isProcessing} label="결제 화면 닫기" /></div>
           <p className="payment-modal-description">
             소중한 인연을 놓치지 않도록,<br />
             알람 슬롯을 하나 더 추가해보세요.<br />

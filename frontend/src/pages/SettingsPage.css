@@ -214,10 +214,8 @@
 
 .withdrawal-sheet { width: 100%; max-width: 376px; max-height: 90dvh !important; overflow-y: auto; background: #fff; border-radius: 24px 24px 0 0; }
 .withdrawal-content { padding: 20px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
-.withdrawal-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.withdrawal-title-row { margin-bottom: 10px; }
 .withdrawal-content h2 { margin: 0; font-size: 20px; line-height: 1.4; color: #191f28; }
-.withdrawal-close { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; margin-right: -12px; border: 0; background: none; color: #8b95a1; cursor: pointer; }
-.withdrawal-close:disabled { opacity: .5; cursor: default; }
 .withdrawal-content p, .withdrawal-content li { font-size: 14px; line-height: 1.6; color: #6b7684; word-break: keep-all; overflow-wrap: anywhere; }
 .withdrawal-content p { margin: 0; }
 .withdrawal-content ul { margin: 18px 0 0; padding-left: 18px; }

@@ -1,14 +1,12 @@
+import { PageHeader } from '../components/PageHeader';
 import { useState, useEffect } from 'react';
 import {
   Text,
-  Top,
   List,
   ListRow,
   Switch,
   Spacing,
 } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
 import {
@@ -19,7 +17,6 @@ import { logScreen, logClick } from '../utils/analytics';
 import './SettingsPage.css';
 
 export function NotificationSettingsPage() {
-  const navigate = useNavigate();
   const { user, setUser, requireLogin } = useAuth();
 
   const userId = user?.id;
@@ -84,22 +81,8 @@ export function NotificationSettingsPage() {
 
   return (
     <div className="settings-page-container">
-      <Spacing size={14} />
-
       <div className="settings-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph
-              size={22}
-              color={adaptive.grey900}
-              fontWeight="bold"
-              style={{ fontSize: '22px' }}
-            >
-              알림 설정
-            </Top.TitleParagraph>
-          }
-          onBackClick={() => navigate(-1)}
-        />
+        <PageHeader title="알림 설정" />
       </div>
 
       <Spacing size={24} />

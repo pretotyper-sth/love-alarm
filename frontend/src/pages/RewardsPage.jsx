@@ -1,12 +1,11 @@
+import { PageHeader } from '../components/PageHeader';
 import { useState, useEffect } from 'react';
 import {
   List,
   ListRow,
   Button,
   Spacing,
-  Top,
 } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { logScreen, logClick } from '../utils/analytics';
@@ -203,20 +202,8 @@ export function RewardsPage() {
 
   return (
     <div className="rewards-page-container">
-      <Spacing size={14} />
-
       <div className="rewards-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph
-              size={22}
-              color={adaptive.grey900}
-              style={{ fontSize: '22px' }}
-            >
-              보상
-            </Top.TitleParagraph>
-          }
-        />
+        <PageHeader title="보상" />
       </div>
 
       <Spacing size={20} />

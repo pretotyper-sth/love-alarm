@@ -1,3 +1,8 @@
+export function accountBalance(account, userId, fallback = null) {
+  if (!userId) return null;
+  return account?.userId === userId ? account.balance ?? fallback : fallback;
+}
+
 // Confirmed display data only. Granting, spending and deletion still use the authenticated server.
 export function createAccountData(base, storage, now = Date.now) {
   const accounts = new Map(), listeners = new Set();

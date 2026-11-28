@@ -1,14 +1,14 @@
+import { PageHeader } from '../components/PageHeader';
+import { SheetCloseButton, SheetLaterButton } from '../components/SheetControls';
 import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Top,
   ListRow,
   Spacing,
   Button,
   Skeleton,
   BottomSheet,
 } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
@@ -612,20 +612,8 @@ export function AlarmListPage() {
 
   return (
     <div className="alarm-list-page-container">
-      <Spacing size={14} />
-
       <div className="alarm-list-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph 
-              size={22} 
-              color={adaptive.grey900}
-              style={{ fontSize: '22px' }}
-            >
-              알람 목록
-            </Top.TitleParagraph>
-          }
-        />
+        <PageHeader title="알람 목록" />
         <div className="alarm-list-msg-wrapper">
           <button
             className="alarm-list-msg-btn"
@@ -806,7 +794,7 @@ export function AlarmListPage() {
       <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>
         <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="bottom-sheet-header">
-            <h3 className="bottom-sheet-title">알림 받기</h3>
+            <div className="sheet-title-row"><h3 className="bottom-sheet-title">알림 받기</h3><SheetCloseButton onClose={handleNotificationClose} label="알림 받기 화면 닫기" /></div>
             <p className="bottom-sheet-description">알람이 추가됐어요.<br />연결 소식이나 메시지가 오면 바로 알려드릴게요.</p>
           </div>
           <div className="bottom-sheet-content">
@@ -842,9 +830,9 @@ export function AlarmListPage() {
           </div>
         </div>
       </div>
-      <BottomSheet className="guest-alarm-sheet" ctaContentGap={12} open={showGuestIntro} onClose={() => setShowGuestIntro(false)}>
+      <BottomSheet className="guest-alarm-sheet" style={{ width: '100%' }} open={showGuestIntro} onClose={() => { if (!guestLoginBusy) setShowGuestIntro(false); }}>
         <div className="guest-alarm-intro">
-          <h2>좋아하는 사람을 추가해요</h2>
+          <div className="sheet-title-row"><h2>좋아하는 사람을 추가해요</h2><SheetCloseButton onClose={() => setShowGuestIntro(false)} disabled={guestLoginBusy} label="알람 추가 안내 닫기" /></div>
           <p>서로의 인스타그램 ID를 등록하면 알람이 울려요.<br />추가해도 상대에게 연락이 가지 않아요.</p>
           <div className="guest-alarm-preview" aria-label="알람 추가 화면 미리보기">
             <h3>알람 추가 미리보기</h3>
@@ -852,7 +840,10 @@ export function AlarmListPage() {
             <div className="guest-alarm-preview-field"><span>상대 인스타그램 ID</span><strong>someone_i_like</strong></div>
           </div>
         </div>
-        <BottomSheet.CTA onClick={handleGuestLogin} loading={guestLoginBusy} disabled={guestLoginBusy}>로그인하고 추가하기</BottomSheet.CTA>
+        <div className="sheet-actions">
+          <Button size="xlarge" display="block" onClick={handleGuestLogin} loading={guestLoginBusy} disabled={guestLoginBusy}>로그인하고 추가하기</Button>
+          <SheetLaterButton onClose={() => setShowGuestIntro(false)} disabled={guestLoginBusy} />
+        </div>
       </BottomSheet>
     </div>
   );

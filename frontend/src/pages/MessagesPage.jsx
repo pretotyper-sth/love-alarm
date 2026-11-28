@@ -1,9 +1,11 @@
+import { PageHeader } from '../components/PageHeader';
+import { SheetCloseButton } from '../components/SheetControls';
 import { useBackDismiss } from '../utils/backNavigation';
 import { useAccountData } from '../utils/useAccountData';
+import { accountBalance } from '../utils/accountData';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Top, Skeleton, Spacing } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
+import { Skeleton, Spacing } from '@toss/tds-mobile';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -87,10 +89,10 @@ function SentMessageDetailSheet({ message, onClose }) {
   return (
     <>
       <div className="msg-sheet-overlay" onClick={onClose} />
-      <div className="msg-sheet">
+      <div className="msg-sheet" role="dialog" aria-modal="true" aria-label="보낸 메시지">
         <div className="msg-sheet-handle" />
 
-        <div className="msg-sheet-badge-row">
+        <div className="msg-sheet-summary"><div className="msg-sheet-badge-row">
           <span className="msg-sheet-badge msg-sheet-badge--sent">
             <img
               src="https://static.toss.im/icons/png/4x/icon-letter-heart.png"
@@ -100,7 +102,7 @@ function SentMessageDetailSheet({ message, onClose }) {
             To: @{message.targetInstagramId}
           </span>
           <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
-        </div>
+        </div><SheetCloseButton onClose={onClose} label="보낸 메시지 닫기" /></div>
 
         <div className="msg-sheet-card">
           <p className="msg-sheet-text">{message.message}</p>
@@ -148,12 +150,12 @@ function MessageDetailSheet({ message, onClose, onReact, onReport, reacting, rea
   return (
     <>
       <div className="msg-sheet-overlay" onClick={onClose} />
-      <div className="msg-sheet">
+      <div className="msg-sheet" role="dialog" aria-modal="true" aria-label="받은 메시지">
         {/* 드래그 핸들 */}
         <div className="msg-sheet-handle" />
 
         {/* 발신자 배지 */}
-        <div className="msg-sheet-badge-row">
+        <div className="msg-sheet-summary"><div className="msg-sheet-badge-row">
           <span className="msg-sheet-badge msg-sheet-badge--received">
             <svg
               width="12"
@@ -177,6 +179,7 @@ function MessageDetailSheet({ message, onClose, onReact, onReport, reacting, rea
           <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
         </div>
 
+        <SheetCloseButton onClose={onClose} label="받은 메시지 닫기" /></div>
         {/* 메시지 카드 */}
         <div className="msg-sheet-card">
           <p className="msg-sheet-text">{message.message}</p>
@@ -242,7 +245,7 @@ function ReportMessageSheet({
         <div className="msg-sheet-handle" />
 
         <div className="msg-report-header">
-          <h3 className="msg-report-title">이 메시지를 신고할까요?</h3>
+          <div className="sheet-title-row"><h3 className="msg-report-title">이 메시지를 신고할까요?</h3><SheetCloseButton onClose={onClose} disabled={isSubmitting} label="메시지 신고 화면 닫기" /></div>
           <p className="msg-report-desc">
             신고 사유를 선택해 주세요.
             <br />
@@ -320,7 +323,7 @@ export function MessagesPage() {
   const [verifiedId, setVerifiedId] = useState(null);
   const [wallet, setWallet] = useState(null);
   const account = useAccountData();
-  const passBalance = account?.userId === user?.id ? account.balance ?? wallet?.balance : wallet?.balance;
+  const passBalance = accountBalance(account, user?.id, wallet?.balance);
   const [reportTargetMessage, setReportTargetMessage] = useState(null);
   const [selectedReportReason, setSelectedReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -423,9 +426,8 @@ export function MessagesPage() {
   }
 
   return <div className="messages-page">
-    <Spacing size={14} />
-    <div className="messages-top-section"><Top title={<Top.TitleParagraph size={22} color={adaptive.grey900} style={{ fontSize: 22 }}>메시지</Top.TitleParagraph>} /></div>
-    <Spacing size={12} />
+    <div className="messages-top-section"><PageHeader title="메시지" /></div>
+    <Spacing size={28} />
     <div className="messages-segmented-wrap"><div className="messages-segmented" role="tablist" aria-label="메시지 탭">
       <button className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`} onClick={() => handleTabChange('sent')} role="tab" aria-selected={activeTab === 'sent'}>내가 보낸 메시지</button>
       <button className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`} onClick={() => handleTabChange('received')} role="tab" aria-selected={activeTab === 'received'}>받은 메시지</button>

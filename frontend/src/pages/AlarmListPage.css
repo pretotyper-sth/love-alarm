@@ -559,4 +559,6 @@
 .add-tutorial-target { position: relative; z-index: 10001; background: #fff; border-radius: 0; }
 .add-tutorial-target > * { border-radius: 0; }
 
-.guest-alarm-sheet { background: #fff; border-radius: 24px 24px 0 0; width: 100%; max-width: 420px; max-height: 80dvh !important; }
+.guest-alarm-sheet { background: #fff; border-radius: 24px 24px 0 0; width: 100%; max-width: 376px; max-height: 80dvh !important; }
+
+.guest-alarm-intro .sheet-title-row h2 { margin: 0; }

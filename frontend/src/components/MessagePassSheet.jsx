@@ -1,3 +1,4 @@
+import { SheetCloseButton } from './SheetControls';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { api } from '../utils/api';
@@ -124,11 +125,9 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
     }}>
       <div className="msg-sheet-handle" aria-hidden="true" />
       <header className="pass-header">
-        <div className="pass-title-row">
+        <div className="sheet-title-row">
           <h2 id="message-pass-title">{hasPass ? '메시지를 열어볼까요?' : '메시지 열람권'}</h2>
-          <button ref={closeButton} className="pass-close" onClick={onClose} disabled={busy} aria-label="열람권 화면 닫기">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-          </button>
+          <SheetCloseButton buttonRef={closeButton} onClose={onClose} disabled={busy} label="메시지 열람권 화면 닫기" />
         </div>
         <p className="pass-description">{hasPass ? '한 번 연 메시지는 추가 사용 없이 다시 볼 수 있어요.' : '열람권 1장으로 메시지 1개를 확인해요.'}</p>
       </header>

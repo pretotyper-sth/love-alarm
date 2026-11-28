@@ -1,13 +1,12 @@
+import { PageHeader } from '../components/PageHeader';
 import { useState, useEffect, useRef } from 'react';
 import {
   Text,
-  Top,
   TextField,
   TextArea,
   Spacing,
   BottomCTA,
 } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
@@ -344,12 +343,8 @@ export function AddAlarmPage() {
   return (
     <div className="add-alarm-page-container">
       <div className="add-alarm-form-content">
-      <Spacing size={16} />
-      <Top
-        title={<Top.TitleParagraph size={22} color={adaptive.grey900} style={{ fontSize: 22, lineHeight: 1.4 }}>알람 추가</Top.TitleParagraph>}
-        subtitleBottom={<Text color={adaptive.grey600} typography="t6" style={{ fontSize: 14, lineHeight: 1.5 }}>추가해도 상대에게 연락이 가지 않아요.</Text>}
-      />
-      <Spacing size={12} />
+      <PageHeader title="알람 추가" subtitle="추가해도 상대에게 연락이 가지 않아요." />
+      <Spacing size={28} />
       <div className="alarm-entry-fields form-entry-fields">
         <div className="form-field-heading"><label htmlFor="alarm-my-id">본인 인스타그램 ID</label></div>
         {isVerified ? (

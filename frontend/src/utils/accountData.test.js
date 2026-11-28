@@ -1,7 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setImmediate } from 'node:timers';
-import { createAccountData } from './accountData.js';
+import { createAccountData, accountBalance } from './accountData.js';
+
+test('guest pages and uncached accounts have no balance; another account cannot supply it', () => {
+  assert.equal(accountBalance(null, undefined), null);
+  assert.equal(accountBalance(null, 'a'), null);
+  assert.equal(accountBalance({ userId: 'a', balance: 3 }, undefined, 9), null);
+  assert.equal(accountBalance({ userId: 'b', balance: 7 }, 'a'), null);
+  assert.equal(accountBalance({ userId: 'a', balance: 0 }, 'a'), 0);
+  assert.equal(accountBalance({ userId: 'a', balance: 3 }, 'a'), 3);
+});
 
 function setup() {
   const values = new Map();

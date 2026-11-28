@@ -170,29 +170,6 @@
 }
 
 /* 액션 버튼 */
-.lcs-actions {
-  padding: 20px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 .lcs-actions button:first-child {
   transition: opacity 0.15s ease, background-color 0.15s ease !important;
-}
-
-.lcs-cancel {
-  width: 100%;
-  min-height: 52px;
-  background: #f2f4f6;
-  color: #6b7684;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.lcs-cancel:active {
-  background: #e5e8eb;
 }

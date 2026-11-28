@@ -298,6 +298,9 @@
 }
 
 /* 발신자/수신자 배지 행 */
+.msg-sheet-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.msg-sheet-summary > .msg-sheet-badge-row { flex: 1; min-width: 0; margin-bottom: 0; flex-wrap: wrap; }
+.msg-sheet-summary .msg-sheet-badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 .msg-sheet-badge-row {
   display: flex;
   align-items: center;

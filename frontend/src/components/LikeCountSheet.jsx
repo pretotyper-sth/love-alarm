@@ -1,3 +1,4 @@
+import { SheetCloseButton, SheetLaterButton } from './SheetControls';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { api } from '../utils/api';
@@ -151,12 +152,12 @@ export function LikeCountSheet({ open, onClose, onResult }) {
 
   return (
     <>
-      <div className="lcs-overlay" onClick={onClose} />
+      <div className="lcs-overlay" onClick={isLoading ? undefined : onClose} />
       <div className="lcs-sheet">
         <div className="lcs-handle" />
 
         <div className="lcs-header">
-          <h2 className="lcs-title">좋아하는 사람 수 확인하기</h2>
+          <div className="sheet-title-row"><h2 className="lcs-title">좋아하는 사람 수 확인하기</h2><SheetCloseButton onClose={onClose} disabled={isLoading} label="좋아하는 사람 수 화면 닫기" /></div>
           <p className="lcs-desc">
             인스타그램 ID를 입력하고 짧은 광고를 보면<br />
             지금 몇 명이 좋아하는지 알 수 있어요.
@@ -215,7 +216,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
           </div>
         </div>
 
-        <div className="lcs-actions">
+        <div className="sheet-actions lcs-actions">
           <Button
             size="xlarge"
             display="block"
@@ -225,9 +226,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
           >
             {isAdFree() ? '확인하기' : '광고 보고 확인하기'}
           </Button>
-          <button className="lcs-cancel" onClick={onClose}>
-            나중에 하기
-          </button>
+          <SheetLaterButton onClose={onClose} disabled={isLoading} />
         </div>
       </div>
     </>

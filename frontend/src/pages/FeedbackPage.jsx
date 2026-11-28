@@ -1,13 +1,14 @@
+import { PageHeader } from '../components/PageHeader';
+import { useBackDismiss } from '../utils/backNavigation';
+import { SheetCloseButton } from '../components/SheetControls';
 import { useState } from 'react';
 import {
   Text,
-  Top,
   TextField,
   TextArea,
   Spacing,
   BottomCTA,
 } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../utils/api';
 import './FeedbackPage.css';
@@ -28,6 +29,7 @@ export function FeedbackPage() {
   const [content, setContent] = useState('');
   const [selectedCategoryValue, setSelectedCategoryValue] = useState(null);
   const [showCategorySheet, setShowCategorySheet] = useState(false);
+  useBackDismiss(showCategorySheet, () => setShowCategorySheet(false));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorToast, setErrorToast] = useState({ show: false, message: '' });
 
@@ -75,15 +77,8 @@ export function FeedbackPage() {
   return (
     <div className="feedback-page-container">
       <div className="feedback-form-content">
-      <Spacing size={16} />
-      <Top
-        title={<Top.TitleParagraph size={28} color={adaptive.grey900} fontWeight="bold" style={{ fontSize: 28, lineHeight: 1.4 }}>의견 보내기</Top.TitleParagraph>}
-        subtitleBottom={<Text color={adaptive.grey600} typography="t6" style={{ fontSize: 16, lineHeight: 1.5 }}>
-          서비스 개선에 도움이 되는 의견을 보내주세요.
-          하나도 놓치지 않고 전부 읽어볼게요!
-        </Text>}
-      />
-      <Spacing size={12} />
+      <PageHeader title="의견 보내기" subtitle="서비스 개선에 도움이 되는 의견을 보내주세요. 하나도 놓치지 않고 전부 읽어볼게요!" />
+      <Spacing size={28} />
       <div className="feedback-entry-fields form-entry-fields">
         <div className="form-field-heading"><label htmlFor="feedback-category">카테고리</label></div>
         <TextField.Button
@@ -138,7 +133,7 @@ export function FeedbackPage() {
         <div className={`feedback-bottom-sheet ${showCategorySheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="feedback-sheet-handle" />
           <div className="bottom-sheet-header">
-            <h3 className="bottom-sheet-title">카테고리 선택</h3>
+            <div className="sheet-title-row"><h3 className="bottom-sheet-title">카테고리 선택</h3><SheetCloseButton onClose={() => setShowCategorySheet(false)} label="카테고리 선택 닫기" /></div>
           </div>
           <div className="feedback-sheet-options">
             {CATEGORY_OPTIONS.map((option) => (

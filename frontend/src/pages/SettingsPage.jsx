@@ -1,16 +1,17 @@
+import { PageHeader } from '../components/PageHeader';
+import { SheetCloseButton } from '../components/SheetControls';
 import { useAccountData } from '../utils/useAccountData';
+import { accountBalance } from '../utils/accountData';
 import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef } from 'react';
 import {
   Text,
-  Top,
   List,
   ListRow,
   Spacing,
   BottomSheet,
   Button,
 } from '@toss/tds-mobile';
-import { adaptive } from '@toss/tds-colors';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../utils/api';
@@ -55,7 +56,7 @@ export function SettingsPage() {
   useBackDismiss(showWithdrawal, () => { if (!withdrawing) setShowWithdrawal(false); });
   const [withdrawalError, setWithdrawalError] = useState('');
   const account = useAccountData();
-  const passBalance = account?.userId === user?.id ? account.balance ?? null : null;
+  const passBalance = accountBalance(account, user?.id);
   const withdrawalLock = useRef(false);
 
   useEffect(() => {
@@ -235,20 +236,8 @@ export function SettingsPage() {
 
   return (
     <div className="settings-page-container">
-      <Spacing size={14} />
-
       <div className="settings-top-section">
-        <Top
-          title={
-            <Top.TitleParagraph 
-              size={22} 
-              color={adaptive.grey900}
-              style={{ fontSize: '22px' }}
-            >
-              더보기
-            </Top.TitleParagraph>
-          }
-        />
+        <PageHeader title="더보기" />
       </div>
 
       <Spacing size={24} />
@@ -370,11 +359,9 @@ export function SettingsPage() {
       </>}
       <BottomSheet className="withdrawal-sheet" open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
         <div className="withdrawal-content">
-          <div className="withdrawal-title-row">
+          <div className="sheet-title-row withdrawal-title-row">
             <h2>정말 탈퇴할까요?</h2>
-            <button type="button" className="withdrawal-close" aria-label="회원 탈퇴 화면 닫기" onClick={() => setShowWithdrawal(false)} disabled={withdrawing}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
-            </button>
+            <SheetCloseButton onClose={() => setShowWithdrawal(false)} disabled={withdrawing} label="회원 탈퇴 화면 닫기" />
           </div>
           <p>계정과 등록한 알람, 인스타그램 인증 정보가 삭제돼요. 탈퇴 후에는 복구할 수 없어요.</p>
           <ul>
@@ -430,7 +417,7 @@ export function SettingsPage() {
           <div className="auth-manage-card-header">
             {authManageStep === 'menu' ? (
               <>
-                <h3 className="auth-manage-card-title">인스타그램 인증 관리</h3>
+                <div className="sheet-title-row"><h3 className="auth-manage-card-title">인스타그램 인증 관리</h3><SheetCloseButton onClose={closeAuthManageSheet} disabled={isDisconnectingAuth} label="인스타그램 인증 관리 닫기" /></div>
                 <p className="auth-manage-card-desc">
                   현재 @{verifiedUsername} 계정이 인증돼 있어요.
                   <br />
@@ -439,7 +426,7 @@ export function SettingsPage() {
               </>
             ) : (
               <>
-                <h3 className="auth-manage-card-title">인증을 해제할까요?</h3>
+                <div className="sheet-title-row"><h3 className="auth-manage-card-title">인증을 해제할까요?</h3><SheetCloseButton onClose={closeAuthManageSheet} disabled={isDisconnectingAuth} label="인스타그램 인증 해제 화면 닫기" /></div>
                 <p className="auth-manage-card-desc">
                   해제 시 현재 ID로 등록한 알람도 함께 정리돼요.
                 </p>

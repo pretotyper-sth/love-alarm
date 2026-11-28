@@ -1,3 +1,4 @@
+import { SheetCloseButton } from './SheetControls';
 import { logClick } from '../utils/analytics';
 import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -16,7 +17,7 @@ export function InstagramAuthSheet({
   currentVerifiedUsername = '',
 }) {
   const { requireLogin } = useAuth();
-  useBackDismiss(open, onClose);
+  useBackDismiss(open, () => { if (!isConfirming) onClose(); });
   const [username, setUsername] = useState('');
   const [stage, setStage] = useState('input'); // 'input' | 'waiting'
   const [sessionId, setSessionId] = useState(null);
@@ -205,12 +206,12 @@ export function InstagramAuthSheet({
 
   return (
     <>
-      <div className={`ig-auth-overlay ${open ? 'show' : ''}`} onClick={onClose} />
+      <div className={`ig-auth-overlay ${open ? 'show' : ''}`} onClick={isConfirming ? undefined : onClose} />
       <div className={`ig-auth-sheet ${open ? 'show' : ''}`} onClick={e => e.stopPropagation()}>
 
         {/* 헤더 */}
         <div className="ig-auth-header">
-          <h3 className="ig-auth-title">인스타그램 인증</h3>
+          <div className="sheet-title-row"><h3 className="ig-auth-title">인스타그램 인증</h3><SheetCloseButton onClose={onClose} disabled={isConfirming} label="인스타그램 인증 화면 닫기" /></div>
           <p className="ig-auth-desc">
             {alreadyVerified ? (
               <>
