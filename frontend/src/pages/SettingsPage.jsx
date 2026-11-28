@@ -1,3 +1,4 @@
+import { WithdrawalSheet } from '../components/WithdrawalSheet';
 import { PageHeader } from '../components/PageHeader';
 import { SheetCloseButton } from '../components/SheetControls';
 import { useAccountData } from '../utils/useAccountData';
@@ -9,8 +10,6 @@ import {
   List,
   ListRow,
   Spacing,
-  BottomSheet,
-  Button,
 } from '@toss/tds-mobile';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,7 +20,6 @@ import './SettingsPage.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const IS_DEV = import.meta.env.DEV;
-const WITHDRAWAL_SHEET_STYLE = { width: '100%' };
 const DEV_BYPASS_USERNAME = 'dev_bypass';
 const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
 const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
@@ -54,7 +52,6 @@ export function SettingsPage() {
   const { user, setUser, logout } = useAuth();
   const [showWithdrawal, setShowWithdrawal] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
-  useBackDismiss(showWithdrawal, () => { if (!withdrawing) setShowWithdrawal(false); });
   const [withdrawalError, setWithdrawalError] = useState('');
   const account = useAccountData();
   const passBalance = accountBalance(account, user?.id);
@@ -358,27 +355,9 @@ export function SettingsPage() {
           right={<img src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png" alt="" style={{ width: '20px', height: '20px', opacity: 0.6 }} />}
           verticalPadding="large" horizontalPadding="medium" onClick={() => { setWithdrawalError(''); setShowWithdrawal(true); logClick('settings_withdraw_click'); }} /></List>
       </>}
-      <BottomSheet className="withdrawal-sheet" style={WITHDRAWAL_SHEET_STYLE} maxHeight="90vh" disableChildrenDragging open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
-        <div className="withdrawal-content">
-          <div className="sheet-title-row withdrawal-title-row">
-            <h2>정말 탈퇴할까요?</h2>
-            <SheetCloseButton onClose={() => setShowWithdrawal(false)} disabled={withdrawing} source="withdrawal" label="회원 탈퇴 화면 닫기" />
-          </div>
-          <p>계정과 등록한 알람, 인스타그램 인증 정보가 삭제돼요. 탈퇴 후에는 복구할 수 없어요.</p>
-          <ul>
-            <li>남은 열람권과 열람한 메시지도 복구할 수 없어요.</li>
-            <li>상대방이 이미 열어본 메시지는 남을 수 있어요.</li>
-            <li>결제 기록은 환불·정산 처리를 위해 보관해요.</li>
-          </ul>
-          {passBalance == null && <div className="withdrawal-warning" role="status">{account?.error ? <>보유 메시지 열람권을 확인하지 못했어요. <button onClick={() => { void api.getRewardSummary({ force: true }).catch(() => {}); }}>다시 확인</button></> : '보유 메시지 열람권을 확인하고 있어요.'}</div>}
-          {passBalance > 0 && <p className="withdrawal-warning">보유 열람권 {passBalance}장이 있어요. 구매 관련 문의는 탈퇴 전에 ‘의견 보내기’로 보내 주세요.</p>}
-          {withdrawalError && <p className="withdrawal-error" role="alert">{withdrawalError}</p>}
-          <div className="withdrawal-actions">
-            <button className="auth-manage-card-btn auth-manage-card-btn--ghost" onClick={() => setShowWithdrawal(false)} disabled={withdrawing}>계속 이용하기</button>
-            <Button size="large" onClick={handleWithdraw} loading={withdrawing} disabled={withdrawing || passBalance == null}>탈퇴하기</Button>
-          </div>
-        </div>
-      </BottomSheet>
+      <WithdrawalSheet open={showWithdrawal} busy={withdrawing} balance={passBalance} loadError={account?.error} error={withdrawalError}
+        onClose={() => { if (!withdrawing) setShowWithdrawal(false); }} onWithdraw={handleWithdraw}
+        onRetry={() => { void api.getRewardSummary({ force: true }).catch(() => {}); }} />
 
       {/* 토스트 - 성공/에러 공용 */}
       <div className="toast-stack">

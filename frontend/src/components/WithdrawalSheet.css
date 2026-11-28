@@ -1,0 +1,20 @@
+/* Match the Instagram sheet: one CSS transform, no SDK size/drag animations. */
+.withdrawal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 9999; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease-out, visibility .3s ease-out; }
+.withdrawal-overlay.show { opacity: 1; visibility: visible; pointer-events: auto; }
+.withdrawal-sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 376px; max-height: 90dvh; display: flex; flex-direction: column; background: #fff; border-radius: 24px 24px 0 0; z-index: 10000; visibility: hidden; pointer-events: none; transition: transform .3s ease-out, visibility 0s .3s; }
+.withdrawal-sheet.show { transform: translateX(-50%) translateY(0); visibility: visible; pointer-events: auto; transition: transform .3s ease-out; }
+.withdrawal-content { overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.withdrawal-content { padding: 20px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.withdrawal-title-row { margin-bottom: 10px; }
+.withdrawal-content h2 { margin: 0; font-size: 20px; line-height: 1.4; color: #191f28; }
+.withdrawal-content p, .withdrawal-content li { font-size: 14px; line-height: 1.6; color: #6b7684; word-break: keep-all; overflow-wrap: anywhere; }
+.withdrawal-content p { margin: 0; }
+.withdrawal-content ul { margin: 18px 0 0; padding-left: 18px; }
+.withdrawal-content li + li { margin-top: 6px; }
+.withdrawal-content .withdrawal-warning { margin-top: 18px; padding: 14px; border-radius: 12px; background: #f2f4f6; color: #4e5968; }
+.withdrawal-warning[role="status"] { min-height: 46px; font-size: 14px; line-height: 1.6; }
+.withdrawal-warning button { border: 0; background: none; padding: 4px 0; color: #3182f6; font: inherit; cursor: pointer; }
+.withdrawal-content .withdrawal-error { margin-top: 14px; color: #d14356; }
+.withdrawal-actions { display: flex; gap: 10px; margin-top: 24px; }
+.withdrawal-actions > button { flex: 1; min-width: 0; }
+
