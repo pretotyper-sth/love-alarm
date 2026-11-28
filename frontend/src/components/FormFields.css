@@ -36,7 +36,7 @@
   word-spacing: normal;
 }
 .form-entry-fields .form-field-notes { padding-top: 14px; line-height: 1.7; }
-.form-entry-fields .alarm-page-guide { padding-top: 32px; }
+.form-entry-fields .alarm-page-guide { padding-top: 32px; padding-bottom: 12px; }
 
 .form-entry-fields {
   --adaptiveGreyOpacity50: #f2f4f6;

@@ -1,14 +1,34 @@
+import { setImmediate } from 'node:timers';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { backDismissStack, isExitRoot, subscribeNativeBack } from './backNavigation.js';
+import { backDismissStack, isExitRoot, subscribeNativeBack, updateExitNavigationBar } from './backNavigation.js';
 
-test('Toss root leaves exit and GNB dimming to the native host without subscribing', () => {
-  const graniteEvent = { addEventListener() { assert.fail('native root must not be intercepted'); } };
+test('Toss root explicitly subscribes so every host shows an exit confirmation', () => {
+  let calls = 0, removed = 0;
+  const graniteEvent = { addEventListener(name, { onEvent }) { assert.equal(name, 'backEvent'); onEvent(); return () => removed++; } };
   for (const path of ['/', '/alarms']) {
     assert.equal(isExitRoot(path), true);
-    subscribeNativeBack({ graniteEvent, path, hasOverlay: false, onBack: assert.fail })();
+    subscribeNativeBack({ graniteEvent, onBack: () => calls++ })();
   }
   assert.equal(isExitRoot('/more'), false);
+  assert.equal(calls, 2); assert.equal(removed, 2);
+});
+
+test('GNB dim and restore stay ordered across rapid reopening without changing layout or theme', async () => {
+  const applied = [];
+  let finishFirst;
+  const NavigationBar = { setOptions: async options => {
+    applied.push(options);
+    if (applied.length === 1) await new Promise(resolve => { finishFirst = resolve; });
+  } };
+  const first = updateExitNavigationBar(NavigationBar, true);
+  const restore = updateExitNavigationBar(NavigationBar, false);
+  const reopen = updateExitNavigationBar(NavigationBar, true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(applied, [{ backgroundColor: '#999999' }]);
+  finishFirst(); await Promise.all([first, restore, reopen]);
+  assert.deepEqual(applied, [{ backgroundColor: '#999999' }, { backgroundColor: '#ffffff' }, { backgroundColor: '#999999' }]);
+  await updateExitNavigationBar(NavigationBar, false);
 });
 
 test('child routes and root overlays intercept back; unsubscribe restores host behavior', () => {

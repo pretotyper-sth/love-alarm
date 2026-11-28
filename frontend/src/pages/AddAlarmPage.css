@@ -3,9 +3,12 @@
   flex-direction: column;
   min-height: 100dvh;
   background: var(--adaptiveBackground, #fff);
+  padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
 }
 
-.add-alarm-form-content { flex: 1; }
+.add-alarm-form-content { flex: 0 0 auto; }
+.alarm-submit-footer { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 376px; z-index: 1000; background: var(--adaptiveBackground, #fff); }
 
 /* Quick_Navigation 스타일 - IntroPage와 동일 */
 .quick-navigation {

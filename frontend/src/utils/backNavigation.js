@@ -33,8 +33,14 @@ export function useBackDismissCount() {
   return useSyncExternalStore(backDismissStack.subscribe, backDismissStack.size);
 }
 
-export function subscribeNativeBack({ graniteEvent, path, hasOverlay, onBack }) {
-  // Like HSB, keep the actual WebView at its native root; Toss dims its own GNB.
-  if (isExitRoot(path) && !hasOverlay) return () => {};
+export function subscribeNativeBack({ graniteEvent, onBack }) {
+  // Always handle root back explicitly; native exit behavior varies across Toss hosts.
   return graniteEvent.addEventListener('backEvent', { onEvent: onBack, onError: () => {} });
+}
+
+export const exitNavigationBarOptions = open => ({ backgroundColor: open ? '#999999' : '#ffffff' });
+let chromeUpdate = Promise.resolve();
+export function updateExitNavigationBar(NavigationBar, open) {
+  chromeUpdate = chromeUpdate.catch(() => {}).then(() => NavigationBar.setOptions(exitNavigationBarOptions(open)));
+  return chromeUpdate;
 }

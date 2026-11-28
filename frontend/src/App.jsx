@@ -17,7 +17,7 @@ import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import './App.css';
-import { insideToss, isExitRoot, backDismissStack, useBackDismiss, useBackDismissCount, subscribeNativeBack } from './utils/backNavigation';
+import { insideToss, isExitRoot, backDismissStack, useBackDismiss, subscribeNativeBack, updateExitNavigationBar } from './utils/backNavigation';
 
 // 앱 종료 처리
 const exitApp = async () => {
@@ -34,6 +34,18 @@ function ExitConfirmModal({ onClose, onConfirm }) {
   const dialog = useRef(null);
   const cancel = useRef(null);
   useBackDismiss(true, onClose);
+  useEffect(() => {
+    if (!insideToss()) return;
+    let disposed = false;
+    let restore = () => {};
+    void import('@apps-in-toss/web-framework').then(({ NavigationBar }) => {
+      if (disposed) return;
+      // Serialize restoration after dimming without toggling transparency or moving the WebView.
+      void updateExitNavigationBar(NavigationBar, true).catch(() => {});
+      restore = () => { void updateExitNavigationBar(NavigationBar, false).catch(() => {}); };
+    }).catch(() => {});
+    return () => { disposed = true; restore(); };
+  }, []);
   useEffect(() => {
     const previous = document.activeElement;
     const overflow = document.body.style.overflow;
@@ -95,13 +107,13 @@ function ExitConfirmModal({ onClose, onConfirm }) {
 // 히스토리 가드 설정 (앱 시작 시 한 번만)
 function setupHistoryGuard() {
   if (insideToss()) return;
-  if (sessionStorage.getItem('history_guard_set')) return;
-  sessionStorage.setItem('history_guard_set', 'true');
+  if (window.history.state?.loveAlarmBackGuard) return;
   
   // 현재 상태를 가드로 설정하고, 새 상태 추가
   // [가드] → [현재페이지]
-  window.history.replaceState({ isExitGuard: true, index: 0 }, '');
-  window.history.pushState({ index: 1 }, '');
+  const state = window.history.state || {};
+  window.history.replaceState({ ...state, isExitGuard: true }, '');
+  window.history.pushState({ ...state, isExitGuard: false, loveAlarmBackGuard: true }, '');
 }
 
 const TAB_PATHS = ['/alarms', '/rewards', '/more'];
@@ -127,24 +139,24 @@ function AppRouter({ children }) {
     : <BrowserRouter>{children}</BrowserRouter>;
 }
 
-function NativeBackNavigation() {
+function NativeBackNavigation({ onExit }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const hasOverlay = useBackDismissCount() > 0;
   useEffect(() => {
-    if (!insideToss() || (isExitRoot(location.pathname) && !hasOverlay)) return;
+    if (!insideToss()) return;
     let disposed = false;
     let off = () => {};
     void import('@apps-in-toss/web-framework').then(({ graniteEvent }) => {
       if (disposed) return;
-      off = subscribeNativeBack({ graniteEvent, path: location.pathname, hasOverlay, onBack: () => {
+      off = subscribeNativeBack({ graniteEvent, onBack: () => {
         if (backDismissStack.dismiss()) return;
+        if (isExitRoot(location.pathname)) { onExit(); return; }
         if (TAB_PATHS.includes(location.pathname) || location.key === 'default') navigate('/alarms', { replace: true });
         else navigate(-1);
       } });
     }).catch(() => {});
     return () => { disposed = true; off(); };
-  }, [location.pathname, location.key, navigate, hasOverlay]);
+  }, [location.pathname, location.key, navigate, onExit]);
   return null;
 }
 
@@ -176,6 +188,7 @@ function AppRoutes() {
   
   // 종료 확인 다이얼로그 상태
   const [showExitModal, setShowExitModal] = useState(false);
+  const openExitModal = useCallback(() => setShowExitModal(true), []);
 
   // 온보딩 완료 처리 (IntroPage에서 호출)
   const markAsVisited = useCallback(() => {
@@ -219,7 +232,7 @@ function AppRoutes() {
         {user && <button onClick={logout}>가상 로그아웃</button>}</div>}
       <AppRouter>
         <NavigationTracker />
-        <NativeBackNavigation />
+        <NativeBackNavigation onExit={openExitModal} />
         <TabLayout>
           <Routes>
             <Route

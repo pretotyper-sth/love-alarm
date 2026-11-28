@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   List,
   ListRow,
@@ -13,6 +13,7 @@ import { logScreen, logClick } from '../utils/analytics';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import { ALARM_REWARDS } from '../../../backend/src/config/alarmRewards.js';
 import './RewardsPage.css';
+import { createRewardQueue } from '../utils/rewardQueue';
 
 const IS_DEV = import.meta.env.DEV;
 
@@ -71,19 +72,31 @@ export function RewardsPage() {
     user ? parseInt(localStorage.getItem(CHECKIN10_CYCLES_KEY) || '0', 10) : 0
   ));
   const [claimed30, setClaimed30] = useState(() => !!user && localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true');
-  const [toast, setToast] = useState({ show: false, message: '' });
+  const [toasts, setToasts] = useState([]);
+  const toast = toasts[0];
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToasts(items => items.slice(1)), 2500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+  const [pendingClaims, setPendingClaims] = useState([]);
+  const [rewardQueue] = useState(() => createRewardQueue(setPendingClaims));
+  const enqueueClaim = (key, action) => {
+    const owner = api.getCurrentUser()?.id;
+    return rewardQueue.enqueue(key, async () => {
+      if (owner && api.getCurrentUser()?.id !== owner) return;
+      try { await action(); }
+      catch (error) { showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.', true); }
+    });
+  };
+  const pending = key => pendingClaims.includes(key);
+  const processing = key => pendingClaims[0] === key;
   const [reward, setReward] = useState(null);
-  const [rewardBusy, setRewardBusy] = useState(false);
   const [showRewardAuth, setShowRewardAuth] = useState(false);
-  const rewardLock = useRef(false);
   const currentReward = reward?.userId === user?.id ? reward : null;
   const [checkin, setCheckin] = useState(null);
-  const [checkinBusy, setCheckinBusy] = useState(false);
-  const checkinLock = useRef(false);
   const currentCheckin = checkin?.userId === user?.id ? checkin : null;
   const [alarmRewards, setAlarmRewards] = useState(null);
-  const [alarmRewardBusy, setAlarmRewardBusy] = useState(null);
-  const alarmRewardLock = useRef(false);
   const currentAlarmRewards = alarmRewards?.userId === user?.id ? alarmRewards : null;
 
   useEffect(() => {
@@ -94,19 +107,14 @@ export function RewardsPage() {
     return () => { active = false; };
   }, [user]);
 
-  const handleClaimAlarmReward = async missionId => {
-    if (alarmRewardLock.current) return;
-    alarmRewardLock.current = true; setAlarmRewardBusy(missionId);
-    try {
-      const result = currentAlarmRewards?.error ? await api.getAlarmRewards() : await api.claimAlarmReward(missionId);
-      setAlarmRewards({ ...result, userId: api.getCurrentUser().id });
-      if ('alreadyGranted' in result) {
-        logClick('rewards_claim_alarm_pass_success', { type: missionId, pass_balance: result.balance });
-        showToast(result.alreadyGranted ? '이미 받은 보상이에요' : '메시지 열람권 1장을 받았어요');
-      }
-    } catch (error) { showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.'); }
-    finally { alarmRewardLock.current = false; setAlarmRewardBusy(null); }
-  };
+  const handleClaimAlarmReward = missionId => enqueueClaim(`alarm:${missionId}`, async () => {
+    const result = currentAlarmRewards?.error ? await api.getAlarmRewards() : await api.claimAlarmReward(missionId);
+    setAlarmRewards({ ...result, userId: api.getCurrentUser().id });
+    if ('alreadyGranted' in result) {
+      logClick('rewards_claim_alarm_pass_success', { type: missionId, pass_balance: result.balance });
+      showToast(result.alreadyGranted ? '이미 받은 보상이에요' : `${missionId === 'first_alarm' ? '첫 알람 보상' : '알람 3명 보상'} · 메시지 열람권 1장`);
+    }
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -121,19 +129,14 @@ export function RewardsPage() {
     return () => { active = false; document.removeEventListener('visibilitychange', refresh); };
   }, [user]);
 
-  const handleClaimCheckin = async () => {
-    if (checkinLock.current) return;
-    checkinLock.current = true; setCheckinBusy(true);
-    try {
-      const result = currentCheckin?.error ? await api.checkinMessagePass() : await api.claimCheckinPass();
-      setCheckin({ ...result, userId: api.getCurrentUser().id });
-      if (result.granted) {
-        logClick('rewards_claim_checkin_pass_success', { pass_balance: result.balance, day_count: result.days });
-        showToast('메시지 열람권 1장을 받았어요');
-      }
-    } catch (error) { showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.'); }
-    finally { checkinLock.current = false; setCheckinBusy(false); }
-  };
+  const handleClaimCheckin = () => enqueueClaim('checkin', async () => {
+    const result = currentCheckin?.error ? await api.checkinMessagePass() : await api.claimCheckinPass();
+    setCheckin({ ...result, userId: api.getCurrentUser().id });
+    if (result.granted) {
+      logClick('rewards_claim_checkin_pass_success', { pass_balance: result.balance, day_count: result.days });
+      showToast('출석 보상 · 메시지 열람권 1장');
+    }
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -142,24 +145,16 @@ export function RewardsPage() {
     return () => { active = false; };
   }, [user]);
 
-  const handleClaimPass = async () => {
-    if (rewardLock.current) return;
-    rewardLock.current = true;
-    setRewardBusy(true);
-    try {
-      if (!await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
-      const status = await api.getInstagramReward();
-      if (!status.claimed && !status.verified) { setShowRewardAuth(true); return; }
-      logClick('rewards_claim_pass_start');
-      const result = await api.claimInstagramReward();
-      setReward({ ...result, userId: api.getCurrentUser().id });
-      logClick('rewards_claim_pass_success', { pass_balance: result.balance });
-      showToast(result.alreadyGranted ? '이미 받은 보상이에요' : '메시지 열람권 1장을 받았어요');
-    } catch (error) {
-      logClick('rewards_claim_pass_fail');
-      showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.');
-    } finally { rewardLock.current = false; setRewardBusy(false); }
-  };
+  const handleClaimPass = verifiedNow => enqueueClaim('instagram', async () => {
+    if (!await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
+    const status = verifiedNow === true ? { verified: true } : currentReward || await api.getInstagramReward();
+    if (!status.claimed && !status.verified) { setShowRewardAuth(true); return; }
+    logClick('rewards_claim_pass_start');
+    const result = await api.claimInstagramReward();
+    setReward({ ...result, userId: api.getCurrentUser().id });
+    logClick('rewards_claim_pass_success', { pass_balance: result.balance });
+    showToast(result.alreadyGranted ? '이미 받은 보상이에요' : '인증 보상 · 메시지 열람권 1장');
+  });
 
   // ─── 10일 체크인 계산 ───────────────────────────────────
   const raw10 = visitDates.length - claimed10Cycles * 10;
@@ -170,44 +165,33 @@ export function RewardsPage() {
   const progress30 = Math.min(visitDates.length, 30);
   const canClaim30 = progress30 >= 30 && !claimed30;
 
-  // ─── 토스트 ─────────────────────────────────────────────
-  const showToast = (message) => {
-    setToast({ show: true, message });
-    setTimeout(() => setToast(prev => ({ ...prev, show: false })), 3000);
+  const showToast = (message, isError = false) => {
+    setToasts(items => [...items, { id: crypto.randomUUID(), message, isError }]);
   };
 
-  // ─── 수령 핸들러 ─────────────────────────────────────────
-  const handleClaim30 = async () => {
+  const handleClaim30 = () => enqueueClaim('adfree', async () => {
     if (!canClaim30 || !await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
     logClick('rewards_claim_adfree');
+    const result = await api.claimAdFree();
     localStorage.setItem(CHECKIN30_CLAIMED_KEY, 'true');
     setClaimed30(true);
-    try {
-      await api.claimAdFree();
-      showToast('광고를 영구 제거했어요');
-    } catch {
-      showToast('광고를 영구 제거했어요');
-    }
-  };
+    if (result?.user) setUser(result.user);
+    showToast('광고를 영구 제거했어요');
+  });
 
-  const handleClaim10 = async () => {
+  const handleClaim10 = () => enqueueClaim('slot', async () => {
     if (!canClaim10 || !await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
     logClick('rewards_claim_slot');
+    const data = await api.purchaseSlot();
     const next = claimed10Cycles + 1;
     localStorage.setItem(CHECKIN10_CYCLES_KEY, String(next));
     setClaimed10Cycles(next);
-    try {
-      const data = await api.purchaseSlot();
-      // AuthContext + 캐시 즉시 동기화 → AlarmListPage 초기값이 새 값으로 뜸
-      if (data?.user) {
-        setUser(data.user);
-        localStorage.setItem('love_alarm_cached_maxSlots', String(data.user.maxSlots));
-      }
-      showToast('알람 슬롯 1개를 받았어요');
-    } catch {
-      showToast('알람 슬롯 1개를 받았어요');
+    if (data?.user) {
+      setUser(data.user);
+      localStorage.setItem('love_alarm_cached_maxSlots', String(data.user.maxSlots));
     }
-  };
+    showToast('알람 슬롯 1개를 받았어요');
+  });
 
   // ─── DEV bypass ─────────────────────────────────────────
   const devResetSlotClaim = () => {
@@ -265,8 +249,8 @@ export function RewardsPage() {
             </div>
           }
           right={
-            <Button size="small" disabled={!!currentReward?.claimed || rewardBusy} loading={rewardBusy} onClick={handleClaimPass}>
-              {currentReward?.claimed ? '완료' : currentReward?.verified ? '받기' : '인증하고 받기'}
+            <Button size="small" disabled={!!currentReward?.claimed || pending('instagram')} loading={processing('instagram')} onClick={handleClaimPass}>
+              {pending('instagram') && !processing('instagram') ? '대기 중' : currentReward?.claimed ? '완료' : currentReward?.verified ? '받기' : '인증하고 받기'}
             </Button>
           }
           leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
@@ -280,7 +264,7 @@ export function RewardsPage() {
               <p className="checkin-sub">{mission.goal === 1 ? '첫 알람 등록 시 메시지 열람권 1장' : '3명 등록 시 메시지 열람권 1장'}</p>
               <span className="checkin-badge">{currentAlarmRewards?.error ? '등록 횟수를 불러오지 못했어요' : user && !currentAlarmRewards ? '등록 확인 중' : `(${status?.progress || 0}/${mission.goal}) · 계정당 1회`}</span>
             </div>}
-            right={<Button size="small" disabled={alarmRewardBusy !== null || (!status?.canClaim && !currentAlarmRewards?.error)} loading={alarmRewardBusy === mission.id} onClick={() => handleClaimAlarmReward(mission.id)}>{currentAlarmRewards?.error ? '다시 시도' : status?.claimed ? '완료' : '받기'}</Button>}
+            right={<Button size="small" disabled={pending(`alarm:${mission.id}`) || (!status?.canClaim && !currentAlarmRewards?.error)} loading={processing(`alarm:${mission.id}`)} onClick={() => handleClaimAlarmReward(mission.id)}>{pending(`alarm:${mission.id}`) && !processing(`alarm:${mission.id}`) ? '대기 중' : currentAlarmRewards?.error ? '다시 시도' : status?.claimed ? '완료' : '받기'}</Button>}
             leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
           />;
         })}
@@ -293,7 +277,7 @@ export function RewardsPage() {
               <span className="checkin-badge">{currentCheckin?.error ? '출석을 불러오지 못했어요' : user && !currentCheckin ? '출석 확인 중' : `(${currentCheckin?.progress || 0}/3)`}</span>
             </div>
           }
-          right={<Button size="small" disabled={checkinBusy || (!currentCheckin?.canClaim && !currentCheckin?.error)} loading={checkinBusy} onClick={handleClaimCheckin}>{currentCheckin?.error ? '다시 시도' : '받기'}</Button>}
+          right={<Button size="small" disabled={pending('checkin') || (!currentCheckin?.canClaim && !currentCheckin?.error)} loading={processing('checkin')} onClick={handleClaimCheckin}>{pending('checkin') && !processing('checkin') ? '대기 중' : currentCheckin?.error ? '다시 시도' : '받기'}</Button>}
           leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
         />
       {/* ── 10일 체크인 ── */}
@@ -319,8 +303,8 @@ export function RewardsPage() {
             </div>
           }
           right={
-            <Button size="small" disabled={!canClaim10} onClick={handleClaim10}>
-              받기
+            <Button size="small" disabled={!canClaim10 || pending('slot')} loading={processing('slot')} onClick={handleClaim10}>
+              {pending('slot') && !processing('slot') ? '대기 중' : '받기'}
             </Button>
           }
           leftAlignment="top"
@@ -349,8 +333,8 @@ export function RewardsPage() {
             </div>
           }
           right={
-            <Button size="small" disabled={!canClaim30 || claimed30} onClick={handleClaim30}>
-              {claimed30 ? '완료' : '받기'}
+            <Button size="small" disabled={!canClaim30 || claimed30 || pending('adfree')} loading={processing('adfree')} onClick={handleClaim30}>
+              {pending('adfree') && !processing('adfree') ? '대기 중' : claimed30 ? '완료' : '받기'}
             </Button>
           }
           leftAlignment="top"
@@ -362,14 +346,14 @@ export function RewardsPage() {
 
       <InstagramAuthSheet open={showRewardAuth} onClose={() => setShowRewardAuth(false)} onSuccess={() => {
         setShowRewardAuth(false);
-        void handleClaimPass();
+        void handleClaimPass(true);
       }} />
 
       {/* 토스트 */}
-      <div className={`single-toast ${toast.show ? 'show' : ''}`}>
+      <div key={toast?.id} role="status" aria-live="polite" className={`single-toast ${toast ? 'show' : ''}`}>
         <div className="custom-toast-content">
-          <span className="custom-toast-icon">✓</span>
-          <span className="custom-toast-text">{toast.message}</span>
+          <span className="custom-toast-icon">{toast?.isError ? '!' : '✓'}</span>
+          <span className="custom-toast-text">{toast?.message}</span>
         </div>
       </div>
 

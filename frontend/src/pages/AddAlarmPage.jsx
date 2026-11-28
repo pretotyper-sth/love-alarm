@@ -409,7 +409,7 @@ export function AddAlarmPage() {
           variant="box"
             paddingTop={8}
             paddingBottom={0}
-          minHeight={128}
+          minHeight={96}
           style={{ textAlign: 'left' }}
           labelOption="sustain"
           placeholder="본인을 알 수 있는 힌트 또는 평소에 하고 싶었던 말을 남겨보세요."
@@ -426,6 +426,7 @@ export function AddAlarmPage() {
         </div>
       </div>
       </div>
+      <div className="alarm-submit-footer">
       <BottomCTA
         onClick={handleSubmit}
         disabled={!myId.trim() || !targetId.trim() || isSubmitting || myIdHasError || targetIdHasError}
@@ -433,6 +434,7 @@ export function AddAlarmPage() {
       >
         {isAdFree() ? '알람 추가하기' : '광고보고 추가하기'}
       </BottomCTA>
+      </div>
 
       {/* 에러 Toast */}
       <div className={`single-toast ${errorToast.show ? 'show' : ''}`}>
