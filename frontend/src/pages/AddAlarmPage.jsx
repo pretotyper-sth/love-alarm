@@ -61,7 +61,8 @@ function isAdFree() {
 
 export function AddAlarmPage() {
   const navigate = useNavigate();
-  const { user, requireLogin } = useAuth();
+  const { user, requireLogin, claimAddTutorial } = useAuth();
+  useEffect(() => { claimAddTutorial(user?.id); }, [user?.id, claimAddTutorial]);
   const [myId, setMyId] = useState('');
   const [targetId, setTargetId] = useState('');
   const [message, setMessage] = useState('');

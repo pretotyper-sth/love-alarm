@@ -3,6 +3,7 @@ import { appLogin } from '@apps-in-toss/web-framework';
 import { api } from '../utils/api';
 import { restoreMessagePassOrders } from '../utils/messagePassPurchase';
 import { restoreAuthUser } from '../utils/auth.js';
+import { createAddAlarmTutorial } from '../utils/addAlarmTutorial.js';
 import { logClick, logImpression } from '../utils/analytics';
 import { LoginPrompt } from '../components/LoginPrompt';
 
@@ -14,6 +15,9 @@ export function AuthProvider({ children }) {
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState('');
   const pendingLogin = useRef(null);
+  const addAlarmTutorial = useRef(null);
+  if (!addAlarmTutorial.current) addAlarmTutorial.current = createAddAlarmTutorial(localStorage);
+  const claimAddTutorial = useCallback(userId => addAlarmTutorial.current.claim(userId), []);
 
   useEffect(() => {
     if (!loginError || api.isPreview) return;
@@ -65,6 +69,7 @@ export function AuthProvider({ children }) {
         result = await api.tossLogin(authorizationCode, referrer);
       }
       logClick('login_success');
+      addAlarmTutorial.current.start(result);
       setUser(result.user);
       api.connectSocket();
       finishLogin(result.user);
@@ -99,12 +104,13 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    addAlarmTutorial.current.clear();
     api.logout();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, updateInstagramId, logout, requireLogin }}>
+    <AuthContext.Provider value={{ user, setUser, updateInstagramId, logout, requireLogin, claimAddTutorial }}>
       {children}
       {!api.isPreview && loginError && <div className="login-error-toast" role="alert">{loginError}</div>}
       {api.isPreview && loginTitle && <LoginPrompt title={loginTitle} busy={loginBusy} error={loginError}

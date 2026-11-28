@@ -154,25 +154,23 @@ const getCachedMaxSlots = () => {
 export function AlarmListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, setUser, requireLogin } = useAuth();
+  const { user, setUser, requireLogin, claimAddTutorial } = useAuth();
   const [showGuestIntro, setShowGuestIntro] = useState(false);
   const [guestLoginBusy, setGuestLoginBusy] = useState(false);
   const tutorialRef = useRef(null);
-  const tutorialKey = user ? `love_alarm_add_tutorial_${user.id}` : null;
-  const [showAddTutorial, setShowAddTutorial] = useState(() => !!user &&
-    !localStorage.getItem(`love_alarm_add_tutorial_${user.id}`));
-  const dismissAddTutorial = () => {
-    if (tutorialKey) localStorage.setItem(tutorialKey, 'true');
-    setShowAddTutorial(false);
-  };
+  const [tutorialUserId, setTutorialUserId] = useState(null);
+  const showAddTutorial = !!user && tutorialUserId === user.id;
+  const dismissAddTutorial = () => setTutorialUserId(null);
+  useEffect(() => {
+    if (claimAddTutorial(user?.id)) setTutorialUserId(user.id);
+  }, [user?.id, claimAddTutorial]);
   useEffect(() => {
     if (!showAddTutorial) return;
     const controls = () => [...tutorialRef.current.querySelectorAll('button, [role="button"]')];
     controls()[0]?.focus();
     const handleKey = (event) => {
       if (event.key === 'Escape') {
-        localStorage.setItem(`love_alarm_add_tutorial_${user.id}`, 'true');
-        setShowAddTutorial(false);
+        setTutorialUserId(null);
       }
       if (event.key !== 'Tab') return;
       const buttons = controls();
