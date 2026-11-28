@@ -1,3 +1,4 @@
+import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Top,
@@ -161,6 +162,8 @@ export function AlarmListPage() {
   const [tutorialUserId, setTutorialUserId] = useState(null);
   const showAddTutorial = !!user && tutorialUserId === user.id;
   const dismissAddTutorial = () => setTutorialUserId(null);
+  useBackDismiss(showAddTutorial, dismissAddTutorial);
+  useBackDismiss(showGuestIntro, () => { if (!guestLoginBusy) setShowGuestIntro(false); });
   useEffect(() => {
     if (claimAddTutorial(user?.id)) setTutorialUserId(user.id);
   }, [user?.id, claimAddTutorial]);
@@ -195,6 +198,7 @@ export function AlarmListPage() {
   const [toasts, setToasts] = useState([]); // 토스트 스택
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showNotificationSheet, setShowNotificationSheet] = useState(false);
+  useBackDismiss(showNotificationSheet, () => setShowNotificationSheet(false));
   // 캐시된 maxSlots 또는 user.maxSlots로 초기화
   const [maxSlots, setMaxSlots] = useState(() => user ? user.maxSlots || getCachedMaxSlots() : 2);
 
@@ -453,9 +457,9 @@ export function AlarmListPage() {
     
     // state 정리
     if (location.state) {
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true, state: null });
     }
-  }, [addToast, location.state]);
+  }, [addToast, location.state, location.pathname, navigate]);
 
   useEffect(() => {
     if (!showNotificationSheet) return;

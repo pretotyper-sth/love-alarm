@@ -417,8 +417,12 @@ export function AddAlarmPage() {
           onChange={(e) => setMessage(e.target.value)}
           maxLength={MESSAGE_MAX_LENGTH}
         />
-        <div className="form-field-notes">
-          <p>상대는 인스타그램 인증 후 메시지를 확인해요. 열람권이 필요한 경우 수신자가 구매해요. 보낸 메시지는 메시지함에서 다시 볼 수 있어요.</p>
+        <div className="form-field-notes alarm-page-guide">
+          <ul>
+            <li>상대는 인스타그램 인증 후 메시지를 확인해요.</li>
+            <li>메시지 열람권이 필요하면 받는 사람이 구매해요.</li>
+            <li>보낸 메시지는 메시지함에서 다시 볼 수 있어요.</li>
+          </ul>
         </div>
       </div>
       </div>

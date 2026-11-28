@@ -1,8 +1,10 @@
 import { useEffect, useRef, useId } from 'react';
 import { Button } from '@toss/tds-mobile';
 import './LoginPrompt.css';
+import { useBackDismiss } from '../utils/backNavigation';
 
 export function LoginPrompt({ title, busy, error, onConfirm, onClose }) {
+  useBackDismiss(true, () => { if (!busy) onClose(); });
   const dialogRef = useRef(null);
   const titleId = useId();
 

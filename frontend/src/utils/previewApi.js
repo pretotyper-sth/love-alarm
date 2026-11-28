@@ -1,7 +1,8 @@
 import { MESSAGE_PASS_PRODUCTS } from '../../../backend/src/config/messagePassProducts.js';
+import { ALARM_REWARDS } from '../../../backend/src/config/alarmRewards.js';
 
 // Local-only account and data. Never delegates preview actions to the real API.
-export function createPreviewApi(storage) {
+export function createPreviewApi(storage, now = () => new Date()) {
   const USER_KEY = 'love_alarm_preview_user';
   const LOGIN_KEY = 'love_alarm_preview_logged_in';
   const ALARMS_KEY = 'love_alarm_preview_alarms';
@@ -62,6 +63,26 @@ export function createPreviewApi(storage) {
     return { instagramId: user.instagramId, messages: sampleMessages.filter(message => !reports[message.id]).map(message => viewMessage(message, state)) };
   };
   const noPurchase = async () => { throw new Error('이 기능은 로컬 미리보기에서 지원하지 않아요.'); };
+  const alarmRewards = () => {
+    requireUser();
+    const targets = [...new Set([...read('_love_alarm_preview_alarm_targets', []), ...read(ALARMS_KEY, []).map(alarm => alarm.targetInstagramId)].map(target => target.trim().toLowerCase()))];
+    write('_love_alarm_preview_alarm_targets', targets);
+    const claimed = read('_love_alarm_preview_alarm_rewards', []);
+    return { count: targets.length, rewards: ALARM_REWARDS.map(mission => ({ ...mission, progress: Math.min(targets.length, mission.goal), claimed: claimed.includes(mission.id), canClaim: targets.length >= mission.goal && !claimed.includes(mission.id) })) };
+  };
+  const checkin = async (claim = false) => {
+    requireUser();
+    const state = read('_love_alarm_preview_checkin', { dates: [], claimed: 0 });
+    const today = new Date(now().getTime() + 9 * 3600000).toISOString().slice(0, 10);
+    if (!state.dates.includes(today)) state.dates.push(today);
+    write('_love_alarm_preview_checkin', state);
+    if (claim) {
+      if (state.dates.length < (state.claimed + 1) * 3) throw Object.assign(new Error('3일 출석하면 받을 수 있어요.'), { status: 409 });
+      const wallet = passes(); wallet.balance++; write(PASSES_KEY, wallet);
+      state.claimed++; write('_love_alarm_preview_checkin', state);
+    }
+    return { days: state.dates.length, progress: Math.min(state.dates.length - state.claimed * 3, 3), canClaim: state.dates.length >= (state.claimed + 1) * 3, balance: passes().balance, granted: claim };
+  };
   const messagePassIAP = {
     getProductItemList: async () => ({ products: MESSAGE_PASS_PRODUCTS.map(product => ({ ...product, displayAmount: `${product.amount.toLocaleString('ko-KR')}원` })) }),
     createOneTimePurchaseOrder: ({ options, onEvent, onError }) => {
@@ -90,6 +111,21 @@ export function createPreviewApi(storage) {
   return {
     isPreview: true,
     messagePassIAP,
+    getAlarmRewards: async () => alarmRewards(),
+    claimAlarmReward: async missionId => {
+      const status = alarmRewards();
+      const mission = status.rewards.find(item => item.id === missionId);
+      if (!mission) throw new Error('보상을 확인해 주세요.');
+      if (!mission.claimed && !mission.canClaim) throw Object.assign(new Error('알람 등록 조건을 먼저 달성해 주세요.'), { status: 409 });
+      const wallet = passes();
+      if (!mission.claimed) {
+        wallet.balance += mission.quantity; write(PASSES_KEY, wallet);
+        write('_love_alarm_preview_alarm_rewards', [...read('_love_alarm_preview_alarm_rewards', []), missionId]);
+      }
+      return { ...alarmRewards(), balance: wallet.balance, alreadyGranted: mission.claimed };
+    },
+    checkinMessagePass: () => checkin(),
+    claimCheckinPass: () => checkin(true),
     resetMessagePassPreview: () => { requireUser(); storage.removeItem(PASSES_KEY); },
     login,
     tossLogin: login,
@@ -98,6 +134,7 @@ export function createPreviewApi(storage) {
     withdrawAccount: async () => {
       requireUser();
       for (const key of [USER_KEY, LOGIN_KEY, ALARMS_KEY, PASSES_KEY, REACTIONS_KEY, REPORTS_KEY]) storage.removeItem(key);
+      storage.removeItem('_love_alarm_preview_alarm_targets');
       storage.removeItem('love_alarm_user');
       storage.removeItem('love_alarm_instagram_verified_username');
       return { success: true };
@@ -115,15 +152,18 @@ export function createPreviewApi(storage) {
     onMatched: () => {}, offMatched: () => {}, onMatchCanceled: () => {}, offMatchCanceled: () => {},
     getAlarms,
     createAlarm: async (fromInstagramId, targetInstagramId, message) => {
+      targetInstagramId = targetInstagramId.trim().toLowerCase();
       const user = requireUser();
       const alarms = await getAlarms();
       if (alarms.length >= user.maxSlots) throw new Error('알람 슬롯이 가득 찼어요.');
       if (alarms.some(alarm => alarm.targetInstagramId === targetInstagramId)) throw new Error('이미 등록한 알람이에요.');
       const alarm = { id: crypto.randomUUID(), userId: user.id, fromInstagramId, targetInstagramId, message, status: 'waiting', createdAt: new Date().toISOString() };
       write(ALARMS_KEY, [alarm, ...alarms]);
+      alarmRewards();
       return { alarm, matched: false };
     },
     deleteAlarm: async id => {
+      alarmRewards();
       write(ALARMS_KEY, (await getAlarms()).filter(alarm => alarm.id !== id));
       return { success: true };
     },

@@ -1,3 +1,4 @@
+import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef } from 'react';
 import {
   Text,
@@ -50,6 +51,7 @@ export function SettingsPage() {
   const { user, setUser, logout } = useAuth();
   const [showWithdrawal, setShowWithdrawal] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  useBackDismiss(showWithdrawal, () => { if (!withdrawing) setShowWithdrawal(false); });
   const [withdrawalError, setWithdrawalError] = useState('');
   const [passBalance, setPassBalance] = useState(null);
   const withdrawalLock = useRef(false);
@@ -109,9 +111,9 @@ export function SettingsPage() {
         }, 300);
       }, 3000);
       
-      window.history.replaceState({}, document.title);
+      navigate(location.pathname, { replace: true, state: null });
     }
-  }, [location.state]);
+  }, [location.state, location.pathname, navigate]);
 
   useEffect(() => {
     logScreen('settings_screen');
@@ -183,6 +185,8 @@ export function SettingsPage() {
     setShowAuthManageSheet(false);
     setAuthManageStep('menu');
   };
+
+  useBackDismiss(showAuthManageSheet, closeAuthManageSheet);
 
   const handleInstagramAuthRowClick = () => {
     logClick('settings_auth_click', { has_verified: !!verifiedUsername });

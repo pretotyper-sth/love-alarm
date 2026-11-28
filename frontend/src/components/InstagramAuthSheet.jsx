@@ -1,4 +1,5 @@
 import { logClick } from '../utils/analytics';
+import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import { api } from '../utils/api';
@@ -15,6 +16,7 @@ export function InstagramAuthSheet({
   currentVerifiedUsername = '',
 }) {
   const { requireLogin } = useAuth();
+  useBackDismiss(open, onClose);
   const [username, setUsername] = useState('');
   const [stage, setStage] = useState('input'); // 'input' | 'waiting'
   const [sessionId, setSessionId] = useState(null);

@@ -12,6 +12,8 @@
 .form-field-notes { padding: 0 24px 24px; color: #6b7684; font-size: 13px; line-height: 1.6; word-break: keep-all; }
 .form-field-notes p { margin: 0; }
 .form-field-notes p + p { margin-top: 8px; }
+.form-field-notes ul { margin: 0; padding-left: 16px; }
+.form-field-notes li + li { margin-top: 6px; }
 .alarm-entry-fields textarea, .feedback-entry-fields textarea { text-align: left; word-spacing: normal; letter-spacing: normal; }
 
 .form-entry-fields .form-field-heading { font-weight: 600; font-size: 15px; color: #333d4b; }
@@ -34,6 +36,7 @@
   word-spacing: normal;
 }
 .form-entry-fields .form-field-notes { padding-top: 14px; line-height: 1.7; }
+.form-entry-fields .alarm-page-guide { padding-top: 32px; }
 
 .form-entry-fields {
   --adaptiveGreyOpacity50: #f2f4f6;

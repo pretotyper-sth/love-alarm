@@ -3,6 +3,7 @@ import { Button } from '@toss/tds-mobile';
 import { api } from '../utils/api';
 import { logScreen, logClick } from '../utils/analytics';
 import './LikeCountSheet.css';
+import { useBackDismiss } from '../utils/backNavigation';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const CHECKIN30_CLAIMED_KEY = 'love_alarm_checkin30_claimed';
@@ -33,6 +34,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
 
   const [instagramId, setInstagramId] = useState(cachedTarget || '');
   const [isLoading, setIsLoading] = useState(false);
+  useBackDismiss(open, () => { if (!isLoading) onClose(); });
   const [submitMessage, setSubmitMessage] = useState('');
   const isAdLoadedRef = useRef(false);
   const adCleanupRef = useRef(null);

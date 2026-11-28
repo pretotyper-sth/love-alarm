@@ -4,12 +4,14 @@ import { api } from '../utils/api';
 import { purchaseMessagePass, restoreMessagePassOrders } from '../utils/messagePassPurchase';
 import { logClick, logImpression } from '../utils/analytics';
 import './MessagePassSheet.css';
+import { useBackDismiss } from '../utils/backNavigation';
 
 export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalletChange }) {
   const [wallet, setWallet] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [selected, setSelected] = useState('single');
   const [busy, setBusy] = useState(false);
+  useBackDismiss(true, () => { if (!busy) onClose(); });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const purchase = useRef(null);

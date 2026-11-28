@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button, Spacing } from '@toss/tds-mobile';
 import './PaymentModal.css';
+import { useBackDismiss } from '../utils/backNavigation';
 
 // 상품 SKU (콘솔에서 등록한 값)
 const PRODUCT_SKU = 'ait.0000015595.2522bade.4f8d898420.7421896636';
 
 export function PaymentModal({ onClose, onSuccess }) {
   const [isProcessing, setIsProcessing] = useState(false);
+  useBackDismiss(true, () => { if (!isProcessing) onClose(); });
   const [error, setError] = useState(null);
   const iapModuleRef = useRef(null);
 

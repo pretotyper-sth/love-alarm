@@ -512,6 +512,10 @@ const serverApi = {
   getReceivedMessageState: () => messageRequest('/messages/received'),
   getMessagePassWallet: () => messageRequest('/message-passes'),
   getInstagramReward: () => messageRequest('/message-passes/instagram-reward'),
+  getAlarmRewards: () => messageRequest('/message-passes/alarm-rewards'),
+  claimAlarmReward: missionId => messageRequest(`/message-passes/alarm-rewards/${encodeURIComponent(missionId)}`, { method: 'POST' }),
+  checkinMessagePass: () => messageRequest('/message-passes/checkin', { method: 'POST' }),
+  claimCheckinPass: () => messageRequest('/message-passes/checkin-reward', { method: 'POST' }),
   claimInstagramReward: () => messageRequest('/message-passes/instagram-reward', { method: 'POST' }),
   grantMessagePassOrder: (orderId) => messageRequest('/message-passes/grant', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId }),

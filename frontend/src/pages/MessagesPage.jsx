@@ -1,3 +1,4 @@
+import { useBackDismiss } from '../utils/backNavigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Top, Skeleton, Spacing } from '@toss/tds-mobile';
@@ -77,6 +78,7 @@ const EMOJI_ASSET_MAP = {
 // SentMessageDetailSheet — 보낸 메시지 상세 (반응 수신 확인용)
 // ──────────────────────────────────────────────────────────────────────
 function SentMessageDetailSheet({ message, onClose }) {
+  useBackDismiss(!!message, onClose);
   if (!message) return null;
   const reaction = message.reactions?.[0]?.emoji ?? null;
   const reactionAsset = reaction ? EMOJI_ASSET_MAP[reaction] : null;
@@ -136,6 +138,7 @@ function SentMessageDetailSheet({ message, onClose }) {
 // MessageDetailSheet — 받은 메시지 상세 바텀시트
 // ──────────────────────────────────────────────────────────────────────
 function MessageDetailSheet({ message, onClose, onReact, onReport, reacting, reactionError }) {
+  useBackDismiss(!!message, onClose);
   const EMOJIS = ['❤️', '😊', '🤔', '😳', '🥹'];
   const currentEmoji = message?.reactions?.[0]?.emoji ?? null;
 
@@ -228,6 +231,7 @@ function ReportMessageSheet({
   onSubmit,
   isSubmitting,
 }) {
+  useBackDismiss(!!message, () => { if (!isSubmitting) onClose(); });
   if (!message) return null;
 
   return (

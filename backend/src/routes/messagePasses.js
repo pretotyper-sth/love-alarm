@@ -1,10 +1,22 @@
 import { Router } from 'express';
 import { requireSession } from '../middleware/session.js';
-import { grantMessagePasses, messagePassSalesEnabled, passProducts, syncMessagePassRefund, instagramRewardStatus, claimInstagramReward } from '../services/messagePasses.js';
+import { grantMessagePasses, messagePassSalesEnabled, passProducts, syncMessagePassRefund, instagramRewardStatus, claimInstagramReward, checkinMessagePass, alarmRegistrationRewards, claimAlarmRegistrationReward } from '../services/messagePasses.js';
 
 export function createMessagePassRouter({ verifyOrder } = {}) {
   const router = Router();
   router.use(requireSession);
+  router.get('/alarm-rewards', async (req, res, next) => {
+    try { res.json(await alarmRegistrationRewards(req.prisma, req.user)); } catch (error) { next(error); }
+  });
+  router.post('/alarm-rewards/:missionId', async (req, res, next) => {
+    try { res.json(await claimAlarmRegistrationReward(req.prisma, req.user, req.params.missionId)); } catch (error) { next(error); }
+  });
+  router.post('/checkin', async (req, res, next) => {
+    try { res.json(await checkinMessagePass(req.prisma, req.user)); } catch (error) { next(error); }
+  });
+  router.post('/checkin-reward', async (req, res, next) => {
+    try { res.json(await checkinMessagePass(req.prisma, req.user, { claim: true })); } catch (error) { next(error); }
+  });
   router.get('/instagram-reward', async (req, res, next) => {
     try { res.json(await instagramRewardStatus(req.prisma, req.user)); } catch (error) { next(error); }
   });

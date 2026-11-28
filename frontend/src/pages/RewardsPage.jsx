@@ -11,6 +11,7 @@ import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { logScreen, logClick } from '../utils/analytics';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
+import { ALARM_REWARDS } from '../../../backend/src/config/alarmRewards.js';
 import './RewardsPage.css';
 
 const IS_DEV = import.meta.env.DEV;
@@ -76,6 +77,63 @@ export function RewardsPage() {
   const [showRewardAuth, setShowRewardAuth] = useState(false);
   const rewardLock = useRef(false);
   const currentReward = reward?.userId === user?.id ? reward : null;
+  const [checkin, setCheckin] = useState(null);
+  const [checkinBusy, setCheckinBusy] = useState(false);
+  const checkinLock = useRef(false);
+  const currentCheckin = checkin?.userId === user?.id ? checkin : null;
+  const [alarmRewards, setAlarmRewards] = useState(null);
+  const [alarmRewardBusy, setAlarmRewardBusy] = useState(null);
+  const alarmRewardLock = useRef(false);
+  const currentAlarmRewards = alarmRewards?.userId === user?.id ? alarmRewards : null;
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    api.getAlarmRewards().then(result => { if (active) setAlarmRewards({ ...result, userId: user.id }); })
+      .catch(() => { if (active) setAlarmRewards({ error: true, userId: user.id }); });
+    return () => { active = false; };
+  }, [user]);
+
+  const handleClaimAlarmReward = async missionId => {
+    if (alarmRewardLock.current) return;
+    alarmRewardLock.current = true; setAlarmRewardBusy(missionId);
+    try {
+      const result = currentAlarmRewards?.error ? await api.getAlarmRewards() : await api.claimAlarmReward(missionId);
+      setAlarmRewards({ ...result, userId: api.getCurrentUser().id });
+      if ('alreadyGranted' in result) {
+        logClick('rewards_claim_alarm_pass_success', { type: missionId, pass_balance: result.balance });
+        showToast(result.alreadyGranted ? '이미 받은 보상이에요' : '메시지 열람권 1장을 받았어요');
+      }
+    } catch (error) { showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.'); }
+    finally { alarmRewardLock.current = false; setAlarmRewardBusy(null); }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      api.checkinMessagePass().then(result => { if (active) setCheckin({ ...result, userId: user.id }); })
+        .catch(() => { if (active) setCheckin({ error: true, userId: user.id }); });
+    };
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    return () => { active = false; document.removeEventListener('visibilitychange', refresh); };
+  }, [user]);
+
+  const handleClaimCheckin = async () => {
+    if (checkinLock.current) return;
+    checkinLock.current = true; setCheckinBusy(true);
+    try {
+      const result = currentCheckin?.error ? await api.checkinMessagePass() : await api.claimCheckinPass();
+      setCheckin({ ...result, userId: api.getCurrentUser().id });
+      if (result.granted) {
+        logClick('rewards_claim_checkin_pass_success', { pass_balance: result.balance, day_count: result.days });
+        showToast('메시지 열람권 1장을 받았어요');
+      }
+    } catch (error) { showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.'); }
+    finally { checkinLock.current = false; setCheckinBusy(false); }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -211,6 +269,31 @@ export function RewardsPage() {
               {currentReward?.claimed ? '완료' : currentReward?.verified ? '받기' : '인증하고 받기'}
             </Button>
           }
+          leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
+        />
+        {ALARM_REWARDS.map(mission => {
+          const status = currentAlarmRewards?.rewards?.find(item => item.id === mission.id);
+          return <ListRow key={mission.id}
+            left={<ListRow.AssetIcon shape="squircle" size="medium" url="https://static.toss.im/3d-emojis/u1F381-apng.png" backgroundColor="#f2f4f6" />}
+            contents={<div className="checkin-contents">
+              <p className="checkin-title">{mission.title}</p>
+              <p className="checkin-sub">{mission.goal === 1 ? '첫 알람 등록 시 메시지 열람권 1장' : '3명 등록 시 메시지 열람권 1장'}</p>
+              <span className="checkin-badge">{currentAlarmRewards?.error ? '등록 횟수를 불러오지 못했어요' : user && !currentAlarmRewards ? '등록 확인 중' : `(${status?.progress || 0}/${mission.goal}) · 계정당 1회`}</span>
+            </div>}
+            right={<Button size="small" disabled={alarmRewardBusy !== null || (!status?.canClaim && !currentAlarmRewards?.error)} loading={alarmRewardBusy === mission.id} onClick={() => handleClaimAlarmReward(mission.id)}>{currentAlarmRewards?.error ? '다시 시도' : status?.claimed ? '완료' : '받기'}</Button>}
+            leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
+          />;
+        })}
+        <ListRow
+          left={<ListRow.AssetIcon shape="squircle" size="medium" url="https://static.toss.im/3d-emojis/u1F381-apng.png" backgroundColor="#f2f4f6" />}
+          contents={
+            <div className="checkin-contents">
+              <p className="checkin-title">3일 출석 보상<span className="checkin-repeat"> (반복 가능)</span></p>
+              <p className="checkin-sub">3일 방문마다 메시지 열람권 1장</p>
+              <span className="checkin-badge">{currentCheckin?.error ? '출석을 불러오지 못했어요' : user && !currentCheckin ? '출석 확인 중' : `(${currentCheckin?.progress || 0}/3)`}</span>
+            </div>
+          }
+          right={<Button size="small" disabled={checkinBusy || (!currentCheckin?.canClaim && !currentCheckin?.error)} loading={checkinBusy} onClick={handleClaimCheckin}>{currentCheckin?.error ? '다시 시도' : '받기'}</Button>}
           leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
         />
       {/* ── 10일 체크인 ── */}

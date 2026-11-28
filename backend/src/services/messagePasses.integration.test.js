@@ -159,6 +159,21 @@ test('message pass API: purchase, unlock, restore, report, and refund against Po
       assert.equal((await request(`/messages/${target.id}/open`, { as: other, method: 'POST' })).data.balance, 0);
       assert.equal((await db.messageUnlock.findUnique({ where: { userId_messageId: { userId: other.id, messageId: target.id } } })).orderId, null);
     });
+    await t.test('concurrent daily checkins credit once and ignore client-supplied progress', async () => {
+      assert.equal((await request('/message-passes/checkin', { as: null, method: 'POST' })).status, 401);
+      const visits = await Promise.all(Array.from({ length: 5 }, () => request('/message-passes/checkin', { as: other, method: 'POST', body: { days: 3, now: '2099-01-01' } })));
+      assert.ok(visits.every(r => r.status === 200 && r.data.days === 1 && !r.data.canClaim));
+      assert.equal(await db.messagePassEntry.count({ where: { userId: other.id, reason: 'checkin' } }), 1);
+      assert.equal((await request('/message-passes/checkin-reward', { as: other, method: 'POST', body: { days: 3 } })).status, 409);
+    });
+    await t.test('concurrent alarm reward claims grant once from existing registrations', async () => {
+      assert.equal((await request('/message-passes/alarm-rewards', { as: null })).status, 401);
+      const claims = await Promise.all(Array.from({ length: 5 }, () => request('/message-passes/alarm-rewards/first_alarm', { as: sender, method: 'POST' })));
+      assert.ok(claims.every(r => r.status === 200 && r.data.balance === 1));
+      assert.equal(claims.filter(r => !r.data.alreadyGranted).length, 1);
+      assert.equal((await request('/message-passes/alarm-rewards/three_alarms', { as: sender, method: 'POST' })).status, 409);
+      assert.equal((await request('/message-passes/alarm-rewards/unknown', { as: sender, method: 'POST' })).status, 400);
+    });
     await t.test('legacy message is free; account deletion preserves receipts', async () => {
       const legacy = await db.messageDelivery.create({ data: { targetInstagramId: recipient, message: 'free legacy', requiresPass: false } });
       assert.equal((await request(`/messages/${legacy.id}/open`, { method: 'POST' })).status, 200);

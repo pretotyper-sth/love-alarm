@@ -9,6 +9,49 @@ function memoryStorage() {
   return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
 }
 
+test('alarm rewards retain distinct registration progress through deletion and cannot be reclaimed', async () => {
+  const api = createPreviewApi(memoryStorage());
+  await assert.rejects(api.getAlarmRewards(), { status: 401 });
+  await api.login();
+  await assert.rejects(api.claimAlarmReward('first_alarm'), { status: 409 });
+  const first = await api.createAlarm('me', 'person_one');
+  assert.equal((await api.claimAlarmReward('first_alarm')).balance, 1);
+  await api.deleteAlarm(first.alarm.id);
+  const repeated = await api.createAlarm('me', 'PERSON_ONE');
+  assert.equal((await api.getAlarmRewards()).count, 1);
+  await api.deleteAlarm(repeated.alarm.id);
+  await api.createAlarm('me', 'person_two');
+  await api.createAlarm('me', 'person_three');
+  assert.equal((await api.claimAlarmReward('three_alarms')).balance, 2);
+  assert.equal((await api.claimAlarmReward('first_alarm')).balance, 2);
+  assert.equal((await api.claimAlarmReward('three_alarms')).alreadyGranted, true);
+  await api.verifyInstagramStart('me');
+  await api.verifyInstagramConfirm('preview-verification', '123456');
+  assert.equal((await api.openReceivedMessage('preview-message-1')).balance, 1);
+  await api.withdrawAccount(); await api.login();
+  assert.ok((await api.getAlarmRewards()).rewards.every(mission => mission.claimed));
+});
+
+test('preview three-day reward repeats without consecutive visits or duplicate daily credit', async () => {
+  let date = new Date('2026-11-01T14:00:00Z');
+  const api = createPreviewApi(memoryStorage(), () => date);
+  await assert.rejects(api.checkinMessagePass(), { status: 401 });
+  await api.login();
+  assert.equal((await api.checkinMessagePass()).progress, 1);
+  assert.equal((await api.checkinMessagePass()).progress, 1);
+  await assert.rejects(api.claimCheckinPass(), { status: 409 });
+  for (let day = 2; day <= 6; day++) {
+    date = new Date(Date.UTC(2026, 10, day * 2));
+    const state = await api.checkinMessagePass();
+    if (day % 3 === 0) {
+      assert.equal(state.canClaim, true);
+      const claimed = await api.claimCheckinPass();
+      assert.equal(claimed.balance, day / 3); assert.equal(claimed.progress, 0);
+      await assert.rejects(api.claimCheckinPass(), { status: 409 });
+    }
+  }
+});
+
 test('Instagram reward requires verification, grants once, and opens a paid message without purchase', async () => {
   const api = createPreviewApi(memoryStorage());
   await assert.rejects(api.claimInstagramReward(), { status: 401 });

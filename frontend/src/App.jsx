@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@toss/tds-mobile';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { IntroPage } from './pages/IntroPage';
@@ -17,6 +17,7 @@ import { BottomNav } from './components/BottomNav';
 import { storage } from './utils/storage';
 import { api } from './utils/api';
 import './App.css';
+import { insideToss, isExitRoot, backDismissStack, useBackDismiss, useBackDismissCount, subscribeNativeBack } from './utils/backNavigation';
 
 // 앱 종료 처리
 const exitApp = async () => {
@@ -30,12 +31,37 @@ const exitApp = async () => {
 
 // 종료 확인 다이얼로그 (알림 설정과 동일한 스타일 - 가로 2버튼)
 function ExitConfirmModal({ onClose, onConfirm }) {
+  const dialog = useRef(null);
+  const cancel = useRef(null);
+  useBackDismiss(true, onClose);
+  useEffect(() => {
+    const previous = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    cancel.current?.focus({ preventScroll: true });
+    const blockScroll = event => { if (!dialog.current?.contains(event.target)) event.preventDefault(); };
+    document.addEventListener('touchmove', blockScroll, { passive: false });
+    document.addEventListener('wheel', blockScroll, { passive: false });
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener('touchmove', blockScroll);
+      document.removeEventListener('wheel', blockScroll);
+      previous?.focus?.({ preventScroll: true });
+    };
+  }, []);
   return (
     <>
       <div className="exit-modal-overlay show" onClick={onClose} />
-      <div className="exit-modal-container show" onClick={(e) => e.stopPropagation()}>
+      <div ref={dialog} className="exit-modal-container show" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title" onClick={(e) => e.stopPropagation()} onKeyDown={event => {
+        if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+        if (event.key === 'Tab') {
+          const buttons = dialog.current.querySelectorAll('button');
+          if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons[1].focus(); }
+          else if (!event.shiftKey && document.activeElement === buttons[1]) { event.preventDefault(); buttons[0].focus(); }
+        }
+      }}>
         <div className="exit-modal-header">
-          <h3 className="exit-modal-title">좋아하면 울리는을 종료할까요?</h3>
+          <h3 id="exit-modal-title" className="exit-modal-title">좋아하면 울리는을 종료할까요?</h3>
         </div>
         
         <div className="exit-modal-cta-double">
@@ -43,6 +69,7 @@ function ExitConfirmModal({ onClose, onConfirm }) {
             size="large"
             color="dark"
             variant="weak"
+            ref={cancel}
             onClick={onClose}
             style={{
               flex: 1,
@@ -67,6 +94,7 @@ function ExitConfirmModal({ onClose, onConfirm }) {
 
 // 히스토리 가드 설정 (앱 시작 시 한 번만)
 function setupHistoryGuard() {
+  if (insideToss()) return;
   if (sessionStorage.getItem('history_guard_set')) return;
   sessionStorage.setItem('history_guard_set', 'true');
   
@@ -92,6 +120,34 @@ function NavigationTracker() {
   return null;
 }
 
+// Memory routes keep Toss at its native root, including after returning from a child page.
+function AppRouter({ children }) {
+  return insideToss()
+    ? <MemoryRouter initialEntries={[window.location.pathname + window.location.search]}>{children}</MemoryRouter>
+    : <BrowserRouter>{children}</BrowserRouter>;
+}
+
+function NativeBackNavigation() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const hasOverlay = useBackDismissCount() > 0;
+  useEffect(() => {
+    if (!insideToss() || (isExitRoot(location.pathname) && !hasOverlay)) return;
+    let disposed = false;
+    let off = () => {};
+    void import('@apps-in-toss/web-framework').then(({ graniteEvent }) => {
+      if (disposed) return;
+      off = subscribeNativeBack({ graniteEvent, path: location.pathname, hasOverlay, onBack: () => {
+        if (backDismissStack.dismiss()) return;
+        if (TAB_PATHS.includes(location.pathname) || location.key === 'default') navigate('/alarms', { replace: true });
+        else navigate(-1);
+      } });
+    }).catch(() => {});
+    return () => { disposed = true; off(); };
+  }, [location.pathname, location.key, navigate, hasOverlay]);
+  return null;
+}
+
 // 탭 레이아웃: 하단 네비 조건부 표시
 function TabLayout({ children }) {
   const location = useLocation();
@@ -107,6 +163,13 @@ function TabLayout({ children }) {
 // 라우팅 컴포넌트 (AuthProvider 안에서 useAuth 사용 가능)
 function AppRoutes() {
   const { user, logout } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    const checkin = () => { if (document.visibilityState === 'visible') void api.checkinMessagePass().catch(() => {}); };
+    checkin();
+    document.addEventListener('visibilitychange', checkin);
+    return () => document.removeEventListener('visibilitychange', checkin);
+  }, [user]);
   
   // 첫 방문 여부 - 초기값은 스토리지에서 바로 읽음 (빈 화면 방지)
   const [hasVisited, setHasVisited] = useState(() => storage.get('has_visited_intro'));
@@ -139,61 +202,24 @@ function AppRoutes() {
     };
   }, []);
 
-  // 백버튼 이벤트: 토스 앱에서는 backEvent, 브라우저에서는 popstate
   useEffect(() => {
-    let cleanup = () => {};
-    
-    // popstate 이벤트 핸들러 (가드 상태 감지)
-    const handlePopState = (e) => {
-      // 가드 상태에 도달 → 종료 모달 표시
-      if (e.state?.isExitGuard) {
-        setShowExitModal(true);
-        // 가드에서 앞으로 다시 이동 (다이얼로그 닫으면 현재 페이지 유지)
-        window.history.forward();
-      }
-      // 그 외의 경우는 정상 네비게이션 (종료 모달 X)
+    if (insideToss()) return;
+    const handlePopState = event => {
+      if (!event.state?.isExitGuard) return;
+      if (!backDismissStack.dismiss()) setShowExitModal(true);
+      window.history.forward();
     };
-    
     window.addEventListener('popstate', handlePopState);
-    
-    const setupBackEvent = async () => {
-      try {
-        const { graniteEvent } = await import('@apps-in-toss/web-framework');
-        
-        cleanup = graniteEvent.addEventListener('backEvent', {
-          onEvent: () => {
-            // /alarms 또는 / 에서 백버튼 → 바로 종료 모달
-            const currentPath = window.location.pathname;
-            if (currentPath === '/alarms' || currentPath === '/') {
-              setShowExitModal(true);
-            } else {
-              // 다른 페이지에서는 뒤로가기 실행
-              window.history.back();
-            }
-          },
-          onError: () => {
-            // 에러 무시
-          },
-        });
-      } catch {
-        // SDK 미지원 환경 (브라우저) - popstate로만 처리
-      }
-    };
-    
-    setupBackEvent();
-    
-    return () => {
-      cleanup();
-      window.removeEventListener('popstate', handlePopState);
-    };
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   return (
     <>
       {api.isPreview && <div className="preview-status"><span>로컬 미리보기 · {user ? '로그인됨' : '로그인 없이 둘러보기'}</span>
         {user && <button onClick={logout}>가상 로그아웃</button>}</div>}
-      <BrowserRouter>
+      <AppRouter>
         <NavigationTracker />
+        <NativeBackNavigation />
         <TabLayout>
           <Routes>
             <Route
@@ -250,7 +276,7 @@ function AppRoutes() {
             <Route path="/error" element={<ErrorPage />} />
           </Routes>
         </TabLayout>
-      </BrowserRouter>
+      </AppRouter>
       
       {/* 종료 확인 다이얼로그 */}
       {showExitModal && (
