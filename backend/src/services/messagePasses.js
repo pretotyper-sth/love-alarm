@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { createHash } from 'node:crypto';
 import { getHttpsAgent } from './tossAuth.js';
 import { MESSAGE_PASS_PRODUCTS } from '../config/messagePassProducts.js';
 
@@ -64,6 +65,31 @@ export async function lockWallet(tx, userId) {
   return tx.user.findUniqueOrThrow({ where: { id: userId } });
 }
 
+function instagramRewardReference(user) {
+  return `instagram_reward:${createHash('sha256').update(user.tossUserId).digest('hex')}`;
+}
+
+export async function instagramRewardStatus(db, user) {
+  const [claimed, verified] = await Promise.all([
+    db.messagePassEntry.findUnique({ where: { reference: instagramRewardReference(user) } }),
+    db.verificationSession.findFirst({ where: { userId: user.id, status: 'verified' } }),
+  ]);
+  return { claimed: !!claimed, verified: !!verified };
+}
+
+export async function claimInstagramReward(db, user) {
+  return db.$transaction(async tx => {
+    const wallet = await lockWallet(tx, user.id);
+    const status = await instagramRewardStatus(tx, user);
+    if (status.claimed) return { ...status, balance: wallet.messagePassBalance, alreadyGranted: true };
+    if (!status.verified) throw new MessagePassError('인스타그램 인증을 먼저 완료해 주세요.', 403, 'INSTAGRAM_REQUIRED');
+    // The receipt survives withdrawal, so reconnecting the same Toss account cannot claim again.
+    await tx.messagePassEntry.create({ data: { userId: user.id, delta: 1, reason: 'instagram_reward', reference: instagramRewardReference(user) } });
+    await tx.user.update({ where: { id: user.id }, data: { messagePassBalance: { increment: 1 } } });
+    return { claimed: true, verified: true, balance: wallet.messagePassBalance + 1, alreadyGranted: false };
+  });
+}
+
 export async function grantMessagePasses(db, user, orderId, verifyOrder = verifyTossPassOrder) {
   if (typeof orderId !== 'string' || !/^[\w-]{8,100}$/.test(orderId)) throw new MessagePassError('주문 정보를 확인해 주세요.');
   const order = await verifyOrder(orderId, user.tossUserId);
@@ -99,18 +125,21 @@ export async function openReceivedMessage(db, userId, messageId, verifyOrder = v
     if (charged && wallet.messagePassBalance < 1) throw new MessagePassError('열람권이 필요해요.', 402, 'PASS_REQUIRED');
     let order;
     if (charged) {
-      order = await tx.messagePassOrder.findFirst({ where: { userId, remaining: { gt: 0 }, refundedAt: null }, orderBy: { createdAt: 'asc' } });
-      if (!order) throw new MessagePassError('구매 내역을 다시 확인해 주세요.', 409);
-      // A refunded purchase must not unlock content, even when the client skips restoration.
-      const checked = await verifyOrder(order.orderId, wallet.tossUserId);
-      if (checked.sku !== order.sku) throw new MessagePassError('구매 상품을 확인할 수 없어요.', 409);
+      const rewards = await tx.messagePassEntry.aggregate({ where: { userId, reason: { in: ['instagram_reward', 'open_reward', 'report_restore_reward'] } }, _sum: { delta: true } });
+      if ((rewards._sum.delta || 0) < 1) {
+        order = await tx.messagePassOrder.findFirst({ where: { userId, remaining: { gt: 0 }, refundedAt: null }, orderBy: { createdAt: 'asc' } });
+        if (!order) throw new MessagePassError('구매 내역을 다시 확인해 주세요.', 409);
+        // A refunded purchase must not unlock content, even when the client skips restoration.
+        const checked = await verifyOrder(order.orderId, wallet.tossUserId);
+        if (checked.sku !== order.sku) throw new MessagePassError('구매 상품을 확인할 수 없어요.', 409);
+      }
     }
     if (!unlocked) {
       await tx.messageUnlock.create({ data: { userId, messageId, charged, orderId: order?.orderId } });
       if (charged) {
-        await tx.messagePassOrder.update({ where: { orderId: order.orderId }, data: { remaining: { decrement: 1 } } });
+        if (order) await tx.messagePassOrder.update({ where: { orderId: order.orderId }, data: { remaining: { decrement: 1 } } });
         await tx.user.update({ where: { id: userId }, data: { messagePassBalance: { decrement: 1 } } });
-        await tx.messagePassEntry.create({ data: { userId, delta: -1, reason: 'open', reference: `open:${userId}:${messageId}` } });
+        await tx.messagePassEntry.create({ data: { userId, delta: -1, reason: order ? 'open' : 'open_reward', reference: `open:${userId}:${messageId}` } });
       }
     }
     return { message: receivedMessage(message, true), balance: wallet.messagePassBalance - Number(charged) };
@@ -126,11 +155,11 @@ export async function resolveMessageReport(db, reportId, uphold) {
     if (current.status !== 'pending') return current;
     const unlock = await tx.messageUnlock.findUnique({ where: { userId_messageId: { userId: current.userId, messageId: current.messageId } } });
     const order = unlock?.orderId ? await tx.messagePassOrder.findUnique({ where: { orderId: unlock.orderId } }) : null;
-    const restore = uphold && unlock?.charged && order && !order.refundedAt;
+    const restore = uphold && unlock?.charged && (!unlock.orderId || (order && !order.refundedAt));
     if (restore) {
-      await tx.messagePassOrder.update({ where: { orderId: order.orderId }, data: { remaining: { increment: 1 } } });
+      if (order) await tx.messagePassOrder.update({ where: { orderId: order.orderId }, data: { remaining: { increment: 1 } } });
       await tx.user.update({ where: { id: current.userId }, data: { messagePassBalance: { increment: 1 } } });
-      await tx.messagePassEntry.create({ data: { userId: current.userId, delta: 1, reason: 'report_restore', reference: `report:${reportId}` } });
+      await tx.messagePassEntry.create({ data: { userId: current.userId, delta: 1, reason: order ? 'report_restore' : 'report_restore_reward', reference: `report:${reportId}` } });
     }
     return tx.messageReport.update({ where: { id: reportId }, data: { status: uphold ? 'upheld' : 'rejected', restoredAt: restore ? new Date() : null } });
   });

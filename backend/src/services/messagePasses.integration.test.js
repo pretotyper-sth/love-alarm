@@ -149,6 +149,16 @@ test('message pass API: purchase, unlock, restore, report, and refund against Po
       assert.equal((await request(`/messages/${delivery.id}/open`, { method: 'POST' })).data.message.message, 'original body');
       assert.equal((await request(`/messages/${next.id}/open`, { method: 'POST' })).status, 402);
     });
+    await t.test('concurrent reward claims grant once and allow opening without an order', async () => {
+      assert.equal((await request('/message-passes/instagram-reward', { as: null })).status, 401);
+      assert.equal((await request('/message-passes/instagram-reward', { as: sender, method: 'POST' })).status, 403);
+      const claims = await Promise.all(Array.from({ length: 5 }, () => request('/message-passes/instagram-reward', { as: other, method: 'POST' })));
+      assert.ok(claims.every(r => r.status === 200 && r.data.balance === 1));
+      assert.equal(claims.filter(r => !r.data.alreadyGranted).length, 1);
+      const target = await db.messageDelivery.create({ data: { targetInstagramId: `other_${suffix}`, message: 'reward body' } });
+      assert.equal((await request(`/messages/${target.id}/open`, { as: other, method: 'POST' })).data.balance, 0);
+      assert.equal((await db.messageUnlock.findUnique({ where: { userId_messageId: { userId: other.id, messageId: target.id } } })).orderId, null);
+    });
     await t.test('legacy message is free; account deletion preserves receipts', async () => {
       const legacy = await db.messageDelivery.create({ data: { targetInstagramId: recipient, message: 'free legacy', requiresPass: false } });
       assert.equal((await request(`/messages/${legacy.id}/open`, { method: 'POST' })).status, 200);

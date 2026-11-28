@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   List,
   ListRow,
@@ -10,6 +10,7 @@ import { adaptive } from '@toss/tds-colors';
 import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import { logScreen, logClick } from '../utils/analytics';
+import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import './RewardsPage.css';
 
 const IS_DEV = import.meta.env.DEV;
@@ -70,6 +71,37 @@ export function RewardsPage() {
   ));
   const [claimed30, setClaimed30] = useState(() => !!user && localStorage.getItem(CHECKIN30_CLAIMED_KEY) === 'true');
   const [toast, setToast] = useState({ show: false, message: '' });
+  const [reward, setReward] = useState(null);
+  const [rewardBusy, setRewardBusy] = useState(false);
+  const [showRewardAuth, setShowRewardAuth] = useState(false);
+  const rewardLock = useRef(false);
+  const currentReward = reward?.userId === user?.id ? reward : null;
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    api.getInstagramReward().then(result => { if (active) setReward({ ...result, userId: user.id }); }).catch(() => {});
+    return () => { active = false; };
+  }, [user]);
+
+  const handleClaimPass = async () => {
+    if (rewardLock.current) return;
+    rewardLock.current = true;
+    setRewardBusy(true);
+    try {
+      if (!await requireLogin('보상을 받으려면 로그인이 필요해요')) return;
+      const status = await api.getInstagramReward();
+      if (!status.claimed && !status.verified) { setShowRewardAuth(true); return; }
+      logClick('rewards_claim_pass_start');
+      const result = await api.claimInstagramReward();
+      setReward({ ...result, userId: api.getCurrentUser().id });
+      logClick('rewards_claim_pass_success', { pass_balance: result.balance });
+      showToast(result.alreadyGranted ? '이미 받은 보상이에요' : '메시지 열람권 1장을 받았어요');
+    } catch (error) {
+      logClick('rewards_claim_pass_fail');
+      showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.');
+    } finally { rewardLock.current = false; setRewardBusy(false); }
+  };
 
   // ─── 10일 체크인 계산 ───────────────────────────────────
   const raw10 = visitDates.length - claimed10Cycles * 10;
@@ -165,6 +197,22 @@ export function RewardsPage() {
       <Spacing size={20} />
 
       <List>
+        <ListRow
+          left={<ListRow.AssetIcon shape="squircle" size="medium" url="https://static.toss.im/3d-emojis/u1F381-apng.png" backgroundColor="#f2f4f6" />}
+          contents={
+            <div className="checkin-contents">
+              <p className="checkin-title">메시지 열람권 1장</p>
+              <p className="checkin-sub">인스타그램 첫 인증 완료 시</p>
+              <span className="checkin-badge">토스 계정당 1회</span>
+            </div>
+          }
+          right={
+            <Button size="small" disabled={!!currentReward?.claimed || rewardBusy} loading={rewardBusy} onClick={handleClaimPass}>
+              {currentReward?.claimed ? '완료' : currentReward?.verified ? '받기' : '인증하고 받기'}
+            </Button>
+          }
+          leftAlignment="top" rightAlignment="top" verticalPadding="large" horizontalPadding="medium"
+        />
       {/* ── 10일 체크인 ── */}
         <ListRow
           left={
@@ -228,6 +276,11 @@ export function RewardsPage() {
           horizontalPadding="medium"
         />
       </List>
+
+      <InstagramAuthSheet open={showRewardAuth} onClose={() => setShowRewardAuth(false)} onSuccess={() => {
+        setShowRewardAuth(false);
+        void handleClaimPass();
+      }} />
 
       {/* 토스트 */}
       <div className={`single-toast ${toast.show ? 'show' : ''}`}>

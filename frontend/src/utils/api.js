@@ -511,6 +511,8 @@ const serverApi = {
 
   getReceivedMessageState: () => messageRequest('/messages/received'),
   getMessagePassWallet: () => messageRequest('/message-passes'),
+  getInstagramReward: () => messageRequest('/message-passes/instagram-reward'),
+  claimInstagramReward: () => messageRequest('/message-passes/instagram-reward', { method: 'POST' }),
   grantMessagePassOrder: (orderId) => messageRequest('/message-passes/grant', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId }),
   }),

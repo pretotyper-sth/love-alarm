@@ -9,6 +9,22 @@ function memoryStorage() {
   return { getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: key => values.delete(key) };
 }
 
+test('Instagram reward requires verification, grants once, and opens a paid message without purchase', async () => {
+  const api = createPreviewApi(memoryStorage());
+  await assert.rejects(api.claimInstagramReward(), { status: 401 });
+  await api.login();
+  await assert.rejects(api.claimInstagramReward(), { code: 'INSTAGRAM_REQUIRED' });
+  await api.verifyInstagramStart('reward_account');
+  await api.verifyInstagramConfirm('preview-verification', '123456');
+  assert.equal((await api.claimInstagramReward()).balance, 1);
+  assert.equal((await api.claimInstagramReward()).alreadyGranted, true);
+  assert.equal((await api.openReceivedMessage('preview-message-1')).balance, 0);
+  await assert.rejects(api.openReceivedMessage('preview-message-2'), { code: 'PASS_REQUIRED' });
+  await api.withdrawAccount();
+  await api.login();
+  assert.equal((await api.getInstagramReward()).claimed, true);
+});
+
 test('preview browsing never logs in and protected actions need explicit login', async () => {
   const api = createPreviewApi(memoryStorage());
   assert.equal(api.getCurrentUser(), null);

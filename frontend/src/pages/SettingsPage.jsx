@@ -367,7 +367,12 @@ export function SettingsPage() {
       </>}
       <BottomSheet className="withdrawal-sheet" open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
         <div className="withdrawal-content">
-          <h2>정말 탈퇴할까요?</h2>
+          <div className="withdrawal-title-row">
+            <h2>정말 탈퇴할까요?</h2>
+            <button type="button" className="withdrawal-close" aria-label="회원 탈퇴 화면 닫기" onClick={() => setShowWithdrawal(false)} disabled={withdrawing}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            </button>
+          </div>
           <p>계정과 등록한 알람, 인스타그램 인증 정보가 삭제돼요. 탈퇴 후에는 복구할 수 없어요.</p>
           <ul>
             <li>남은 열람권과 열람한 메시지도 복구할 수 없어요.</li>

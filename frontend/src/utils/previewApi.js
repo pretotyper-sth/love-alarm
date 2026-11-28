@@ -132,6 +132,14 @@ export function createPreviewApi(storage) {
     getReceivedMessageState: receivedState,
     getReceivedMessages: async () => (await receivedState()).messages,
     getMessagePassWallet: async () => { requireUser(); return { balance: passes().balance, enabled: true, products: MESSAGE_PASS_PRODUCTS, entries: [] }; },
+    getInstagramReward: async () => ({ claimed: read('_love_alarm_preview_instagram_reward', false), verified: !!requireUser().instagramId }),
+    claimInstagramReward: async () => {
+      if (!requireUser().instagramId) throw Object.assign(new Error('인스타그램 인증을 먼저 완료해 주세요.'), { code: 'INSTAGRAM_REQUIRED', status: 403 });
+      const alreadyGranted = read('_love_alarm_preview_instagram_reward', false);
+      const state = passes();
+      if (!alreadyGranted) { state.balance++; write(PASSES_KEY, state); write('_love_alarm_preview_instagram_reward', true); }
+      return { claimed: true, verified: true, balance: state.balance, alreadyGranted };
+    },
     grantMessagePassOrder: async orderId => {
       requireUser();
       const state = passes(), order = state.orders[orderId];

@@ -1,10 +1,16 @@
 import { Router } from 'express';
 import { requireSession } from '../middleware/session.js';
-import { grantMessagePasses, messagePassSalesEnabled, passProducts, syncMessagePassRefund } from '../services/messagePasses.js';
+import { grantMessagePasses, messagePassSalesEnabled, passProducts, syncMessagePassRefund, instagramRewardStatus, claimInstagramReward } from '../services/messagePasses.js';
 
 export function createMessagePassRouter({ verifyOrder } = {}) {
   const router = Router();
   router.use(requireSession);
+  router.get('/instagram-reward', async (req, res, next) => {
+    try { res.json(await instagramRewardStatus(req.prisma, req.user)); } catch (error) { next(error); }
+  });
+  router.post('/instagram-reward', async (req, res, next) => {
+    try { res.json(await claimInstagramReward(req.prisma, req.user)); } catch (error) { next(error); }
+  });
   router.get('/', async (req, res, next) => {
     try {
       const [entries, user] = await Promise.all([
