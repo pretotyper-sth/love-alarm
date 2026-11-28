@@ -7,6 +7,10 @@ export const FUNNELS = [
   { key: 'reaction', title: '메시지 반응', steps: [['message_detail_open', '메시지 열람'], ['message_reaction_start', '반응 시도'], ['message_reaction_success', '반응 완료']] },
   { key: 'report', title: '메시지 신고', steps: [['message_report_start', '신고 제출'], ['message_report_success', '신고 완료']] },
   { key: 'instagram', title: '인스타그램 인증', steps: [['instagram_verify_start', '코드 요청'], ['instagram_verify_code_sent', '코드 발급'], ['instagram_verify_success', '인증 완료']] },
+  { key: 'withdrawal', title: '회원 탈퇴', steps: [['settings_withdraw_click', '탈퇴 안내'], ['account_withdraw_start', '탈퇴 실행'], ['account_withdraw_success', '탈퇴 완료']] },
+  { key: 'instagram_reward', title: '인증 보상', steps: [['rewards_screen', '보상 방문'], ['rewards_claim_pass_start', '받기 실행'], ['rewards_claim_pass_success', '처리 완료']] },
+  { key: 'alarm_reward', title: '알람 등록 보상', steps: [['rewards_screen', '보상 방문'], ['rewards_claim_alarm_pass_start', '받기 실행'], ['rewards_claim_alarm_pass_success', '처리 완료']] },
+  { key: 'checkin_reward', title: '출석 보상', steps: [['rewards_screen', '보상 방문'], ['rewards_claim_checkin_pass_start', '받기 실행'], ['rewards_claim_checkin_pass_success', '지급 완료']] },
 ];
 const types = new Set(['screen', 'click', 'impression']);
 const keys = new Set(['source', 'auth_state', 'tab', 'field', 'type', 'status', 'product', 'pass_balance', 'has_message', 'alarm_count', 'slot_used', 'slot_max', 'day_count', 'checkin_days', 'streak', 'badge_count', 'value']);

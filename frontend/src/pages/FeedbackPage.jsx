@@ -133,7 +133,7 @@ export function FeedbackPage() {
         <div className={`feedback-bottom-sheet ${showCategorySheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="feedback-sheet-handle" />
           <div className="bottom-sheet-header">
-            <div className="sheet-title-row"><h3 className="bottom-sheet-title">카테고리 선택</h3><SheetCloseButton onClose={() => setShowCategorySheet(false)} label="카테고리 선택 닫기" /></div>
+            <div className="sheet-title-row"><h3 className="bottom-sheet-title">카테고리 선택</h3><SheetCloseButton onClose={() => setShowCategorySheet(false)} source="feedback_category" label="카테고리 선택 닫기" /></div>
           </div>
           <div className="feedback-sheet-options">
             {CATEGORY_OPTIONS.map((option) => (

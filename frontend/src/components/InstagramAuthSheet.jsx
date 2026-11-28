@@ -211,7 +211,7 @@ export function InstagramAuthSheet({
 
         {/* 헤더 */}
         <div className="ig-auth-header">
-          <div className="sheet-title-row"><h3 className="ig-auth-title">인스타그램 인증</h3><SheetCloseButton onClose={onClose} disabled={isConfirming} label="인스타그램 인증 화면 닫기" /></div>
+          <div className="sheet-title-row"><h3 className="ig-auth-title">인스타그램 인증</h3><SheetCloseButton onClose={onClose} disabled={isConfirming} source="instagram_auth" label="인스타그램 인증 화면 닫기" /></div>
           <p className="ig-auth-desc">
             {alreadyVerified ? (
               <>

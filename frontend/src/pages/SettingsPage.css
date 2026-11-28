@@ -212,7 +212,7 @@
   cursor: default;
 }
 
-.withdrawal-sheet { width: 100%; max-width: 376px; max-height: 90dvh !important; overflow-y: auto; background: #fff; border-radius: 24px 24px 0 0; }
+.withdrawal-sheet { width: 100%; max-width: 376px; background: #fff; border-radius: 24px 24px 0 0; }
 .withdrawal-content { padding: 20px 24px calc(24px + env(safe-area-inset-bottom, 0px)); }
 .withdrawal-title-row { margin-bottom: 10px; }
 .withdrawal-content h2 { margin: 0; font-size: 20px; line-height: 1.4; color: #191f28; }

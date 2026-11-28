@@ -127,7 +127,7 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
       <header className="pass-header">
         <div className="sheet-title-row">
           <h2 id="message-pass-title">{hasPass ? '메시지를 열어볼까요?' : '메시지 열람권'}</h2>
-          <SheetCloseButton buttonRef={closeButton} onClose={onClose} disabled={busy} label="메시지 열람권 화면 닫기" />
+          <SheetCloseButton buttonRef={closeButton} onClose={onClose} disabled={busy} source="message_pass" label="메시지 열람권 화면 닫기" />
         </div>
         <p className="pass-description">{hasPass ? '한 번 연 메시지는 추가 사용 없이 다시 볼 수 있어요.' : '열람권 1장으로 메시지 1개를 확인해요.'}</p>
       </header>

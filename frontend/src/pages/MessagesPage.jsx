@@ -102,7 +102,7 @@ function SentMessageDetailSheet({ message, onClose }) {
             To: @{message.targetInstagramId}
           </span>
           <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
-        </div><SheetCloseButton onClose={onClose} label="보낸 메시지 닫기" /></div>
+        </div><SheetCloseButton onClose={onClose} source="sent_message" label="보낸 메시지 닫기" /></div>
 
         <div className="msg-sheet-card">
           <p className="msg-sheet-text">{message.message}</p>
@@ -179,7 +179,7 @@ function MessageDetailSheet({ message, onClose, onReact, onReport, reacting, rea
           <span className="msg-sheet-date">{formatDate(message.createdAt)}</span>
         </div>
 
-        <SheetCloseButton onClose={onClose} label="받은 메시지 닫기" /></div>
+        <SheetCloseButton onClose={onClose} source="received_message" label="받은 메시지 닫기" /></div>
         {/* 메시지 카드 */}
         <div className="msg-sheet-card">
           <p className="msg-sheet-text">{message.message}</p>
@@ -245,7 +245,7 @@ function ReportMessageSheet({
         <div className="msg-sheet-handle" />
 
         <div className="msg-report-header">
-          <div className="sheet-title-row"><h3 className="msg-report-title">이 메시지를 신고할까요?</h3><SheetCloseButton onClose={onClose} disabled={isSubmitting} label="메시지 신고 화면 닫기" /></div>
+          <div className="sheet-title-row"><h3 className="msg-report-title">이 메시지를 신고할까요?</h3><SheetCloseButton onClose={onClose} disabled={isSubmitting} source="message_report" label="메시지 신고 화면 닫기" /></div>
           <p className="msg-report-desc">
             신고 사유를 선택해 주세요.
             <br />

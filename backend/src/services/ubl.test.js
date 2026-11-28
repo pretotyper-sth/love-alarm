@@ -34,3 +34,16 @@ test('purchase and reaction funnels track ordered completion and exclude failed 
   assert.equal(result.funnels.find(f => f.key === 'reaction').conversion, 1);
   assert.deepEqual(cleanParams({ pass_balance: 4, message: 'private', messageId: 'private' }), { pass_balance: 4 });
 });
+
+test('withdrawal and reward funnels separate abandoned, failed, and completed sessions', () => {
+  const names = ['settings_withdraw_click', 'account_withdraw_start', 'account_withdraw_success', 'rewards_screen', 'rewards_claim_alarm_pass_start', 'rewards_claim_alarm_pass_success', 'rewards_claim_checkin_pass_start', 'rewards_claim_checkin_pass_success'];
+  const rows = names.map((name, index) => event(name, 'complete', index));
+  rows.push(event('settings_withdraw_click', 'abandoned', 0), event('sheet_close_click', 'abandoned', 1));
+  rows.push(event('rewards_screen', 'failed', 0), event('rewards_claim_alarm_pass_start', 'failed', 1), event('rewards_claim_fail', 'failed', 2));
+  const result = overview(rows, 7, now);
+  assert.deepEqual(result.funnels.find(f => f.key === 'withdrawal').steps.map(s => s.sessions), [2, 1, 1]);
+  assert.deepEqual(result.funnels.find(f => f.key === 'alarm_reward').steps.map(s => s.sessions), [2, 2, 1]);
+  assert.deepEqual(result.funnels.find(f => f.key === 'checkin_reward').steps.map(s => s.sessions), [2, 1, 1]);
+  assert.equal(result.failures.find(e => e.name === 'rewards_claim_fail').count, 1);
+  assert.deepEqual(cleanParams({ source: 'withdrawal', label: 'private content' }), { source: 'withdrawal' });
+});

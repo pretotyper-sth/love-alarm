@@ -794,7 +794,7 @@ export function AlarmListPage() {
       <div className={`custom-bottom-sheet-overlay ${showNotificationSheet ? 'show' : ''}`} onClick={handleNotificationClose}>
         <div className={`custom-bottom-sheet ${showNotificationSheet ? 'show' : ''}`} onClick={(e) => e.stopPropagation()}>
           <div className="bottom-sheet-header">
-            <div className="sheet-title-row"><h3 className="bottom-sheet-title">알림 받기</h3><SheetCloseButton onClose={handleNotificationClose} label="알림 받기 화면 닫기" /></div>
+            <div className="sheet-title-row"><h3 className="bottom-sheet-title">알림 받기</h3><SheetCloseButton onClose={handleNotificationClose} source="notification" label="알림 받기 화면 닫기" /></div>
             <p className="bottom-sheet-description">알람이 추가됐어요.<br />연결 소식이나 메시지가 오면 바로 알려드릴게요.</p>
           </div>
           <div className="bottom-sheet-content">
@@ -832,7 +832,7 @@ export function AlarmListPage() {
       </div>
       <BottomSheet className="guest-alarm-sheet" style={{ width: '100%' }} open={showGuestIntro} onClose={() => { if (!guestLoginBusy) setShowGuestIntro(false); }}>
         <div className="guest-alarm-intro">
-          <div className="sheet-title-row"><h2>좋아하는 사람을 추가해요</h2><SheetCloseButton onClose={() => setShowGuestIntro(false)} disabled={guestLoginBusy} label="알람 추가 안내 닫기" /></div>
+          <div className="sheet-title-row"><h2>좋아하는 사람을 추가해요</h2><SheetCloseButton onClose={() => setShowGuestIntro(false)} disabled={guestLoginBusy} source="guest_alarm_intro" label="알람 추가 안내 닫기" /></div>
           <p>서로의 인스타그램 ID를 등록하면 알람이 울려요.<br />추가해도 상대에게 연락이 가지 않아요.</p>
           <div className="guest-alarm-preview" aria-label="알람 추가 화면 미리보기">
             <h3>알람 추가 미리보기</h3>
@@ -842,7 +842,7 @@ export function AlarmListPage() {
         </div>
         <div className="sheet-actions">
           <Button size="xlarge" display="block" onClick={handleGuestLogin} loading={guestLoginBusy} disabled={guestLoginBusy}>로그인하고 추가하기</Button>
-          <SheetLaterButton onClose={() => setShowGuestIntro(false)} disabled={guestLoginBusy} />
+          <SheetLaterButton source="guest_alarm_intro" onClose={() => setShowGuestIntro(false)} disabled={guestLoginBusy} />
         </div>
       </BottomSheet>
     </div>

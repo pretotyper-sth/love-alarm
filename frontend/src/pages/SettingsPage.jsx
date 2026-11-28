@@ -21,6 +21,7 @@ import './SettingsPage.css';
 
 const IG_VERIFIED_KEY = 'love_alarm_instagram_verified_username';
 const IS_DEV = import.meta.env.DEV;
+const WITHDRAWAL_SHEET_STYLE = { width: '100%' };
 const DEV_BYPASS_USERNAME = 'dev_bypass';
 const LIKE_COUNT_TARGET_KEY = 'love_alarm_like_count_target';
 const LIKE_COUNT_RESULT_KEY = 'love_alarm_like_count_result';
@@ -62,7 +63,7 @@ export function SettingsPage() {
   useEffect(() => {
     if (!user?.id) return;
     void api.getRewardSummary().catch(() => {});
-  }, [user?.id, showWithdrawal]);
+  }, [user?.id]);
 
   const handleWithdraw = async () => {
     if (withdrawalLock.current) return;
@@ -357,11 +358,11 @@ export function SettingsPage() {
           right={<img src="https://static.toss.im/icons/png/4x/icon-arrow-right-mono.png" alt="" style={{ width: '20px', height: '20px', opacity: 0.6 }} />}
           verticalPadding="large" horizontalPadding="medium" onClick={() => { setWithdrawalError(''); setShowWithdrawal(true); logClick('settings_withdraw_click'); }} /></List>
       </>}
-      <BottomSheet className="withdrawal-sheet" style={{ width: '100%' }} open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
+      <BottomSheet className="withdrawal-sheet" style={WITHDRAWAL_SHEET_STYLE} maxHeight="90vh" disableChildrenDragging open={showWithdrawal} onClose={() => { if (!withdrawing) setShowWithdrawal(false); }}>
         <div className="withdrawal-content">
           <div className="sheet-title-row withdrawal-title-row">
             <h2>정말 탈퇴할까요?</h2>
-            <SheetCloseButton onClose={() => setShowWithdrawal(false)} disabled={withdrawing} label="회원 탈퇴 화면 닫기" />
+            <SheetCloseButton onClose={() => setShowWithdrawal(false)} disabled={withdrawing} source="withdrawal" label="회원 탈퇴 화면 닫기" />
           </div>
           <p>계정과 등록한 알람, 인스타그램 인증 정보가 삭제돼요. 탈퇴 후에는 복구할 수 없어요.</p>
           <ul>
@@ -417,7 +418,7 @@ export function SettingsPage() {
           <div className="auth-manage-card-header">
             {authManageStep === 'menu' ? (
               <>
-                <div className="sheet-title-row"><h3 className="auth-manage-card-title">인스타그램 인증 관리</h3><SheetCloseButton onClose={closeAuthManageSheet} disabled={isDisconnectingAuth} label="인스타그램 인증 관리 닫기" /></div>
+                <div className="sheet-title-row"><h3 className="auth-manage-card-title">인스타그램 인증 관리</h3><SheetCloseButton onClose={closeAuthManageSheet} disabled={isDisconnectingAuth} source="instagram_manage" label="인스타그램 인증 관리 닫기" /></div>
                 <p className="auth-manage-card-desc">
                   현재 @{verifiedUsername} 계정이 인증돼 있어요.
                   <br />
@@ -426,7 +427,7 @@ export function SettingsPage() {
               </>
             ) : (
               <>
-                <div className="sheet-title-row"><h3 className="auth-manage-card-title">인증을 해제할까요?</h3><SheetCloseButton onClose={closeAuthManageSheet} disabled={isDisconnectingAuth} label="인스타그램 인증 해제 화면 닫기" /></div>
+                <div className="sheet-title-row"><h3 className="auth-manage-card-title">인증을 해제할까요?</h3><SheetCloseButton onClose={closeAuthManageSheet} disabled={isDisconnectingAuth} source="instagram_disconnect" label="인스타그램 인증 해제 화면 닫기" /></div>
                 <p className="auth-manage-card-desc">
                   해제 시 현재 ID로 등록한 알람도 함께 정리돼요.
                 </p>

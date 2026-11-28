@@ -99,7 +99,7 @@ export function PaymentModal({ onClose, onSuccess }) {
       <div className="payment-modal-overlay show" onClick={isProcessing ? undefined : onClose} />
       <div className="payment-modal-container show" onClick={(e) => e.stopPropagation()}>
         <div className="payment-modal-header">
-          <div className="sheet-title-row"><h3 className="payment-modal-title">결제하기</h3><SheetCloseButton onClose={onClose} disabled={isProcessing} label="결제 화면 닫기" /></div>
+          <div className="sheet-title-row"><h3 className="payment-modal-title">결제하기</h3><SheetCloseButton onClose={onClose} disabled={isProcessing} source="slot_purchase" label="결제 화면 닫기" /></div>
           <p className="payment-modal-description">
             소중한 인연을 놓치지 않도록,<br />
             알람 슬롯을 하나 더 추가해보세요.<br />

@@ -83,10 +83,11 @@ export function RewardsPage() {
   const [rewardQueue] = useState(() => createRewardQueue(setPendingClaims));
   const enqueueClaim = (key, action) => {
     const owner = api.getCurrentUser()?.id;
+    logClick('rewards_claim_queue', { source: key.replace(':', '_') });
     return rewardQueue.enqueue(key, async () => {
       if (owner && api.getCurrentUser()?.id !== owner) return;
       try { await action(); }
-      catch (error) { showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.', true); }
+      catch (error) { logClick('rewards_claim_fail', { source: key.replace(':', '_') }); showToast(error.message || '보상을 받지 못했어요. 다시 시도해 주세요.', true); }
     });
   };
   const pending = key => pendingClaims.includes(key);
@@ -110,6 +111,7 @@ export function RewardsPage() {
 
   const handleClaimAlarmReward = missionId => enqueueClaim(`alarm:${missionId}`, async () => {
     if (currentAlarmRewards?.error) { await api.getRewardSummary({ force: true }); return; }
+    logClick('rewards_claim_alarm_pass_start', { type: missionId });
     const result = await api.claimAlarmReward(missionId);
     if ('alreadyGranted' in result) {
       logClick('rewards_claim_alarm_pass_success', { type: missionId, pass_balance: result.balance });
@@ -119,6 +121,7 @@ export function RewardsPage() {
 
   const handleClaimCheckin = () => enqueueClaim('checkin', async () => {
     if (currentCheckin?.error) { await api.getRewardSummary({ force: true }); return; }
+    logClick('rewards_claim_checkin_pass_start');
     const result = await api.claimCheckinPass();
     if (result.granted) {
       logClick('rewards_claim_checkin_pass_success', { pass_balance: result.balance, day_count: result.days });
@@ -215,7 +218,7 @@ export function RewardsPage() {
             <div className="checkin-contents">
               <p className="checkin-title">메시지 열람권 1장</p>
               <p className="checkin-sub">인스타그램 첫 인증 완료 시</p>
-              <span className="checkin-badge">토스 계정당 1회</span>
+              <span className="checkin-badge">계정당 1회</span>
             </div>
           }
           right={

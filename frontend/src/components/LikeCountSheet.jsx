@@ -157,7 +157,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
         <div className="lcs-handle" />
 
         <div className="lcs-header">
-          <div className="sheet-title-row"><h2 className="lcs-title">좋아하는 사람 수 확인하기</h2><SheetCloseButton onClose={onClose} disabled={isLoading} label="좋아하는 사람 수 화면 닫기" /></div>
+          <div className="sheet-title-row"><h2 className="lcs-title">좋아하는 사람 수 확인하기</h2><SheetCloseButton onClose={onClose} disabled={isLoading} source="like_count" label="좋아하는 사람 수 화면 닫기" /></div>
           <p className="lcs-desc">
             인스타그램 ID를 입력하고 짧은 광고를 보면<br />
             지금 몇 명이 좋아하는지 알 수 있어요.
@@ -226,7 +226,7 @@ export function LikeCountSheet({ open, onClose, onResult }) {
           >
             {isAdFree() ? '확인하기' : '광고 보고 확인하기'}
           </Button>
-          <SheetLaterButton onClose={onClose} disabled={isLoading} />
+          <SheetLaterButton source="like_count" onClose={onClose} disabled={isLoading} />
         </div>
       </div>
     </>
