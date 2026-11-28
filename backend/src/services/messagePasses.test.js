@@ -12,9 +12,11 @@ test('signed sessions reject tampering, expiry, and another audience', () => {
 });
 test('locked messages contain neither body nor sender/account identifiers', () => {
   const response = receivedMessage({ id: 'm', message: 'secret', targetInstagramId: 'recipient', fromInstagramId: 'sender', userId: 'sender-user', requiresPass: true, createdAt: 'today' });
-  assert.deepEqual(response, { id: 'm', createdAt: 'today', locked: true, message: null, reactions: [] });
+  assert.deepEqual(response, { id: 'm', createdAt: 'today', locked: true, opened: false, message: null, reactions: [] });
   assert.equal(receivedMessage({ requiresPass: false, message: 'legacy' }).message, 'legacy');
   assert.equal(receivedMessage({ requiresPass: true, message: 'purchased' }, true).message, 'purchased');
+  assert.equal(receivedMessage({ requiresPass: true }, true).opened, true);
+  assert.equal(receivedMessage({ requiresPass: false }).opened, false);
 });
 test('sales stay off until both distinct console SKUs are configured', () => {
   assert.equal(messagePassSalesEnabled({ MESSAGE_PASSES_ENABLED: 'true' }), false);

@@ -14,7 +14,7 @@ export function purchaseMessagePass({ IAP, sku, grant, timeoutMs = 45000 }) {
       cleanup?.();
       if (error) reject(error); else resolve(value);
     };
-    timer = setTimeout(() => finish(new Error('구매 확인이 지연되고 있어요. 구매 복원을 눌러 주세요.')), timeoutMs);
+    timer = setTimeout(() => finish(new Error('구매 확인이 지연되고 있어요. 닫았다가 다시 열어 주세요.')), timeoutMs);
     try {
       cleanup = IAP.createOneTimePurchaseOrder({
         options: {
@@ -34,7 +34,7 @@ export function purchaseMessagePass({ IAP, sku, grant, timeoutMs = 45000 }) {
         onError: error => {
           const code = error?.code || error?.errorCode;
           const canceled = ['USER_CANCELED', 'USER_CANCELLED'].includes(code);
-          finish(Object.assign(new Error(canceled ? '결제를 취소했어요.' : '구매를 완료하지 못했어요. 구매 내역을 복원해 주세요.'), { canceled }));
+          finish(Object.assign(new Error(canceled ? '결제를 취소했어요.' : '구매를 완료하지 못했어요. 닫았다가 다시 열어 주세요.'), { canceled }));
         },
       });
       if (finished) cleanup?.();

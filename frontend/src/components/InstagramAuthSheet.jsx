@@ -89,6 +89,24 @@ export function InstagramAuthSheet({
     }
   };
 
+  const handlePreviewVerify = async () => {
+    if (!import.meta.env.DEV || !api.isPreview || isConfirming) return;
+    if (!await requireLogin('인스타그램 인증을 시작하려면 로그인이 필요해요')) return;
+    setIsConfirming(true);
+    setError('');
+    try {
+      const target = username.trim().toLowerCase().replace(/^@/, '') || 'preview_account';
+      const session = await api.verifyInstagramStart(target);
+      const result = await api.verifyInstagramConfirm(session.sessionId, '123456');
+      localStorage.setItem('love_alarm_instagram_verified_username', result.instagramUsername);
+      onSuccess?.(result.instagramUsername);
+    } catch (err) {
+      setError(err.message || '로컬 인증을 완료하지 못했어요.');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   const handleConfirm = useCallback(async (codeStr) => {
     if (confirmingRef.current || !sessionId || !codeStr || codeStr.length !== 6) return;
     confirmingRef.current = true;
@@ -204,6 +222,10 @@ export function InstagramAuthSheet({
         </div>
 
         <div className="ig-auth-body">
+          {import.meta.env.DEV && api.isPreview && <>
+            <Button size="large" display="block" variant="weak" onClick={handlePreviewVerify} loading={isConfirming} disabled={isConfirming || isRequesting}>인스타 인증 완료 (로컬)</Button>
+            <Spacing size={20} />
+          </>}
           {api.isPreview && stage === 'waiting' && <p className="ig-auth-desc" role="status">미리보기에서는 DM을 보내지 않아요. 인증번호는 123456이에요.</p>}
           {/* Step 1 */}
           <div className="ig-auth-step">

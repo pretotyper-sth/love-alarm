@@ -24,3 +24,13 @@ test('ingestion strips personal content and arbitrary properties, validates size
   assert.equal(+sanitizeEvents([{...input,occurredAt:'2000-01-01'}],now)[0].createdAt,now);
   assert.deepEqual(cleanParams({message:'secret',alarm_count:2,bad:NaN}),{alarm_count:2});
 });
+
+test('purchase and reaction funnels track ordered completion and exclude failed attempts', () => {
+  const rows = ['message_pass_sheet_view', 'message_pass_purchase_start', 'message_pass_purchase_success', 'message_pass_use_start', 'message_pass_use_success', 'message_detail_open', 'message_reaction_start', 'message_reaction_success'].map((name, index) => event(name, 'complete', index));
+  rows.push(event('message_pass_sheet_view', 'failed', 0), event('message_pass_use_start', 'failed', 1), event('message_pass_use_fail', 'failed', 2));
+  const result = overview(rows, 7, now);
+  assert.deepEqual(result.funnels.find(f => f.key === 'purchase').steps.map(s => s.sessions), [2, 1, 1, 1]);
+  assert.deepEqual(result.funnels.find(f => f.key === 'pass_use').steps.map(s => s.sessions), [2, 2, 1]);
+  assert.equal(result.funnels.find(f => f.key === 'reaction').conversion, 1);
+  assert.deepEqual(cleanParams({ pass_balance: 4, message: 'private', messageId: 'private' }), { pass_balance: 4 });
+});

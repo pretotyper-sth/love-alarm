@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPreviewApi } from './previewApi.js';
+import { purchaseMessagePass } from './messagePassPurchase.js';
+import { isReceivedMessageUnread } from './messages.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -33,4 +35,63 @@ test('mock login can finish an alarm action locally and survive reopening', asyn
   reopened.logout();
   assert.equal(reopened.getCurrentUser(), null);
   await assert.rejects(reopened.getAlarms(), { status: 401 });
+});
+
+for (const productId of ['single', 'bundle']) test(`preview ${productId} purchase uses registered SKU, grants once, and spends once locally`, async t => {
+  t.mock.method(globalThis, 'fetch', () => assert.fail('preview must not send requests'));
+  const storage = memoryStorage();
+  const api = createPreviewApi(storage);
+  await assert.rejects(api.getMessagePassWallet(), { status: 401 });
+  await api.login();
+  await assert.rejects(api.openReceivedMessage('preview-message-1'), { code: 'INSTAGRAM_REQUIRED' });
+  await api.verifyInstagramStart('my_preview_account');
+  await api.verifyInstagramConfirm('preview-verification', '123456');
+  const before = await api.getReceivedMessageState();
+  assert.ok(before.messages.slice(0, 2).every(message => message.locked && message.message === null));
+  const wallet = await api.getMessagePassWallet();
+  const product = wallet.products.find(item => item.id === productId);
+  assert.match(product.sku, /^ait\.0000015595\./);
+  await assert.rejects(api.openReceivedMessage(before.messages[0].id), { code: 'PASS_REQUIRED' });
+  await assert.rejects(api.grantMessagePassOrder('made-up-order'));
+  let orderId;
+  await purchaseMessagePass({ IAP: api.messagePassIAP, sku: product.sku, grant: async id => { orderId = id; return api.grantMessagePassOrder(id); } }).promise;
+  assert.equal((await api.getMessagePassWallet()).balance, product.quantity);
+  assert.equal((await api.grantMessagePassOrder(orderId)).alreadyGranted, true);
+  const opened = await api.openReceivedMessage(before.messages[0].id);
+  assert.ok(opened.message.message);
+  assert.equal(opened.balance, product.quantity - 1);
+  assert.equal((await api.openReceivedMessage(before.messages[0].id)).balance, product.quantity - 1);
+  const reopened = createPreviewApi(storage);
+  assert.equal((await reopened.getMessagePassWallet()).balance, product.quantity - 1);
+  assert.equal((await reopened.getReceivedMessageState()).messages[0].locked, false);
+  reopened.resetMessagePassPreview();
+  assert.equal((await reopened.getMessagePassWallet()).balance, 0);
+  assert.ok((await reopened.getReceivedMessageState()).messages.slice(0, 2).every(message => message.locked));
+});
+
+test('preview inbox covers locked, free, opened, reacted, long and reported messages without requests', async t => {
+  t.mock.method(globalThis, 'fetch', () => assert.fail('preview must not send requests'));
+  const storage = memoryStorage();
+  const api = createPreviewApi(storage);
+  await api.login();
+  await api.verifyInstagramStart('preview_account');
+  await api.verifyInstagramConfirm('preview-verification', '123456');
+  const { messages } = await api.getReceivedMessageState();
+  assert.equal(messages.length, 8);
+  assert.equal(messages.filter(message => message.locked).length, 3);
+  assert.ok(messages.find(message => message.id === 'preview-message-6').message.length > 100);
+  assert.equal(messages.find(message => message.id === 'preview-message-5').reactions[0].emoji, '😊');
+  await assert.rejects(api.reactToMessage('preview-message-1', '❤️'), /먼저 열어/);
+  assert.ok(messages.filter(message => isReceivedMessageUnread(message)).every(message => message.locked));
+  assert.ok(messages.filter(message => !message.locked).every(message => message.opened));
+  assert.equal((await api.openReceivedMessage('preview-message-3')).balance, 0);
+  await assert.rejects(api.reactToMessage('preview-message-3', 'invalid'), /유효하지/);
+  assert.equal((await api.reactToMessage('preview-message-3', '❤️')).reaction.emoji, '❤️');
+  assert.equal((await api.reactToMessage('preview-message-3', '🤔')).reaction.emoji, '❤️');
+  const reopened = createPreviewApi(storage);
+  assert.equal((await reopened.openReceivedMessage('preview-message-3')).message.reactions[0].emoji, '❤️');
+  await reopened.reportMessage('preview-message-7', '스팸 또는 광고 같아요');
+  assert.equal((await createPreviewApi(storage).getReceivedMessageState()).messages.length, 7);
+  await assert.rejects(reopened.openReceivedMessage('preview-message-7'), /찾을 수/);
+  await assert.rejects(reopened.reactToMessage('preview-message-7', '❤️'), /찾을 수/);
 });

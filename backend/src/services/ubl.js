@@ -2,11 +2,14 @@ export const FUNNELS = [
   { key: 'alarm', title: '알람 등록', steps: [['alarm_list_screen', '홈 방문'], ['alarm_add_button_click', '추가 클릭'], ['add_alarm_screen', '입력 화면'], ['add_alarm_submit', '등록 시도'], ['add_alarm_success', '등록 완료']] },
   { key: 'guest', title: '둘러보기 → 로그인', steps: [['guest_alarm_intro_view', '서비스 소개'], ['guest_alarm_login_click', '로그인 CTA'], ['login_start', '로그인 실행'], ['login_success', '로그인 완료'], ['add_alarm_screen', '입력 화면']] },
   { key: 'message', title: '메시지 확인', steps: [['messages_screen', '메시지함'], ['message_open_click', '메시지 선택'], ['message_detail_open', '열람 완료']] },
-  { key: 'purchase', title: '열람권 구매', steps: [['message_pass_purchase_start', '구매 시작'], ['message_pass_purchase_success', '구매 완료'], ['message_detail_open', '메시지 열람']] },
+  { key: 'purchase', title: '열람권 구매', steps: [['message_pass_sheet_view', '열람권 화면'], ['message_pass_purchase_start', '구매 시작'], ['message_pass_purchase_success', '구매 완료'], ['message_pass_use_success', '열람권 사용']] },
+  { key: 'pass_use', title: '열람권 사용', steps: [['message_pass_sheet_view', '열람권 화면'], ['message_pass_use_start', '사용 시도'], ['message_pass_use_success', '열람 완료']] },
+  { key: 'reaction', title: '메시지 반응', steps: [['message_detail_open', '메시지 열람'], ['message_reaction_start', '반응 시도'], ['message_reaction_success', '반응 완료']] },
+  { key: 'report', title: '메시지 신고', steps: [['message_report_start', '신고 제출'], ['message_report_success', '신고 완료']] },
   { key: 'instagram', title: '인스타그램 인증', steps: [['instagram_verify_start', '코드 요청'], ['instagram_verify_code_sent', '코드 발급'], ['instagram_verify_success', '인증 완료']] },
 ];
 const types = new Set(['screen', 'click', 'impression']);
-const keys = new Set(['source', 'auth_state', 'tab', 'field', 'type', 'status', 'product', 'has_message', 'alarm_count', 'slot_used', 'slot_max', 'day_count', 'checkin_days', 'streak', 'badge_count', 'value']);
+const keys = new Set(['source', 'auth_state', 'tab', 'field', 'type', 'status', 'product', 'pass_balance', 'has_message', 'alarm_count', 'slot_used', 'slot_max', 'day_count', 'checkin_days', 'streak', 'badge_count', 'value']);
 export function cleanParams(input = {}) {
   const params = {};
   for (const [key, value] of Object.entries(input || {})) {

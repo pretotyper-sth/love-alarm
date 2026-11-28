@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { Button } from '@toss/tds-mobile';
 import { api } from '../utils/api';
 import { purchaseMessagePass, restoreMessagePassOrders } from '../utils/messagePassPurchase';
-import { logClick } from '../utils/analytics';
+import { logClick, logImpression } from '../utils/analytics';
 import './MessagePassSheet.css';
 
 export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalletChange }) {
@@ -31,13 +32,20 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
     window.addEventListener('pagehide', onPageHide);
     void (async () => {
       try {
-        const next = await api.getMessagePassWallet();
+        let next = await api.getMessagePassWallet();
         if (!mounted.current) return;
         setWallet(next);
         onWalletChange(next.balance);
-        if (next.balance > 0) return;
-        const { IAP } = await import('@apps-in-toss/web-framework');
+        logImpression('message_pass_sheet_view', { pass_balance: next.balance });
+        const IAP = api.isPreview ? api.messagePassIAP : (await import('@apps-in-toss/web-framework')).IAP;
         iap.current = IAP;
+        try {
+          await restoreMessagePassOrders({ IAP, skus: next.products.map(p => p.sku).filter(Boolean), grant: api.grantMessagePassOrder, syncRefund: api.syncMessagePassRefund });
+          next = await api.getMessagePassWallet();
+          if (!mounted.current) return;
+          setWallet(next); onWalletChange(next.balance);
+        } catch { /* App startup and the next sheet visit retry pending orders. */ }
+        if (!mounted.current || next.balance > 0) return;
         if (typeof IAP?.getProductItemList === 'function') {
           const native = await Promise.race([
             IAP.getProductItemList(),
@@ -60,8 +68,12 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
   }, []);
 
   async function openMessage() {
-    const result = await api.openReceivedMessage(message.id);
-    if (mounted.current) { onWalletChange(result.balance); onOpened(result.message); }
+    logClick('message_pass_use_start');
+    try {
+      const result = await api.openReceivedMessage(message.id);
+      logClick('message_pass_use_success', { pass_balance: result.balance });
+      if (mounted.current) { onWalletChange(result.balance); onOpened(result.message); }
+    } catch (error) { logClick('message_pass_use_fail'); throw error; }
   }
 
   const product = wallet?.products.find(p => p.id === selected);
@@ -86,7 +98,7 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
       }
       await openMessage();
     } catch (failure) {
-      logClick(failure.canceled ? 'message_pass_purchase_cancel' : 'message_pass_purchase_fail');
+      if (!hasPass && !paid) logClick(failure.canceled ? 'message_pass_purchase_cancel' : 'message_pass_purchase_fail');
       if (!mounted.current) return;
       if (!failure.canceled) setError(paid ? '구매한 열람권이 있어요. 다시 열어 주세요.' : failure.message);
       try { await refreshWallet(); } catch { /* Preserve the actionable purchase error. */ }
@@ -96,26 +108,12 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
     }
   }
 
-  async function handleRestore() {
-    if (operation.current) return;
-    operation.current = true; setBusy(true); setError('');
-    try {
-      const { IAP } = await import('@apps-in-toss/web-framework');
-      if (typeof IAP?.getPendingOrders !== 'function') throw new Error('토스 앱에서 구매를 복원해 주세요.');
-      const current = await refreshWallet();
-      const result = await restoreMessagePassOrders({ IAP, skus: current.products.map(p => p.sku).filter(Boolean), grant: api.grantMessagePassOrder, syncRefund: api.syncMessagePassRefund });
-      await refreshWallet();
-      if (mounted.current) setError(result.failed ? '일부 구매를 확인하지 못했어요. 잠시 후 다시 복원해 주세요.' : result.restored ? '열람권을 복원했어요. 메시지를 열어 주세요.' : '구매 내역을 확인했어요. 보유 열람권을 확인해 주세요.');
-    } catch (failure) { if (mounted.current) setError(failure.message); }
-    finally { operation.current = false; if (mounted.current) setBusy(false); }
-  }
-
   return <>
     <div className="msg-sheet-overlay" onClick={busy ? undefined : onClose} />
     <section className="msg-sheet message-pass-sheet" role="dialog" aria-modal="true" aria-labelledby="message-pass-title" onKeyDown={event => {
       if (event.key === 'Escape' && !busy) onClose();
       if (event.key === 'Tab') {
-        const controls = [...event.currentTarget.querySelectorAll('button:not(:disabled), a[href]')];
+        const controls = [...event.currentTarget.querySelectorAll('button:not(:disabled), input:not(:disabled), a[href]')];
         if (!controls.length) { event.preventDefault(); return; }
         const first = controls[0], last = controls.at(-1);
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
@@ -123,28 +121,42 @@ export function MessagePassSheet({ message, onOpened, onClose, onReport, onWalle
       }
     }}>
       <div className="msg-sheet-handle" aria-hidden="true" />
-      <button ref={closeButton} className="pass-close" onClick={onClose} disabled={busy} aria-label="열람권 화면 닫기">닫기</button>
-      <h3 id="message-pass-title">{hasPass ? '열람권 1장으로 열어볼까요?' : '어떤 마음이 담겨 있을까요?'}</h3>
-      <p className="pass-description">{hasPass ? '한 번 연 메시지는 추가 사용 없이 다시 볼 수 있어요.' : '열람권으로 메시지 내용을 확인해 보세요.'}</p>
-      {hasPass && <p className="pass-balance">보유 {wallet.balance}장 → 사용 후 {wallet.balance - 1}장</p>}
-      {!hasPass && wallet && <div className="pass-products" role="radiogroup" aria-label="열람권 상품">
-        {wallet.products.map(item => {
-          const native = catalog.find(p => p.sku === item.sku);
-          return <button key={item.id} role="radio" aria-checked={selected === item.id} className={selected === item.id ? 'selected' : ''} onClick={() => setSelected(item.id)} disabled={busy || !native || !wallet.enabled}>
-            <strong>열람권 {item.quantity}장</strong><span>{native?.displayAmount || `${item.amount.toLocaleString()}원`}</span>{item.quantity > 1 && <small>이번 메시지에 1장 사용 · 나머지 {item.quantity - 1}장은 다음에 사용</small>}
-          </button>;
-        })}
-      </div>}
-      <p className="pass-notice">{!hasPass && <>구매 후 이 메시지에 1장을 바로 사용해요.<br /></>}보낸 사람은 익명으로 유지돼요.</p>
-      {error && <p className="pass-error" role="status">{error}</p>}
-      {!loading && !hasPass && !canPurchase && <p className="pass-notice">현재 구매 가능한 열람권이 없어요. 토스 앱에서 다시 확인해 주세요.</p>}
-      <button className="messages-empty-btn messages-empty-btn--primary pass-primary" disabled={busy || loading || (!hasPass && !canPurchase)} onClick={handleOpen}>
-        {busy ? '확인 중…' : hasPass ? '열람권 1장으로 열기' : nativeProduct ? `${nativeProduct.displayAmount} 결제하고 열기` : loading ? '불러오는 중…' : '현재 구매할 수 없어요'}
-      </button>
-      <div className="pass-links">
-        <button onClick={handleRestore} disabled={busy || loading}>구매 내역 복원</button>
-        <button onClick={() => onReport(message)} disabled={busy}>신고하고 숨기기</button>
+      <header className="pass-header">
+        <div className="pass-title-row">
+          <h2 id="message-pass-title">{hasPass ? '메시지를 열어볼까요?' : '메시지 열람권'}</h2>
+          <button ref={closeButton} className="pass-close" onClick={onClose} disabled={busy} aria-label="열람권 화면 닫기">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+          </button>
+        </div>
+        <p className="pass-description">{hasPass ? '한 번 연 메시지는 추가 사용 없이 다시 볼 수 있어요.' : '열람권 1장으로 메시지 1개를 확인해요.'}</p>
+      </header>
+      <div className="pass-body">
+        <div className="pass-message-meta">
+          <span>보낸 사람은 익명으로 유지돼요.</span>
+          <button onClick={() => onReport(message)} disabled={busy} aria-label="이 메시지 신고하기">신고</button>
+        </div>
+        {hasPass && <div className="pass-balance"><span>보유 열람권</span><strong>{wallet.balance}장 <span aria-hidden="true">→</span> <span>사용 후 {wallet.balance - 1}장</span></strong></div>}
+        {!hasPass && wallet && <div className="pass-products" role="radiogroup" aria-label="열람권 상품">
+          {wallet.products.map(item => {
+            const native = catalog.find(p => p.sku === item.sku);
+            const unavailable = busy || !native || !wallet.enabled;
+            return <label key={item.id} className={`pass-product${selected === item.id ? ' selected' : ''}${unavailable ? ' unavailable' : ''}`}>
+              <input type="radio" name="message-pass-product" value={item.id} checked={selected === item.id} onChange={() => { setSelected(item.id); logClick('message_pass_product_select', { product: item.id }); }} disabled={unavailable} />
+              <span className="pass-radio" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="m2.5 6 2.25 2.25L9.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+              <span className="pass-product-copy"><strong>열람권 {item.quantity}장</strong>{item.quantity > 1 && <small>남은 열람권은 다음에 사용해요</small>}</span>
+              <span className="pass-product-price">{native?.displayAmount || `${item.amount.toLocaleString('ko-KR')}원`}</span>
+            </label>;
+          })}
+        </div>}
+        {!hasPass && <p className="pass-notice">구매 후 이 메시지에 1장을 바로 사용해요.</p>}
+        {error && <p className="pass-error" role="alert">{error}</p>}
+        {!loading && !error && !hasPass && !canPurchase && <p className="pass-notice" role="status">지금은 열람권을 구매할 수 없어요. 잠시 후 다시 확인해 주세요.</p>}
       </div>
+      <footer className="pass-actions">
+        <Button size="xlarge" display="block" disabled={busy || loading || (!hasPass && !canPurchase)} loading={busy} onClick={handleOpen}>
+          {busy ? '확인 중…' : hasPass ? '열람권 1장으로 열기' : nativeProduct ? `${nativeProduct.displayAmount} 결제하고 열기` : loading ? '불러오는 중…' : '현재 구매할 수 없어요'}
+        </Button>
+      </footer>
     </section>
   </>;
 }

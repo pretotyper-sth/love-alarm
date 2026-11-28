@@ -6,12 +6,13 @@ import { api } from '../utils/api';
 import { useAuth } from '../contexts/AuthContext';
 import {
   loadReadReceivedMessageIds,
+  isReceivedMessageUnread,
   markReceivedMessageAsReported,
   markReceivedMessageAsRead,
   pruneReadReceivedMessageIds,
   pruneReportedReceivedMessageIds,
 } from '../utils/messages';
-import { logScreen, logClick } from '../utils/analytics';
+import { logScreen, logClick, logImpression } from '../utils/analytics';
 import { InstagramAuthSheet } from '../components/InstagramAuthSheet';
 import { MessagePassSheet } from '../components/MessagePassSheet';
 import './MessagesPage.css';
@@ -134,7 +135,7 @@ function SentMessageDetailSheet({ message, onClose }) {
 // ──────────────────────────────────────────────────────────────────────
 // MessageDetailSheet — 받은 메시지 상세 바텀시트
 // ──────────────────────────────────────────────────────────────────────
-function MessageDetailSheet({ message, onClose, onReact, onReport, reacting }) {
+function MessageDetailSheet({ message, onClose, onReact, onReport, reacting, reactionError }) {
   const EMOJIS = ['❤️', '😊', '🤔', '😳', '🥹'];
   const currentEmoji = message?.reactions?.[0]?.emoji ?? null;
 
@@ -202,7 +203,8 @@ function MessageDetailSheet({ message, onClose, onReact, onReport, reacting }) {
               );
             })}
           </div>
-          <p className="msg-sheet-react-description">이모지를 누르면 보낸 사람에게 반응이 전달돼요.<br />반응은 한 번만 보낼 수 있고, 보낸 뒤에는 바꿀 수 없어요.</p>
+          <p className="msg-sheet-react-description" role="status">{currentEmoji ? '반응을 보냈어요. 보낸 반응은 바꿀 수 없어요.' : <>이모지를 누르면 보낸 사람에게 반응이 전달돼요.<br />반응은 한 번만 보낼 수 있고, 보낸 뒤에는 바꿀 수 없어요.</>}</p>
+          {reactionError && <p className="pass-error" role="alert">{reactionError}</p>}
         </div>
 
         <div className="msg-sheet-report-section">
@@ -311,7 +313,7 @@ export function MessagesPage() {
   const [selectedSentMsg, setSelectedSentMsg] = useState(null);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
   const [verifiedId, setVerifiedId] = useState(null);
-  const [, setWallet] = useState(null);
+  const [wallet, setWallet] = useState(null);
   const [reportTargetMessage, setReportTargetMessage] = useState(null);
   const [selectedReportReason, setSelectedReportReason] = useState('');
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
@@ -319,6 +321,7 @@ export function MessagesPage() {
   const opening = useRef(false);
   const reactionLock = useRef(false);
   const [reacting, setReacting] = useState(false);
+  const [reactionError, setReactionError] = useState('');
   const isVerified = !!verifiedId;
 
   const loadMessages = useCallback(async () => {
@@ -341,12 +344,16 @@ export function MessagesPage() {
       localStorage.removeItem(IG_VERIFIED_KEY);
     } else setLoadError(received.reason.message);
     if (passes.status === 'fulfilled') setWallet(passes.value);
+    else { setWallet(null); setLoadError('열람권을 불러오지 못했어요. 다시 불러와 주세요.'); }
     if (sent.status === 'rejected') setLoadError(sent.reason.message);
     setIsLoading(false);
   }, [user]);
 
   useEffect(() => { void loadMessages(); }, [loadMessages]);
   useEffect(() => { logScreen('messages_screen', { tab: 'received' }); }, []);
+  useEffect(() => {
+    if (user && activeTab === 'received' && wallet) logImpression('message_wallet_view', { pass_balance: wallet.balance });
+  }, [user, activeTab, wallet]);
 
   function showError(message) { setReportToast({ show: true, message, type: 'error' }); }
   function handleTabChange(tab) {
@@ -354,6 +361,7 @@ export function MessagesPage() {
   }
   function handleWalletChange(balance) { setWallet(current => ({ ...current, balance })); }
   function handleOpened(message) {
+    setReactionError('');
     logClick('message_detail_open', { type: 'received' });
     setReadReceivedMessageIds(markReceivedMessageAsRead(message.id));
     setReceivedMessages(current => current.map(m => m.id === message.id ? message : m));
@@ -361,7 +369,7 @@ export function MessagesPage() {
     void api.getMessagePassWallet().then(setWallet).catch(() => {});
   }
   async function handleOpenReceivedMessage(message) {
-    logClick('message_open_click');
+    logClick('message_open_click', { type: message.locked ? 'locked' : message.opened ? 'reopen' : 'free', status: isReceivedMessageUnread(message, readReceivedMessageIds) ? 'unread' : 'read' });
     if (message.locked) { setSelectedLockedMsg(message); return; }
     if (opening.current) return;
     opening.current = true;
@@ -372,20 +380,21 @@ export function MessagesPage() {
     finally { opening.current = false; }
   }
   useEffect(() => {
-    const read = new Set(readReceivedMessageIds);
-    const count = receivedMessages.filter(m => !read.has(m.id)).length;
+    const count = receivedMessages.filter(m => isReceivedMessageUnread(m, readReceivedMessageIds)).length;
     localStorage.setItem(MSG_BADGE_COUNT_KEY, String(count));
   }, [receivedMessages, readReceivedMessageIds]);
 
   async function handleReact(messageId, emoji) {
     if (reactionLock.current || selectedReceivedMsg?.reactions?.length) return;
-    reactionLock.current = true; setReacting(true);
+    reactionLock.current = true; setReacting(true); setReactionError('');
+    logClick('message_reaction_start');
     try {
       const result = await api.reactToMessage(messageId, emoji);
       emoji = result.reaction.emoji;
+      logClick('message_reaction_success');
       setReceivedMessages(current => current.map(m => m.id === messageId ? { ...m, reactions: [{ emoji }] } : m));
       setSelectedReceivedMsg(current => current?.id === messageId ? { ...current, reactions: [{ emoji }] } : current);
-    } catch (error) { showError(error.message); }
+    } catch (error) { logClick('message_reaction_fail'); setReactionError(error.message); }
     finally { reactionLock.current = false; setReacting(false); }
   }
   function handleAuthSuccess() { setShowAuthSheet(false); void loadMessages(); }
@@ -394,13 +403,15 @@ export function MessagesPage() {
   async function handleSubmitReport() {
     if (!reportTargetMessage || !selectedReportReason || isSubmittingReport) return;
     setIsSubmittingReport(true);
+    logClick('message_report_start');
     try {
       await api.reportMessage(reportTargetMessage.id, selectedReportReason);
+      logClick('message_report_success');
       markReceivedMessageAsReported(reportTargetMessage.id);
       setReceivedMessages(current => current.filter(m => m.id !== reportTargetMessage.id));
       setSelectedReceivedMsg(null); setSelectedLockedMsg(null); setReportTargetMessage(null);
       setReportToast({ show: true, message: '신고하고 숨겼어요. 위반이 확인되면 사용한 열람권을 돌려드려요.', type: 'success' });
-    } catch (error) { showError(error.message); }
+    } catch (error) { logClick('message_report_fail'); showError(error.message); }
     finally { setIsSubmittingReport(false); }
   }
 
@@ -412,6 +423,7 @@ export function MessagesPage() {
       <button className={`messages-segmented-item${activeTab === 'sent' ? ' active' : ''}`} onClick={() => handleTabChange('sent')} role="tab" aria-selected={activeTab === 'sent'}>내가 보낸 메시지</button>
       <button className={`messages-segmented-item${activeTab === 'received' ? ' active' : ''}`} onClick={() => handleTabChange('received')} role="tab" aria-selected={activeTab === 'received'}>받은 메시지</button>
     </div></div>
+    {user && activeTab === 'received' && wallet && <div className="message-pass-wallet" role="status"><span>보유 열람권</span><strong>{wallet.balance.toLocaleString('ko-KR')}장</strong></div>}
     {!user && <div className="messages-empty">
       <p className="messages-empty-title">로그인하면 내 메시지를 확인할 수 있어요.</p>
       <p className="messages-empty-desc">알람과 함께 보낸 메시지와 누군가 보낸 마음이 여기에 모여요.</p>
@@ -430,14 +442,14 @@ export function MessagesPage() {
     {user && activeTab === 'received' && <div className="messages-content">
       {isLoading ? <Skeleton custom={['listWithIcon']} repeatLastItemCount={1} /> : !isVerified ? <InstagramAuthCta onVerify={() => setShowAuthSheet(true)} /> : receivedMessages.length === 0 ? <div className="messages-empty">
         <p className="messages-empty-title">아직 받은 메시지가 없어요.</p><p className="messages-empty-desc">누군가 메시지를 보내면 여기서 확인할 수 있어요.</p>
-      </div> : receivedMessages.map(msg => <button key={msg.id} className={`message-row message-row-tappable${readReceivedMessageIds.includes(msg.id) ? '' : ' message-row-unread'}`} onClick={() => handleOpenReceivedMessage(msg)}>
+      </div> : receivedMessages.map(msg => <button key={msg.id} className={`message-row message-row-tappable${isReceivedMessageUnread(msg, readReceivedMessageIds) ? ' message-row-unread' : ''}`} onClick={() => handleOpenReceivedMessage(msg)}>
         <MessageIcon type="received" /><div className="message-row-body"><div className="message-row-top message-row-top--with-indicator"><span>알 수 없는 누군가</span>
-        {!readReceivedMessageIds.includes(msg.id) && <span className="message-row-unread-indicator" aria-hidden="true" />}</div>
+        {isReceivedMessageUnread(msg, readReceivedMessageIds) && <span className="message-row-unread-indicator" aria-hidden="true" />}</div>
         <div className="message-row-preview">{msg.locked ? '열람권으로 메시지를 확인해 보세요' : truncateText(msg.message)}</div>
-        <div className="message-row-bottom">{msg.locked ? '잠긴 메시지 · ' : ''}{formatDate(msg.createdAt)}</div></div>
+        <div className="message-row-bottom">{msg.locked ? '잠긴 메시지 · ' : msg.opened === false ? '무료 메시지 · ' : ''}{formatDate(msg.createdAt)}</div></div>
       </button>)}
     </div>}
-    {selectedReceivedMsg && <MessageDetailSheet message={selectedReceivedMsg} onClose={() => setSelectedReceivedMsg(null)} onReact={handleReact} reacting={reacting} onReport={handleOpenReportSheet} />}
+    {selectedReceivedMsg && <MessageDetailSheet message={selectedReceivedMsg} onClose={() => setSelectedReceivedMsg(null)} onReact={handleReact} reacting={reacting} reactionError={reactionError} onReport={handleOpenReportSheet} />}
     {selectedLockedMsg && !reportTargetMessage && <MessagePassSheet key={selectedLockedMsg.id} message={selectedLockedMsg} onOpened={handleOpened} onClose={() => setSelectedLockedMsg(null)} onReport={handleOpenReportSheet} onWalletChange={handleWalletChange} />}
     {reportTargetMessage && <ReportMessageSheet message={reportTargetMessage} selectedReason={selectedReportReason} onSelectReason={setSelectedReportReason} onClose={handleCloseReportSheet} onSubmit={handleSubmitReport} isSubmitting={isSubmittingReport} />}
     {selectedSentMsg && <SentMessageDetailSheet message={selectedSentMsg} onClose={() => setSelectedSentMsg(null)} />}

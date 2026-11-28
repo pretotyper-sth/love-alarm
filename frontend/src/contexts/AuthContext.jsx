@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
         const { IAP } = await import('@apps-in-toss/web-framework');
         if (!active) return;
         await restoreMessagePassOrders({ IAP, skus: wallet.products.map(p => p.sku).filter(Boolean), grant: api.grantMessagePassOrder, syncRefund: api.syncMessagePassRefund });
-      } catch { /* Purchase sheet provides a visible manual retry. */ }
+      } catch { /* App startup and purchase-sheet entry retry pending orders. */ }
     })();
     return () => { active = false; };
   }, [user?.id]);

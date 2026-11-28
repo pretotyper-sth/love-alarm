@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { getHttpsAgent } from './tossAuth.js';
+import { MESSAGE_PASS_PRODUCTS } from '../config/messagePassProducts.js';
 
 export class MessagePassError extends Error {
   constructor(message, status = 400, code = 'MESSAGE_PASS_ERROR') {
@@ -10,10 +11,10 @@ export class MessagePassError extends Error {
 }
 
 export function passProducts(env = process.env) {
-  return [
-    { id: 'single', name: '메시지 열람권 1장', quantity: 1, amount: 1100, sku: env.TOSS_MESSAGE_PASS_SINGLE_SKU || null },
-    { id: 'bundle', name: '메시지 열람권 5장', quantity: 5, amount: 4400, sku: env.TOSS_MESSAGE_PASS_BUNDLE_SKU || null },
-  ];
+  return MESSAGE_PASS_PRODUCTS.map(product => ({
+    ...product,
+    sku: env[product.id === 'single' ? 'TOSS_MESSAGE_PASS_SINGLE_SKU' : 'TOSS_MESSAGE_PASS_BUNDLE_SKU'] || null,
+  }));
 }
 
 export function messagePassSalesEnabled(env = process.env) {
@@ -33,7 +34,7 @@ export async function verifiedRecipient(db, userId) {
 export function receivedMessage(message, unlocked = false) {
   const locked = message.requiresPass && !unlocked;
   return {
-    id: message.id, createdAt: message.createdAt, locked,
+    id: message.id, createdAt: message.createdAt, locked, opened: unlocked,
     message: locked ? null : message.message,
     reactions: message.reaction ? [{ emoji: message.reaction.emoji }] : [],
   };
@@ -48,7 +49,7 @@ export async function verifyTossPassOrder(orderId, tossUserId, { request = fetch
   const payload = await response.json();
   const order = payload.success;
   if (!response.ok || payload.resultType !== 'SUCCESS' || order?.orderId !== orderId) {
-    throw new MessagePassError('결제를 확인하지 못했어요. 구매 복원을 눌러 주세요.', 503);
+    throw new MessagePassError('결제를 확인하지 못했어요. 닫았다가 다시 열어 주세요.', 503);
   }
   // This field was introduced 2026-11-17; missing/unknown must never grant a purchase.
   if (order.purchaserMatched !== true) throw new MessagePassError('이 계정의 구매 내역을 확인할 수 없어요.', 403);

@@ -1,4 +1,9 @@
-import { storage } from './storage';
+import { storage } from './storage.js';
+
+export function isReceivedMessageUnread(message, readIds = []) {
+  if (message.opened === true) return false;
+  return message.locked === true || !readIds.includes(message.id);
+}
 
 export const READ_RECEIVED_MESSAGE_IDS_KEY = 'love_alarm_read_received_message_ids';
 export const REPORTED_RECEIVED_MESSAGE_IDS_KEY = 'love_alarm_reported_received_message_ids';
@@ -32,9 +37,9 @@ export function pruneReadReceivedMessageIds(validMessageIds) {
 }
 
 export function countUnreadReceivedMessages(messages) {
-  const readIdSet = new Set(loadReadReceivedMessageIds());
+  const readIds = loadReadReceivedMessageIds();
   const reportedIdSet = new Set(loadReportedReceivedMessageIds());
-  return messages.filter((message) => !readIdSet.has(message.id) && !reportedIdSet.has(message.id)).length;
+  return messages.filter((message) => isReceivedMessageUnread(message, readIds) && !reportedIdSet.has(message.id)).length;
 }
 
 export function loadReportedReceivedMessageIds() {
